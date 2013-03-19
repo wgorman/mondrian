@@ -78,56 +78,61 @@ public class RolapSchemaReader
         return getLevelMembers(firstLevel, true);
     }
 
-    public synchronized MemberReader getMemberReader(Hierarchy hierarchy) {
+    public synchronized MemberReader getMemberReader(
+        RolapCubeHierarchy hierarchy)
+    {
         MemberReader memberReader = hierarchyReaders.get(hierarchy);
         if (memberReader == null) {
-            memberReader =
-                ((RolapCubeHierarchy) hierarchy).createMemberReader(role);
+            memberReader = hierarchy.createMemberReader(role);
             assert memberReader != null : hierarchy;
             hierarchyReaders.put(hierarchy, memberReader);
         }
         return memberReader;
     }
 
-    public Member substitute(Member member) {
+    public Member substitute(Member _member) {
+        final RolapMember member = (RolapMember) _member;
         final MemberReader memberReader =
             getMemberReader(member.getHierarchy());
-        return memberReader.substitute((RolapMember) member);
+        return memberReader.substitute(member);
     }
 
     public void getMemberRange(
-        Level level, Member startMember, Member endMember, List<Member> list)
+        Level _level, Member _startMember, Member _endMember, List<Member> list)
     {
+        final RolapCubeLevel level = (RolapCubeLevel) _level;
+        final RolapMember startMember = (RolapMember) _startMember;
+        final RolapMember endMember = (RolapMember) _endMember;
         getMemberReader(level.getHierarchy()).getMemberRange(
-            (RolapLevel) level, (RolapMember) startMember,
-            (RolapMember) endMember, Util.<RolapMember>cast(list));
+            level, startMember, endMember, Util.<RolapMember>cast(list));
     }
 
     public int compareMembersHierarchically(Member m1, Member m2) {
         RolapMember member1 = (RolapMember) m1;
         RolapMember member2 = (RolapMember) m2;
-        final RolapHierarchy hierarchy = member1.getHierarchy();
+        final RolapCubeHierarchy hierarchy = member1.getHierarchy();
         Util.assertPrecondition(hierarchy == m2.getHierarchy());
         return getMemberReader(hierarchy).compare(member1, member2, true);
     }
 
-    public Member getMemberParent(Member member) {
-        return getMemberReader(member.getHierarchy()).getMemberParent(
-            (RolapMember) member);
+    public Member getMemberParent(Member _member) {
+        final RolapMember member = (RolapMember) _member;
+        return getMemberReader(member.getHierarchy()).getMemberParent(member);
     }
 
-    public int getMemberDepth(Member member) {
+    public int getMemberDepth(Member _member) {
+        final RolapMember member = (RolapMember) _member;
         final Role.HierarchyAccess hierarchyAccess =
             role.getAccessDetails(member.getHierarchy());
         if (hierarchyAccess != null) {
             final int memberDepth = member.getLevel().getDepth();
             final int topLevelDepth = hierarchyAccess.getTopLevelDepth();
             return memberDepth - topLevelDepth;
-        } else if (((RolapLevel) member.getLevel()).isParentChild()) {
+        } else if (member.getLevel().isParentChild()) {
             // For members of parent-child hierarchy, members in the same level
             // may have different depths.
             int depth = 0;
-            for (Member m = member.getParentMember();
+            for (RolapMember m = member.getParentMember();
                 m != null;
                 m = m.getParentMember())
             {
@@ -139,12 +144,12 @@ public class RolapSchemaReader
         }
     }
 
-
     public List<Member> getMemberChildren(Member member) {
         return getMemberChildren(member, null);
     }
 
-    public List<Member> getMemberChildren(Member member, Evaluator context) {
+    public List<Member> getMemberChildren(Member _member, Evaluator context) {
+        final RolapMember member = (RolapMember) _member;
         MemberChildrenConstraint constraint =
             sqlConstraintFactory.getMemberChildrenConstraint(context);
         List<RolapMember> memberList =
@@ -160,29 +165,30 @@ public class RolapSchemaReader
      * @return List of children
      */
     private List<RolapMember> internalGetMemberChildren(
-        Member member, MemberChildrenConstraint constraint)
+        RolapMember member, MemberChildrenConstraint constraint)
     {
         List<RolapMember> children = new ArrayList<RolapMember>();
-        final Hierarchy hierarchy = member.getHierarchy();
-        final MemberReader memberReader = getMemberReader(hierarchy);
-        memberReader.getMemberChildren(
-            (RolapMember) member, children, constraint);
+        final MemberReader memberReader =
+            getMemberReader(member.getHierarchy());
+        memberReader.getMemberChildren(member, children, constraint);
         return children;
     }
 
     public void getParentChildContributingChildren(
-        Member dataMember,
-        Hierarchy hierarchy,
-        List<Member> list)
+        Member _dataMember,
+        Hierarchy _hierarchy,
+        List<Member> _list)
     {
-        final List<RolapMember> rolapMemberList = Util.cast(list);
+        final RolapMember dataMember = (RolapMember) _dataMember;
+        final RolapCubeHierarchy hierarchy = (RolapCubeHierarchy) _hierarchy;
+        final List<RolapMember> list = Util.cast(_list);
         list.add(dataMember);
-        ((RolapCubeHierarchy) hierarchy).getMemberReader().getMemberChildren(
-            (RolapMember) dataMember, rolapMemberList);
+        hierarchy.getMemberReader().getMemberChildren(dataMember, list);
     }
 
-    public int getChildrenCountFromCache(Member member) {
-        final Hierarchy hierarchy = member.getHierarchy();
+    public int getChildrenCountFromCache(Member _member) {
+        final RolapMember member = (RolapMember) _member;
+        final RolapCubeHierarchy hierarchy = member.getHierarchy();
         final MemberReader memberReader = getMemberReader(hierarchy);
         if (memberReader instanceof
             RolapCubeHierarchy.RolapCubeHierarchyMemberReader)
@@ -191,7 +197,7 @@ public class RolapSchemaReader
                 ((RolapCubeHierarchy.RolapCubeHierarchyMemberReader)
                  memberReader)
                     .getRolapCubeMemberCacheHelper()
-                    .getChildrenFromCache((RolapMember) member, null);
+                    .getChildrenFromCache(member, null);
             if (list == null) {
                 return -1;
             }
@@ -200,7 +206,7 @@ public class RolapSchemaReader
 
         if (memberReader instanceof SmartMemberReader) {
             List list = ((SmartMemberReader) memberReader).getMemberCache()
-                .getChildrenFromCache((RolapMember) member, null);
+                .getChildrenFromCache(member, null);
             if (list == null) {
                 return -1;
             }
@@ -210,7 +216,7 @@ public class RolapSchemaReader
             return -1;
         }
         List list = ((MemberCache) memberReader)
-            .getChildrenFromCache((RolapMember) member, null);
+            .getChildrenFromCache(member, null);
         if (list == null) {
             return -1;
         }
@@ -225,21 +231,21 @@ public class RolapSchemaReader
      * @param level Level
      * @return number of members in level
      */
-    private int getLevelCardinalityFromCache(Level level) {
-        final Hierarchy hierarchy = level.getHierarchy();
+    private int getLevelCardinalityFromCache(RolapCubeLevel level) {
+        final RolapCubeHierarchy hierarchy = level.getHierarchy();
         final MemberReader memberReader = getMemberReader(hierarchy);
         if (memberReader instanceof
             RolapCubeHierarchy.RolapCubeHierarchyMemberReader)
         {
             final MemberCacheHelper cache =
                 ((RolapCubeHierarchy.RolapCubeHierarchyMemberReader)
-                    memberReader).getRolapCubeMemberCacheHelper();
+                    memberReader)
+                    .getRolapCubeMemberCacheHelper();
             if (cache == null) {
                 return Integer.MIN_VALUE;
             }
             final List<RolapMember> list =
-                cache.getLevelMembersFromCache(
-                    (RolapLevel) level, null);
+                cache.getLevelMembersFromCache(level, null);
             if (list == null) {
                 return Integer.MIN_VALUE;
             }
@@ -250,8 +256,7 @@ public class RolapSchemaReader
             List<RolapMember> list =
                 ((SmartMemberReader) memberReader)
                     .getMemberCache()
-                    .getLevelMembersFromCache(
-                        (RolapLevel) level, null);
+                    .getLevelMembersFromCache(level, null);
             if (list == null) {
                 return Integer.MIN_VALUE;
             }
@@ -261,8 +266,7 @@ public class RolapSchemaReader
         if (memberReader instanceof MemberCache) {
             List<RolapMember> list =
                 ((MemberCache) memberReader)
-                    .getLevelMembersFromCache(
-                        (RolapLevel) level, null);
+                    .getLevelMembersFromCache(level, null);
             if (list == null) {
                 return Integer.MIN_VALUE;
             }
@@ -273,11 +277,12 @@ public class RolapSchemaReader
     }
 
     public int getLevelCardinality(
-        Level level,
+        Level _level,
         boolean approximate,
         boolean materialize)
     {
-        if (!this.role.canAccess(level)) {
+        final RolapCubeLevel level = (RolapCubeLevel) _level;
+        if (!this.role.canAccess(_level)) {
             return 1;
         }
 
@@ -288,7 +293,7 @@ public class RolapSchemaReader
         }
 
         if (rowCount == Integer.MIN_VALUE) {
-            rowCount = ((RolapLevel) level).getAttribute().getApproxRowCount();
+            rowCount = level.getAttribute().getApproxRowCount();
         }
 
         if (rowCount == Integer.MIN_VALUE) {
@@ -302,10 +307,9 @@ public class RolapSchemaReader
                 // or they want the precise row count.
                 final MemberReader memberReader =
                     getMemberReader(level.getHierarchy());
-                rowCount =
-                    memberReader.getLevelMemberCount((RolapCubeLevel) level);
+                rowCount = memberReader.getLevelMemberCount(level);
                 // Cache it for future.
-                ((RolapLevel) level).setApproxRowCount(rowCount);
+                level.setApproxRowCount(rowCount);
             }
         }
         return rowCount;
@@ -321,19 +325,19 @@ public class RolapSchemaReader
     {
         if (members.size() == 0) {
             return Collections.emptyList();
-        } else {
-            MemberChildrenConstraint constraint =
-                sqlConstraintFactory.getMemberChildrenConstraint(context);
-            final Hierarchy hierarchy = members.get(0).getHierarchy();
-            final MemberReader memberReader = getMemberReader(hierarchy);
-            final List<RolapMember> rolapMemberList = Util.cast(members);
-            final List<RolapMember> children = new ArrayList<RolapMember>();
-            memberReader.getMemberChildren(
-                rolapMemberList,
-                children,
-                constraint);
-            return Util.cast(children);
         }
+        MemberChildrenConstraint constraint =
+            sqlConstraintFactory.getMemberChildrenConstraint(context);
+        final List<RolapMember> rolapMemberList = Util.cast(members);
+        final RolapCubeHierarchy hierarchy =
+            rolapMemberList.get(0).getHierarchy();
+        final MemberReader memberReader = getMemberReader(hierarchy);
+        final List<RolapMember> children = new ArrayList<RolapMember>();
+        memberReader.getMemberChildren(
+            rolapMemberList,
+            children,
+            constraint);
+        return Util.cast(children);
     }
 
     public void getMemberAncestors(Member member, List<Member> ancestorList) {
@@ -444,8 +448,9 @@ public class RolapSchemaReader
     }
 
     public Member lookupMemberChildByName(
-        Member parent, Id.Segment childName, MatchType matchType)
+        Member _parent, Id.Segment childName, MatchType matchType)
     {
+        final RolapMember parent = (RolapMember) _parent;
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(
                 "looking for child \"" + childName + "\" of " + parent);
@@ -457,7 +462,7 @@ public class RolapSchemaReader
                 && matchType.isExact())
             {
                 constraint = sqlConstraintFactory.getChildByNameConstraint(
-                    (RolapMember) parent, (Id.NameSegment) childName);
+                    parent, (Id.NameSegment) childName);
             } else {
                 constraint =
                     sqlConstraintFactory.getMemberChildrenConstraint(null);
@@ -468,7 +473,7 @@ public class RolapSchemaReader
                 return
                     RolapUtil.findBestMemberMatch(
                         children,
-                        (RolapMember) parent,
+                        parent,
                         children.get(0).getLevel(),
                         childName,
                         matchType,
@@ -509,10 +514,11 @@ public class RolapSchemaReader
         return schema.getNamedSet(name);
     }
 
-    public Member getLeadMember(Member member, int n) {
+    public Member getLeadMember(Member _member, int n) {
+        final RolapMember member = (RolapMember) _member;
         final MemberReader memberReader =
             getMemberReader(member.getHierarchy());
-        return memberReader.getLeadMember((RolapMember) member, n);
+        return memberReader.getLeadMember(member, n);
     }
 
     public List<Member> getLevelMembers(Level level, boolean includeCalculated)
@@ -524,16 +530,16 @@ public class RolapSchemaReader
         return members;
     }
 
-    public List<Member> getLevelMembers(Level level, Evaluator context) {
-        final RolapCubeLevel cubeLevel = (RolapCubeLevel) level;
+    public List<Member> getLevelMembers(Level _level, Evaluator context) {
+        final RolapCubeLevel level = (RolapCubeLevel) _level;
         TupleConstraint constraint =
             sqlConstraintFactory.getLevelMembersConstraint(
                 context,
-                Collections.singletonList(cubeLevel));
+                Collections.singletonList(level));
         final MemberReader memberReader =
             getMemberReader(level.getHierarchy());
         List<RolapMember> membersInLevel =
-            memberReader.getMembersInLevel(cubeLevel, constraint);
+            memberReader.getMembersInLevel(level, constraint);
         return Util.cast(membersInLevel);
     }
 
@@ -584,8 +590,9 @@ public class RolapSchemaReader
         return restrictedLevels;
     }
 
-    public Member getHierarchyDefaultMember(Hierarchy hierarchy) {
-        assert hierarchy != null;
+    public Member getHierarchyDefaultMember(Hierarchy _hierarchy) {
+        final RolapCubeHierarchy hierarchy = (RolapCubeHierarchy) _hierarchy;
+        assert _hierarchy != null;
         // If the whole hierarchy is inaccessible, return the intrinsic default
         // member. This is important to construct a evaluator.
         if (role.getAccess(hierarchy) == Access.NONE) {

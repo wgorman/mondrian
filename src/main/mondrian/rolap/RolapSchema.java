@@ -67,11 +67,13 @@ public class RolapSchema extends OlapElementBase implements Schema {
         new HashMap<String, RolapCube>();
 
     /**
-     * Maps {@link String names of shared dimensions} to {@link
-     * RolapDimension the canonical instance of those dimensions}.
+     * Maps {@link String names of shared dimensions} to the canonical instance
+     * of those dimensions. This instance is a {@link RolapCubeDimension} and
+     * belongs to a dummy cube whose name is the name of the dimension prefixed
+     * with "$", for example "$Store".
      */
-    final Map<String, RolapDimension> mapSharedDimNameToDim =
-        new HashMap<String, RolapDimension>();
+    final Map<String, RolapCubeDimension> sharedDimensions =
+        new HashMap<String, RolapCubeDimension>();
 
     /**
      * The default role for connections to this schema.
@@ -430,13 +432,12 @@ public class RolapSchema extends OlapElementBase implements Schema {
     }
 
     public Dimension[] getSharedDimensions() {
-        Collection<RolapDimension> dimensions =
-            mapSharedDimNameToDim.values();
+        Collection<RolapCubeDimension> dimensions = sharedDimensions.values();
         return dimensions.toArray(new RolapDimension[dimensions.size()]);
     }
 
-    RolapDimension getSharedDimension(final String name) {
-        return mapSharedDimNameToDim.get(name);
+    public NamedList<RolapCubeDimension> getSharedDimensionList() {
+        return new NamedListImpl<RolapCubeDimension>(sharedDimensions.values());
     }
 
     public NamedSet getNamedSet(String name) {

@@ -101,6 +101,9 @@ public class RolapSchemaLoader {
     private static final String EMPTY_TABLE_SOLE_COLUMN_NAME = "c";
     private static final Pattern PROTOCOL_PATTERN = Pattern.compile("[a-z]+:");
 
+    private static final Object DUMMY = new Object();
+    private static final String FACT_COUNT_MEASURE_NAME = "Fact Count";
+
     RolapSchema schema;
     private PhysSchemaBuilder physSchemaBuilder;
     private final RolapSchemaValidatorImpl validator =
@@ -122,6 +125,9 @@ public class RolapSchemaLoader {
         };
 
     private MissingLinkAction missingLinkAction;
+
+    private final List<Util.Function0> postCubeActions =
+        new ArrayList<Util.Function0>();
 
     /**
      * Intentionally not static. SimpleDateFormat is not thread-safe.
@@ -410,6 +416,10 @@ public class RolapSchemaLoader {
                 continue;
             }
             Util.discard(cube);
+            for (Util.Function0 action : postCubeActions) {
+                action.apply();
+            }
+            postCubeActions.clear();
         }
 
         // Create named sets.
@@ -1548,7 +1558,7 @@ public class RolapSchemaLoader {
 
         final NamedList<MondrianDef.MeasureGroup> xmlMeasureGroups =
             xmlCube.getMeasureGroups();
-        if (xmlMeasureGroups.size() == 0) {
+        if (xmlMeasureGroups.size() == 0 && !cube.getName().startsWith("$")) {
             handler.warning(
                 "Cube definition must contain a MeasureGroups element, and at "
                 + "least one MeasureGroup",
@@ -1670,8 +1680,8 @@ public class RolapSchemaLoader {
             if (measureGroup.factCountMeasure == null) {
                 final MondrianDef.Measure xmlMeasure =
                     new MondrianDef.Measure();
-                xmlMeasure.aggregator = "count";
-                xmlMeasure.name = "Fact Count";
+                xmlMeasure.aggregator = RolapAggregator.Count.name;
+                xmlMeasure.name = FACT_COUNT_MEASURE_NAME;
                 xmlMeasure.visible = Boolean.FALSE;
                 RolapSchema.PhysRelation relation =
                     xmlMeasureGroup.table == null
@@ -1849,14 +1859,7 @@ public class RolapSchemaLoader {
                 }
                 RolapStar star = measureGroup.getStar();
                 RolapStar.Table table = star.getFactTable();
-                final RolapBaseCubeMeasure measure1 =
-                    (measure instanceof
-                        RolapCubeHierarchy.RolapCubeStoredMeasure
-                        ? (RolapBaseCubeMeasure)
-                        ((RolapCubeHierarchy.RolapCubeStoredMeasure) measure)
-                            .getRolapMember()
-                        : (RolapBaseCubeMeasure) measure);
-                table.makeMeasure(measure1);
+                table.makeMeasure((RolapBaseCubeMeasure) measure);
             }
 
             // Create a RolapStar.Measure for each measure-reference. It has
@@ -1912,7 +1915,7 @@ public class RolapSchemaLoader {
 
         // Check that all hierarchies now have a default member.
         for (RolapCubeHierarchy hierarchy : cube.hierarchyList) {
-            assert hierarchy.getDefaultMember() != null : hierarchy;
+            assert hierarchy.defaultMember != null : hierarchy;
         }
 
         return cube;
@@ -2627,9 +2630,9 @@ public class RolapSchemaLoader {
      */
     private RolapCubeDimension getOrCreateDimension(
         RolapCube cube,
-        MondrianDef.Dimension xmlCubeDimension,
+        final MondrianDef.Dimension xmlCubeDimension,
         RolapSchema schema,
-        MondrianDef.Schema xmlSchema,
+        final MondrianDef.Schema xmlSchema,
         int dimensionOrdinal,
         List<RolapCubeHierarchy> cubeHierarchyList,
         final NamedList<MondrianDef.Annotation> annotations)
@@ -2674,13 +2677,24 @@ public class RolapSchemaLoader {
                     xmlDimension.description).build());
         validator.putXml(dimension, xmlDimension);
 
-        if (xmlCubeDimension.source != null) {
-            // Must add this dimension to the map of shared dimensions.
-            // (it is bad practice to leak references to a constructed object
-            // within its constructor, so we do it here.)
-            this.schema.mapSharedDimNameToDim.put(
-                dimensionName,
-                dimension);
+        // Must add this dimension to the map of shared dimensions.
+        // (it is bad practice to leak references to a constructed object
+        // within its constructor, so we do it here.)
+        if (xmlCubeDimension.source != null
+            && !schema.sharedDimensions.containsKey(dimension.getName()))
+        {
+            // Add a placeholder to prevent recursion.
+            ((Map) schema.sharedDimensions).put(dimension.getName(), DUMMY);
+
+            // Schedule an action for when we finish the current cube.
+            postCubeActions.add(
+                new Util.Function0() {
+                    public Object apply() {
+                        sharedDimension(
+                            dimension, xmlCubeDimension.source, xmlSchema);
+                        return null;
+                    }
+                });
         }
 
         // Load attributes before hierarchies, because levels refer to
@@ -2945,6 +2959,69 @@ public class RolapSchemaLoader {
         return cubeDimension;
     }
 
+    /** Ensures that there is a dummy cube for each shared dimension.
+     *
+     * <p>You must not call this method while a cube is being loaded.</p>
+     */
+    private void sharedDimension(
+        RolapDimension dimension,
+        String source,
+        MondrianDef.Schema xmlSchema)
+    {
+        // Check that placeholder is still present. Necessary to prevent
+        // recursion.
+        final String name = dimension.getName();
+        assert ((Map) schema.sharedDimensions).get(name)
+            == DUMMY;
+
+        final MondrianDef.Cube xmlCube = new MondrianDef.Cube();
+        xmlCube.name = "$" + source;
+        xmlCube.enableScenarios = false;
+        xmlCube.visible = Boolean.FALSE;
+        xmlCube.defaultMeasure = FACT_COUNT_MEASURE_NAME;
+
+        final MondrianDef.Dimension xmlDimension =
+            new MondrianDef.Dimension();
+        xmlCube.children
+            .holder(new MondrianDef.Dimensions())
+            .list()
+            .add(xmlDimension);
+        xmlDimension.source = source;
+
+        final MondrianDef.MeasureGroup xmlMeasureGroup =
+            new MondrianDef.MeasureGroup();
+        xmlCube.children
+            .holder(new MondrianDef.MeasureGroups())
+            .list()
+            .add(xmlMeasureGroup);
+        xmlMeasureGroup.table =
+            dimension.keyAttribute.getKeyList().get(0).relation.getAlias();
+
+        final MondrianDef.Measure xmlMeasure = new MondrianDef.Measure();
+        xmlMeasureGroup.children
+            .holder(new MondrianDef.Measures())
+            .list()
+            .add(xmlMeasure);
+        xmlMeasure.name = FACT_COUNT_MEASURE_NAME;
+        xmlMeasure.aggregator = RolapAggregator.Count.name;
+
+        final MondrianDef.FactLink xmlFactLink = new MondrianDef.FactLink();
+        xmlMeasureGroup.children
+            .holder(new MondrianDef.DimensionLinks())
+            .list()
+            .add(xmlFactLink);
+        xmlFactLink.dimension = name;
+
+        final RolapCube cube =
+            createCube(
+                schema,
+                xmlCube,
+                xmlSchema);
+        final RolapCubeDimension cubeDimension =
+            cube.getDimensionList().get(1);
+        schema.sharedDimensions.put(name, cubeDimension);
+    }
+
     private MondrianDef.Dimension useSharedDimension(
         RolapCube cube,
         MondrianDef.Dimension xmlCubeDimension,
@@ -3192,13 +3269,15 @@ public class RolapSchemaLoader {
                 validator.getXml(hierarchy.attribute, false);
             initCubeHierarchy(
                 cubeHierarchy,
-                xmlAttribute != null
-                    ? first(
-                        xmlAttribute.hierarchyAllMemberName,
-                        "All " + xmlAttribute.name)
-                    : xmlHierarchy != null
-                    ? xmlHierarchy.allMemberName
-                    : null,
+                first(
+                    xmlAttribute != null
+                        ? first(
+                            xmlAttribute.hierarchyAllMemberName,
+                            "All " + xmlAttribute.name)
+                        : xmlHierarchy != null
+                        ? xmlHierarchy.allMemberName
+                        : null,
+                    "All " + cubeHierarchy.getName() + "s"),
                 xmlAttribute != null
                     ? xmlAttribute.hierarchyAllMemberCaption
                     : xmlHierarchy != null
@@ -3222,8 +3301,9 @@ public class RolapSchemaLoader {
         String allMemberName,
         String allMemberCaption)
     {
+        assert allMemberName != null;
         hierarchy.initCubeHierarchy(
-            this, null, allMemberName, allMemberCaption);
+            this, allMemberName, allMemberCaption);
         for (RolapCubeLevel level : hierarchy.getLevelList()) {
             level.initLevel(this, level.hasClosedPeer());
         }
@@ -3240,10 +3320,6 @@ public class RolapSchemaLoader {
         if (hierarchy instanceof RolapCubeHierarchy) {
             final RolapCubeHierarchy cubeHierarchy =
                 (RolapCubeHierarchy) hierarchy;
-            Util.putMulti(
-                cubeHierMap,
-                cubeHierarchy.getRolapHierarchy(),
-                cubeHierarchy);
             deferAssignDefaultMember(
                 cube, cubeHierarchy.getRolapHierarchy(), xml,
                 hierarchyDefaultMember);

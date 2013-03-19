@@ -38,9 +38,9 @@ import java.util.*;
  * implements {@link RolapMember} but does not extend
  * {@link RolapMemberBase}.</li>
  *
- * <li>TODO remove {@link RolapAllCubeMember}</li>
+ * <li>DONE remove {@code RolapAllCubeMember}</li>
  *
- * <li>TODO reparent {@link mondrian.rolap.RolapHierarchy.LimitedRollupMember}</li>
+ * <li>DONE reparent {@link mondrian.rolap.RolapHierarchy.LimitedRollupMember}</li>
  *
  * <li>DONE remove {@link RolapCubeHierarchy}.bootstrapLookup</li>
  *
@@ -62,11 +62,11 @@ import java.util.*;
  * <li>MAYBE move {@link RolapHierarchy#createMemberReader} to
  * {@link RolapSchemaLoader}</li>
  *
- * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeStoredMeasure}</li>
+ * <li>DONE obsolete
+ * {@code mondrian.rolap.RolapCubeHierarchy.RolapCubeStoredMeasure}</li>
  *
- * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeCalculatedMeasure}</li>
- *
- * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeStoredMeasure}</li>
+ * <li>DONE obsolete
+ * {@code mondrian.rolap.RolapCubeHierarchy.RolapCubeCalculatedMeasure}</li>
  *
  * </ul>
  *

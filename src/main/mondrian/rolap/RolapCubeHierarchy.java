@@ -82,7 +82,6 @@ public class RolapCubeHierarchy extends RolapHierarchy {
 
     void initCubeHierarchy(
         RolapSchemaLoader schemaLoader,
-        String memberReaderClass,
         String allMemberName,
         String allMemberCaption)
     {
@@ -132,24 +131,11 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         }
 
         // Create an all member.
-        final String name = Util.first(allMemberName, "All " + this.name + "s");
-        Pair<String, String> pair =
-            RolapAllCubeMember.foo(
-                name,
-                this);
-        if (false)
-        this.allMember =
-            new RolapMemberBase(
-                null,
-                (RolapCubeLevel) allLevel,
-                null,
-                MemberType.ALL,
-                pair.right,
-                getLarder());
-
         final Larders.LarderBuilder builder = new Larders.LarderBuilder();
-        builder.name(name);
-        if (allMemberCaption != null && !allMemberCaption.equals(name)) {
+        builder.name(allMemberName);
+        if (allMemberCaption != null
+            && !allMemberCaption.equals(allMemberName))
+        {
             builder.caption(allMemberCaption);
         }
         this.allMember =
@@ -158,7 +144,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
                 (RolapCubeLevel) allLevel,
                 Util.COMPARABLE_EMPTY_LIST,
                 Member.MemberType.ALL,
-                Util.makeFqName(allLevel.getHierarchy(), name),
+                Util.makeFqName(allLevel.getHierarchy(), allMemberName),
                 builder.build());
         this.allMember.setOrdinal(0);
 
@@ -890,7 +876,8 @@ public class RolapCubeHierarchy extends RolapHierarchy {
             }
             if (member instanceof RolapStoredMeasure) {
                 RolapStoredMeasure storedMeasure = (RolapStoredMeasure) member;
-                return new RolapCubeStoredMeasure(parent, storedMeasure, level);
+                return null;
+                // new RolapCubeStoredMeasure(parent, storedMeasure, level);
             }
             return new RolapCubeMember(parent, member, level);
         }
@@ -987,78 +974,6 @@ public class RolapCubeHierarchy extends RolapHierarchy {
          */
         public Object getMemberCacheLock() {
             return memberCacheLock;
-        }
-    }
-
-    /**
-     * Implementation of {@link mondrian.rolap.RolapCubeMember} that wraps
-     * a {@link mondrian.rolap.RolapStoredMeasure} and also implements that
-     * interface.
-     *
-     * @see Util#deprecated(Object, boolean) TODO: Obsolete this class;
-     *   {@link mondrian.rolap.RolapBaseCubeMeasure} already implements
-     *   {@code mondrian.rolap.RolapMemberInCube} because a measure cannot be
-     *   shared between cubes. Probably current code requires it to extend
-     *   {@link mondrian.rolap.RolapCubeMember}.
-     */
-    public static class RolapCubeStoredMeasure
-        extends RolapCubeMember
-        implements RolapStoredMeasure
-    {
-        private final RolapStoredMeasure storedMeasure;
-
-        public RolapCubeStoredMeasure(
-            RolapCubeMember parent,
-            RolapStoredMeasure member,
-            RolapCubeLevel cubeLevel)
-        {
-            super(parent, (RolapMember) member, cubeLevel);
-            this.storedMeasure = member;
-            assert !(member instanceof RolapCubeMember) : member;
-        }
-
-        public RolapSchema.PhysExpr getExpr() {
-            return storedMeasure.getExpr();
-        }
-
-        public RolapAggregator getAggregator() {
-            return storedMeasure.getAggregator();
-        }
-
-        public RolapMeasureGroup getMeasureGroup() {
-            return storedMeasure.getMeasureGroup();
-        }
-
-        public RolapResult.ValueFormatter getFormatter() {
-            return storedMeasure.getFormatter();
-        }
-
-        public RolapStar.Measure getStarMeasure() {
-            return storedMeasure.getStarMeasure();
-        }
-    }
-
-    public static class RolapCubeCalculatedMeasure
-        extends RolapCubeMember
-        implements RolapMeasure, CalculatedMember
-    {
-        private final RolapCalculatedMeasure calculatedMeasure;
-
-        public RolapCubeCalculatedMeasure(
-            RolapCubeMember parent,
-            RolapCalculatedMeasure member,
-            RolapCubeLevel cubeLevel)
-        {
-            super(parent, member, cubeLevel);
-            this.calculatedMeasure = member;
-        }
-
-        public RolapResult.ValueFormatter getFormatter() {
-            return calculatedMeasure.getFormatter();
-        }
-
-        public Formula getFormula() {
-            return calculatedMeasure.getFormula();
         }
     }
 }

@@ -735,11 +735,6 @@ public class RolapHierarchy extends HierarchyBase {
      * or 'hidden'. The member is calculated using an expression which
      * aggregates only visible descendants.
      *
-     * <p>Note that this class extends RolapCubeMember only because other code
-     * expects that all members in a RolapCubeHierarchy are RolapCubeMembers.
-     * As part of {@link mondrian.util.Bug#BugSegregateRolapCubeMemberFixed},
-     * maybe make {@link mondrian.rolap.RolapCubeMember} an interface.
-     *
      * @see mondrian.olap.Role.RollupPolicy
      */
     public static class LimitedRollupMember extends DelegatingRolapMember {
