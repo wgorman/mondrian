@@ -24,7 +24,7 @@ public abstract class LevelBase
     extends OlapElementBase
     implements Level
 {
-    protected final Hierarchy hierarchy;
+    public final Hierarchy hierarchy;
     protected final String name;
     protected final String uniqueName;
     protected final int depth;

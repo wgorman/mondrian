@@ -270,8 +270,8 @@ public class RolapCell implements Cell {
                         // however it still suffers from the following bug:
                         //  http://jira.pentaho.com/browse/MONDRIAN-318
                         if (memberWalk.getLevel() != levelLast) {
-                            RolapCubeMember rolapCubeMember =
-                                (RolapCubeMember) memberWalk;
+                            RolapMember rolapCubeMember =
+                                (RolapMember) memberWalk;
                             final RolapStoredMeasure measure =
                                 (RolapStoredMeasure)
                                     result.getCellMembers(pos)[0];

@@ -52,13 +52,6 @@ public class RolapHierarchy extends HierarchyBase {
 
     private static final Logger LOGGER = Logger.getLogger(RolapHierarchy.class);
 
-    /**
-     * The raw member reader. For a member reader which incorporates access
-     * control and deals with hidden members (if the hierarchy is ragged), use
-     * {@link #createMemberReader(Role)}.
-     */
-    private MemberReader memberReader;
-    RolapMember defaultMember;
     protected RolapMember nullMember;
 
     private Exp aggregateChildrenExpression;
@@ -67,6 +60,7 @@ public class RolapHierarchy extends HierarchyBase {
      * The level that the null member belongs too.
      */
     protected RolapLevel nullLevel;
+    protected RolapLevel allLevel;
 
     /**
      * The 'all' member of this hierarchy. This exists even if the hierarchy
@@ -116,15 +110,15 @@ public class RolapHierarchy extends HierarchyBase {
 
     void initHierarchy(
         RolapSchemaLoader schemaLoader,
-        String allLevelName,
-        String allMemberName,
-        String allMemberCaption)
+        String allLevelName)
     {
-        assert !(this instanceof RolapCubeHierarchy);
+        if (this instanceof RolapCubeHierarchy) {
+            throw new AssertionError();
+        }
 
         // Create an 'all' level even if the hierarchy does not officially
         // have one.
-        final RolapLevel allLevel =
+        allLevel =
             new RolapLevel(
                 this,
                 Util.first(allLevelName, "(All)"),
@@ -159,8 +153,6 @@ public class RolapHierarchy extends HierarchyBase {
                 Larders.EMPTY,
                 schemaLoader.resourceMap);
 
-        this.nullMember = new RolapNullMember(nullLevel);
-
         if (dimension.isMeasures()) {
             levelList.add(
                 new RolapLevel(
@@ -177,28 +169,6 @@ public class RolapHierarchy extends HierarchyBase {
                     Larders.EMPTY,
                     schemaLoader.resourceMap));
         }
-
-        if (this instanceof RolapCubeHierarchy) {
-            Util.deprecated("checked above", true);
-            return;
-        }
-
-        // Create an all member.
-        final String name = Util.first(allMemberName, "All " + this.name + "s");
-        final Larders.LarderBuilder builder = new Larders.LarderBuilder();
-        builder.name(name);
-        if (allMemberCaption != null && !allMemberCaption.equals(name)) {
-            builder.caption(allMemberCaption);
-        }
-        this.allMember =
-            new RolapMemberBase(
-                null,
-                allLevel,
-                Util.COMPARABLE_EMPTY_LIST,
-                Member.MemberType.ALL,
-                Util.makeFqName(allLevel.getHierarchy(), name),
-                builder.build());
-        this.allMember.setOrdinal(0);
     }
 
     protected Logger getLogger() {
@@ -218,40 +188,12 @@ public class RolapHierarchy extends HierarchyBase {
     }
 
     /**
-     * Initialize method, called before levels are initialized.
-     *
-     * @param schemaLoader Schema loader
-     * @param memberReaderClass Class to use for reading members
-     */
-    void init1(
-        RolapSchemaLoader schemaLoader,
-        String memberReaderClass)
-    {
-        Util.discard(schemaLoader); // may be needed in future
-    }
-
-    /**
      * Initialize method, called after levels are initialized.
      *
      * @param schemaLoader Schema loader
      */
     void init2(RolapSchemaLoader schemaLoader) {
         Util.discard(schemaLoader); // may be needed in future
-
-        // first create memberReader
-        if (memberReader == null) {
-            memberReader =
-                getRolapSchema().createMemberReader(
-                    this, null);
-        }
-    }
-
-    void setMemberReader(MemberReader memberReader) {
-        this.memberReader = memberReader;
-    }
-
-    MemberReader getMemberReader() {
-        return memberReader;
     }
 
     public Larder getLarder() {
@@ -268,8 +210,7 @@ public class RolapHierarchy extends HierarchyBase {
     }
 
     public RolapMember getDefaultMember() {
-        assert defaultMember != null;
-        return defaultMember;
+        throw new UnsupportedOperationException();
     }
 
     public RolapMember getNullMember() {
@@ -289,6 +230,9 @@ public class RolapHierarchy extends HierarchyBase {
         String name,
         Formula formula)
     {
+        Util.deprecated("cleanup");
+        throw new UnsupportedOperationException();
+/*
         final RolapMember rolapParent = (RolapMember) parent;
         final RolapLevel rolapLevel = (RolapLevel) level;
         if (formula == null) {
@@ -305,6 +249,7 @@ public class RolapHierarchy extends HierarchyBase {
             return new RolapCalculatedMember(
                 rolapParent, rolapLevel, name, formula);
         }
+        */
     }
 
     /**
@@ -344,22 +289,8 @@ public class RolapHierarchy extends HierarchyBase {
 */
     }
 
-    /**
-     * Creates a member reader which enforces the access-control profile of
-     * <code>role</code>.
-     *
-     * <p>This method may not be efficient, so the caller should take care
-     * not to call it too often. A cache is a good idea.
-     *
-     * @param role Role (not null)
-     * @return Member reader that implements access control (never null)
-     */
-    MemberReader createMemberReader(Role role) {
-        return createMemberReader(this, role);
-    }
-
     protected static MemberReader createMemberReader(
-        final RolapHierarchy hierarchy,
+        final RolapCubeHierarchy hierarchy,
         Role role)
     {
         final Access access = role.getAccess(hierarchy);
@@ -472,7 +403,7 @@ public class RolapHierarchy extends HierarchyBase {
      * the country level, we have to constrain at the city level, not state,
      * or else all the values of all cities in the state will be returned.
      */
-    private List<Member> getLowestMembersForAccess(
+    protected List<Member> getLowestMembersForAccess(
         Evaluator evaluator,
         HierarchyAccess hAccess,
         List<Member> currentList)
@@ -688,17 +619,6 @@ public class RolapHierarchy extends HierarchyBase {
     }
 
     /**
-     * Sets default member of this Hierarchy.
-     *
-     * @param member Default member
-     */
-    public void setDefaultMember(RolapMember member) {
-        if (member != null) {
-            this.defaultMember = member;
-        }
-    }
-
-    /**
      * Returns the ordinal of this hierarchy in its cube.
      *
      * <p>Temporarily defined against RolapHierarchy; will be moved to
@@ -732,7 +652,7 @@ public class RolapHierarchy extends HierarchyBase {
      * }".
      */
     static class RolapNullMember extends RolapMemberBase {
-        RolapNullMember(final RolapLevel level) {
+        RolapNullMember(final RolapCubeLevel level) {
             super(
                 null,
                 level,
@@ -755,7 +675,10 @@ public class RolapHierarchy extends HierarchyBase {
         private RolapResult.ValueFormatter cellFormatter;
 
         public RolapCalculatedMeasure(
-            RolapMember parent, RolapLevel level, String name, Formula formula)
+            RolapMember parent,
+            RolapCubeLevel level,
+            String name,
+            Formula formula)
         {
             super(parent, level, name, formula);
         }
@@ -819,18 +742,15 @@ public class RolapHierarchy extends HierarchyBase {
      *
      * @see mondrian.olap.Role.RollupPolicy
      */
-    public static class LimitedRollupMember extends RolapCubeMember {
+    public static class LimitedRollupMember extends DelegatingRolapMember {
         public final RolapMember member;
         private final Exp exp;
 
         LimitedRollupMember(
-            RolapCubeMember member,
+            RolapMember member,
             Exp exp)
         {
-            super(
-                member.getParentMember(),
-                member.getRolapMember(),
-                member.getLevel());
+            super(member);
             assert !(member instanceof LimitedRollupMember);
             this.member = member;
             this.exp = exp;
@@ -897,7 +817,7 @@ public class RolapHierarchy extends HierarchyBase {
             }
             if (member instanceof MultiCardinalityDefaultMember) {
                 return new LimitedRollupMember(
-                    ((MultiCardinalityDefaultMember) member).getParentMember(),
+                    member.getParentMember(),
                     exp);
             }
             if (hierarchyAccess.getAccess(member) == Access.CUSTOM
@@ -905,7 +825,7 @@ public class RolapHierarchy extends HierarchyBase {
             {
                 // Member is visible, but at least one of its
                 // descendants is not.
-                return new LimitedRollupMember((RolapCubeMember)member, exp);
+                return new LimitedRollupMember(member, exp);
             } else {
                 // No need to substitute. Member and all of its
                 // descendants are accessible. Total for member

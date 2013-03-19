@@ -28,7 +28,6 @@ import java.util.*;
  */
 public class RolapCubeMember
     extends DelegatingRolapMember
-    implements RolapMemberInCube
 {
     protected final RolapCubeLevel cubeLevel;
     protected final RolapCubeMember parentCubeMember;
@@ -78,11 +77,6 @@ public class RolapCubeMember
      */
     public final RolapMember getRolapMember() {
         return member;
-    }
-
-    // final is important for performance
-    public final RolapCube getCube() {
-        return cubeLevel.getCube();
     }
 
     @Override

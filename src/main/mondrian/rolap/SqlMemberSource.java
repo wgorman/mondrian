@@ -42,13 +42,13 @@ class SqlMemberSource
 {
     private final SqlConstraintFactory sqlConstraintFactory =
         SqlConstraintFactory.instance();
-    private final RolapHierarchy hierarchy;
+    protected final RolapCubeHierarchy hierarchy;
     private final DataSource dataSource;
     private MemberCache cache;
     private int lastOrdinal = 0;
     private final Map<Object, Object> valuePool;
 
-    SqlMemberSource(RolapHierarchy hierarchy) {
+    SqlMemberSource(RolapCubeHierarchy hierarchy) {
         this.hierarchy = hierarchy;
         this.dataSource =
             hierarchy.getRolapSchema().getInternalConnection().getDataSource();
@@ -56,7 +56,7 @@ class SqlMemberSource
     }
 
     // implement MemberSource
-    public RolapHierarchy getHierarchy() {
+    public RolapCubeHierarchy getHierarchy() {
         return hierarchy;
     }
 
@@ -69,7 +69,7 @@ class SqlMemberSource
     // implement MemberSource
     public int getMemberCount() {
         int count = 0;
-        for (RolapLevel level : hierarchy.getLevelList()) {
+        for (RolapCubeLevel level : hierarchy.getLevelList()) {
             count += getLevelMemberCount(level);
         }
         return count;
@@ -84,7 +84,7 @@ class SqlMemberSource
     }
 
     public RolapMember getMemberByKey(
-        RolapLevel level,
+        RolapCubeLevel level,
         List<Comparable> keyValues)
     {
         if (level.isAll()) {
@@ -115,7 +115,7 @@ class SqlMemberSource
         throw new UnsupportedOperationException();
     }
 
-    public int getLevelMemberCount(RolapLevel level) {
+    public int getLevelMemberCount(RolapCubeLevel level) {
         if (level.isAll()) {
             return 1;
         }
@@ -332,7 +332,7 @@ class SqlMemberSource
                 }
 
                 RolapMember member = root;
-                for (RolapLevel level : hierarchy.getLevelList()) {
+                for (RolapCubeLevel level : hierarchy.getLevelList()) {
                     if (level.isAll()) {
                         continue;
                     }
@@ -540,7 +540,7 @@ class SqlMemberSource
 
     // implement MemberReader
     public List<RolapMember> getMembersInLevel(
-        RolapLevel level)
+        RolapCubeLevel level)
     {
         TupleConstraint constraint =
             sqlConstraintFactory.getLevelMembersConstraint(null);
@@ -548,7 +548,7 @@ class SqlMemberSource
     }
 
     public List<RolapMember> getMembersInLevel(
-        RolapLevel level,
+        RolapCubeLevel level,
         TupleConstraint constraint)
     {
         if (level.isAll()) {
@@ -990,7 +990,7 @@ class SqlMemberSource
         MemberChildrenConstraint mcc)
     {
         // try to fetch all children at once
-        RolapLevel childLevel =
+        RolapCubeLevel childLevel =
             getCommonChildLevelForDescendants(parentMembers);
         if (childLevel != null) {
             TupleConstraint lmc =
@@ -1038,15 +1038,15 @@ class SqlMemberSource
      * returns that level; this indicates that all member children can be
      * fetched at once. Otherwise returns null.
      */
-    private RolapLevel getCommonChildLevelForDescendants(
+    private RolapCubeLevel getCommonChildLevelForDescendants(
         List<RolapMember> parents)
     {
         // at least two members required
         if (parents.size() < 2) {
             return null;
         }
-        RolapLevel parentLevel = null;
-        RolapLevel childLevel = null;
+        RolapCubeLevel parentLevel = null;
+        RolapCubeLevel childLevel = null;
         for (RolapMember member : parents) {
             // we can not fetch children of calc members
             if (member.isCalculated()) {
@@ -1080,8 +1080,8 @@ class SqlMemberSource
     {
         final String sql;
         boolean parentChild;
-        final RolapLevel parentLevel = parentMember.getLevel();
-        RolapLevel childLevel;
+        final RolapCubeLevel parentLevel = parentMember.getLevel();
+        final RolapCubeLevel childLevel;
         SqlTupleReader.ColumnLayoutBuilder layoutBuilder =
             new SqlTupleReader.ColumnLayoutBuilder();
         if (parentLevel.isParentChild()) {
@@ -1216,7 +1216,7 @@ class SqlMemberSource
 
     public RolapMember makeMember(
         RolapMember parentMember,
-        RolapLevel childLevel,
+        RolapCubeLevel childLevel,
         Comparable key,
         Object captionValue,
         String nameValue,
@@ -1226,12 +1226,6 @@ class SqlMemberSource
         SqlTupleReader.LevelColumnLayout layout)
         throws SQLException
     {
-        final RolapLevel rolapChildLevel;
-        if (childLevel instanceof RolapCubeLevel) {
-            rolapChildLevel = ((RolapCubeLevel) childLevel).getRolapLevel();
-        } else {
-            rolapChildLevel = childLevel;
-        }
         final Larders.LarderBuilder builder = new Larders.LarderBuilder();
         builder.add(Property.NAME, nameValue);
 
@@ -1244,7 +1238,7 @@ class SqlMemberSource
         RolapMemberBase member =
             new RolapMemberBase(
                 parentMember,
-                rolapChildLevel,
+                childLevel,
                 key,
                 MemberType.REGULAR,
                 RolapMemberBase.deriveUniqueName(
@@ -1333,11 +1327,7 @@ class SqlMemberSource
     }
 
     public RolapMember allMember() {
-        final RolapHierarchy rolapHierarchy =
-            hierarchy instanceof RolapCubeHierarchy
-                ? ((RolapCubeHierarchy) hierarchy).getRolapHierarchy()
-                : hierarchy;
-        return rolapHierarchy.getAllMember();
+        return hierarchy.getAllMember();
     }
 
     /**
@@ -1557,7 +1547,7 @@ class SqlMemberSource
 
         public RolapParentChildMember(
             RolapMember parentMember,
-            RolapLevel childLevel,
+            RolapCubeLevel childLevel,
             Comparable value,
             RolapMember dataMember)
         {
@@ -1599,7 +1589,7 @@ class SqlMemberSource
     {
         public RolapParentChildMemberNoClosure(
             RolapMember parentMember,
-            RolapLevel childLevel,
+            RolapCubeLevel childLevel,
             Comparable value,
             RolapMember dataMember)
         {

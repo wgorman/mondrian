@@ -4,7 +4,7 @@
 // http://www.eclipse.org/legal/epl-v10.html.
 // You must accept the terms of that agreement to use this software.
 //
-// Copyright (C) 2009-2012 Pentaho and others
+// Copyright (C) 2009-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -117,7 +117,7 @@ public final class ScenarioImpl implements Scenario {
             BitKey.Factory.makeBitKey(starColumnCount);
         Object[] keyValues = new Object[starColumnCount];
         for (int i = 1; i < members.size(); i++) {
-            final RolapCubeMember member = (RolapCubeMember) members.get(i);
+            final RolapMember member = members.get(i);
             final List<Comparable> keyList = member.getKeyAsList();
             int j = 0;
             for (RolapSchema.PhysColumn physColumn

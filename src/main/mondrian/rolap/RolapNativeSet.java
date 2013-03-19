@@ -268,7 +268,7 @@ public abstract class RolapNativeSet extends RolapNative {
         }
 
         private void addLevel(TupleReader tr, CrossJoinArg arg) {
-            RolapLevel level = arg.getLevel();
+            RolapCubeLevel level = arg.getLevel();
             if (level == null) {
                 // Level can be null if the CrossJoinArg represent
                 // an empty set.
@@ -393,7 +393,7 @@ public abstract class RolapNativeSet extends RolapNative {
             MemberReader memberReader = hierarchyReaders.get(hierarchy);
             if (memberReader == null) {
                 memberReader =
-                    ((RolapHierarchy) hierarchy).createMemberReader(
+                    ((RolapCubeHierarchy) hierarchy).createMemberReader(
                         schemaReader.getRole());
                 hierarchyReaders.put(hierarchy, memberReader);
             }

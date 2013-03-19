@@ -4,7 +4,7 @@
 // http://www.eclipse.org/legal/epl-v10.html.
 // You must accept the terms of that agreement to use this software.
 //
-// Copyright (C) 2010-2012 Pentaho and others
+// Copyright (C) 2010-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -21,18 +21,7 @@ package mondrian.rolap;
  * @since 20 March, 2010
  */
 public interface RolapMemberInCube extends RolapMember {
-    /**
-     * Returns the cube this cube member belongs to.
-     *
-     * <p>This method is not in the {@link RolapMember} interface, because
-     * regular members may be shared, and therefore do not belong to a specific
-     * cube.
-     *
-     * @return Cube this cube member belongs to, never null
-     */
-    RolapCube getCube();
 
-    RolapCubeDimension getDimension();
 }
 
 // End RolapMemberInCube.java

@@ -19,7 +19,7 @@ import mondrian.spi.Dialect;
  */
 public class RolapBaseCubeMeasure
     extends RolapMemberBase
-    implements RolapStoredMeasure, RolapMemberInCube
+    implements RolapStoredMeasure
 {
     /**
      * For SQL generator. Column which holds the value of the measure.
@@ -30,8 +30,6 @@ public class RolapBaseCubeMeasure
      * For SQL generator. Has values "SUM", "COUNT", etc.
      */
     private final RolapAggregator aggregator;
-
-    private final RolapCube cube;
 
     /**
      * Holds the {@link mondrian.rolap.RolapStar.Measure} from which this
@@ -47,7 +45,6 @@ public class RolapBaseCubeMeasure
     /**
      * Creates a RolapBaseCubeMeasure.
      *
-     * @param cube Cube
      * @param measureGroup Measure group that this measure belongs to
      * @param level Level this member belongs to
      * @param key Name of this member
@@ -58,9 +55,8 @@ public class RolapBaseCubeMeasure
      * @param uniqueName Unique name
      */
     RolapBaseCubeMeasure(
-        RolapCube cube,
         RolapMeasureGroup measureGroup,
-        RolapLevel level,
+        RolapCubeLevel level,
         String key,
         String uniqueName,
         RolapSchema.PhysExpr expression,
@@ -70,10 +66,9 @@ public class RolapBaseCubeMeasure
     {
         super(null, level, key, MemberType.MEASURE, uniqueName, larder);
         assert larder != null;
-        this.cube = cube;
         this.larder = larder;
         this.measureGroup = measureGroup;
-        assert measureGroup.getCube() == cube;
+        assert measureGroup.getCube() == level.cube;
         RolapSchema.PhysRelation factRelation = measureGroup.getFactRelation();
         assert factRelation != null;
         assert !(expression instanceof RolapSchema.PhysColumn)
@@ -92,16 +87,8 @@ public class RolapBaseCubeMeasure
         return aggregator;
     }
 
-    public RolapCube getCube() {
-        return cube;
-    }
-
     public RolapMeasureGroup getMeasureGroup() {
         return measureGroup;
-    }
-
-    public RolapCubeDimension getDimension() {
-        return ((RolapCubeLevel) level).cubeDimension;
     }
 
     public RolapResult.ValueFormatter getFormatter() {

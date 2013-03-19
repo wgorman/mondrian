@@ -242,8 +242,8 @@ public abstract class RolapAggregationManager {
                 cube.getDimensionList()));
 
             // Iterate over members.
-            for (int i = 0; i < members.length; i++) {
-                final RolapCubeMember member = (RolapCubeMember) members[i];
+            List<RolapMember> memberList = (List) Arrays.asList(members);
+            for (RolapMember member : memberList) {
                 if (member.getHierarchy().getRolapHierarchy().closureFor
                     != null)
                 {
@@ -300,11 +300,7 @@ public abstract class RolapAggregationManager {
             CellRequest request =
                 new CellRequest(starMeasure, extendedContext, drillThrough);
             for (int i = 1; i < members.length; i++) {
-                if (!(members[i] instanceof RolapCubeMember)) {
-                    Util.deprecated("no longer occurs?", true);
-                    continue;
-                }
-                RolapCubeMember member = (RolapCubeMember) members[i];
+                RolapMember member = (RolapMember) members[i];
                 final RolapCubeLevel level = member.getLevel();
                 final boolean needToReturnNull =
                     level.getLevelReader().constrainRequest(

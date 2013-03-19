@@ -308,8 +308,9 @@ public class RolapLevel extends LevelBase {
                     }
                     + ".");
             }
-            return getHierarchy().getMemberReader().getMemberByKey(
-                this, keyValues);
+            final RolapCubeLevel cubeLevel = (RolapCubeLevel) this;
+            return cubeLevel.getHierarchy().getMemberReader().getMemberByKey(
+                cubeLevel, keyValues);
         }
         List<Member> levelMembers = schemaReader.getLevelMembers(this, true);
         if (levelMembers.size() > 0) {

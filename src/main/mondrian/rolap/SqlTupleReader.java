@@ -97,7 +97,7 @@ public class SqlTupleReader implements TupleReader {
      */
     private class Target {
         final List<RolapMember> srcMembers;
-        final RolapLevel level;
+        final RolapCubeLevel level;
         private RolapMember currMember;
         private List<RolapMember> list;
         final Object cacheLock;
@@ -106,7 +106,7 @@ public class SqlTupleReader implements TupleReader {
         final MemberCache cache;
         ColumnLayout columnLayout;
 
-        RolapLevel[] levels;
+        RolapCubeLevel[] levels;
         int levelDepth;
         boolean parentChild;
         List<RolapMember> members;
@@ -117,7 +117,7 @@ public class SqlTupleReader implements TupleReader {
         // for this target
 
         public Target(
-            RolapLevel level,
+            RolapCubeLevel level,
             MemberBuilder memberBuilder,
             List<RolapMember> srcMembers)
         {
@@ -174,7 +174,7 @@ public class SqlTupleReader implements TupleReader {
 
         public void open() {
             levels = level.getHierarchy().getLevelList().toArray(
-                new RolapLevel[
+                new RolapCubeLevel[
                     level.getHierarchy().getLevelList().size()]);
             setList(new ArrayList<RolapMember>());
             levelDepth = level.getDepth();
@@ -200,7 +200,7 @@ public class SqlTupleReader implements TupleReader {
                 setCurrMember(member);
             } else {
                 for (int i = 0; i <= levelDepth; i++) {
-                    RolapLevel childLevel = levels[i];
+                    RolapCubeLevel childLevel = levels[i];
                     final LevelColumnLayout layout =
                         columnLayout.levelLayoutMap.get(childLevel);
                     if (childLevel.isAll()) {
@@ -425,7 +425,7 @@ public class SqlTupleReader implements TupleReader {
     }
 
     public void addLevelMembers(
-        RolapLevel level,
+        RolapCubeLevel level,
         MemberBuilder memberBuilder,
         List<RolapMember> srcMembers)
     {

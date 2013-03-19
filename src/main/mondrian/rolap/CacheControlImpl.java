@@ -19,8 +19,6 @@ import mondrian.spi.SegmentColumn;
 import mondrian.util.ArraySortedSet;
 import mondrian.util.Pair;
 
-import org.eigenbase.util.property.BooleanProperty;
-
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
@@ -658,11 +656,7 @@ public class CacheControlImpl implements CacheControl {
     }
 
     public MemberSet filter(Level level, MemberSet baseSet) {
-        if (level instanceof RolapCubeLevel) {
-            // be forgiving
-            level = ((RolapCubeLevel) level).getRolapLevel();
-        }
-        return ((MemberSetPlus) baseSet).filter((RolapLevel) level);
+        return ((MemberSetPlus) baseSet).filter((RolapCubeLevel) level);
     }
 
     public void flush(MemberSet memberSet) {
@@ -842,13 +836,6 @@ public class CacheControlImpl implements CacheControl {
     }
 
     public void execute(MemberEditCommand cmd) {
-        final BooleanProperty prop =
-            MondrianProperties.instance().EnableRolapCubeMemberCache;
-        if (prop.get()) {
-            throw new IllegalArgumentException(
-                "Member cache control operations are not allowed unless "
-                + "property " + prop.getPath() + " is false");
-        }
         synchronized (MEMBER_CACHE_LOCK) {
             // Make sure that a Locus is in the Execution stack,
             // since some operations might require DB access.
@@ -1276,7 +1263,7 @@ public class CacheControlImpl implements CacheControl {
          * @param level Level
          * @return Member set with members not at the given level removed
          */
-        MemberSetPlus filter(RolapLevel level);
+        MemberSetPlus filter(RolapCubeLevel level);
     }
 
     /**
@@ -1370,7 +1357,7 @@ public class CacheControlImpl implements CacheControl {
             // nothing
         }
 
-        public MemberSetPlus filter(RolapLevel level) {
+        public MemberSetPlus filter(RolapCubeLevel level) {
             return this;
         }
 
@@ -1408,7 +1395,7 @@ public class CacheControlImpl implements CacheControl {
             visitor.visit(this);
         }
 
-        public MemberSetPlus filter(RolapLevel level) {
+        public MemberSetPlus filter(RolapCubeLevel level) {
             List<RolapMember> filteredMembers = new ArrayList<RolapMember>();
             for (RolapMember member : members) {
                 if (member.getLevel().equals(level)) {
@@ -1452,7 +1439,7 @@ public class CacheControlImpl implements CacheControl {
             visitor.visit(this);
         }
 
-        public MemberSetPlus filter(RolapLevel level) {
+        public MemberSetPlus filter(RolapCubeLevel level) {
             final List<MemberSetPlus> filteredItems =
                 new ArrayList<MemberSetPlus>();
             for (MemberSetPlus item : items) {
@@ -1484,7 +1471,7 @@ public class CacheControlImpl implements CacheControl {
         private final RolapMember upperMember;
         private final boolean upperInclusive;
         private final boolean descendants;
-        private final RolapLevel level;
+        private final RolapCubeLevel level;
 
         RangeMemberSet(
             RolapMember lowerMember,
@@ -1544,7 +1531,7 @@ public class CacheControlImpl implements CacheControl {
             visitor.visit(this);
         }
 
-        public MemberSetPlus filter(RolapLevel level) {
+        public MemberSetPlus filter(RolapCubeLevel level) {
             if (level == this.level) {
                 return this;
             } else {
@@ -1553,8 +1540,8 @@ public class CacheControlImpl implements CacheControl {
         }
 
         public MemberSetPlus filter2(
-            RolapLevel seekLevel,
-            RolapLevel level,
+            RolapCubeLevel seekLevel,
+            RolapCubeLevel level,
             RolapMember lower,
             RolapMember upper)
         {

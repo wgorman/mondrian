@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2001-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -58,7 +58,7 @@ class CacheMemberReader implements MemberReader, MemberCache {
     }
 
     // implement MemberReader
-    public RolapHierarchy getHierarchy() {
+    public RolapCubeHierarchy getHierarchy() {
         return source.getHierarchy();
     }
 
@@ -77,7 +77,7 @@ class CacheMemberReader implements MemberReader, MemberCache {
     }
 
     public RolapMember getMemberByKey(
-        RolapLevel level, List<Comparable> keyValues)
+        RolapCubeLevel level, List<Comparable> keyValues)
     {
         assert keyValues.size() == 1;
         return mapKeyToMember.get(keyValues.get(0));
@@ -178,7 +178,7 @@ class CacheMemberReader implements MemberReader, MemberCache {
     }
 
     public List<RolapMember> getMembersInLevel(
-        RolapLevel level)
+        RolapCubeLevel level)
     {
         List<RolapMember> list = new ArrayList<RolapMember>();
         int levelDepth = level.getDepth();
@@ -191,13 +191,13 @@ class CacheMemberReader implements MemberReader, MemberCache {
     }
 
     public List<RolapMember> getMembersInLevel(
-        RolapLevel level,
+        RolapCubeLevel level,
         TupleConstraint constraint)
     {
         return getMembersInLevel(level);
     }
 
-    public int getLevelMemberCount(RolapLevel level) {
+    public int getLevelMemberCount(RolapCubeLevel level) {
         int count = 0;
         int levelDepth = level.getDepth();
         for (Member member : members) {

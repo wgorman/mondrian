@@ -131,23 +131,20 @@ public class RolapCube extends CubeBase {
                 null,
                 measuresDimension.getLarder());
         measuresDimension.addHierarchy(measuresHierarchy);
-        measuresHierarchy.initHierarchy(
-            schemaLoader,
-            null,
-            null,
-            null);
+        measuresHierarchy.initHierarchy(schemaLoader, null);
 
+        final List<RolapCubeHierarchy> cubeHierarchyList =
+            new ArrayList<RolapCubeHierarchy>();
         final RolapCubeDimension measuresCubeDimension =
             new RolapCubeDimension(
-                schemaLoader,
                 this,
                 measuresDimension,
                 measuresDimension.getName(),
-                null,
                 0,
-                new ArrayList<RolapCubeHierarchy>(),
                 measuresDimension.getLarder());
-        schemaLoader.initDimension(measuresCubeDimension);
+        schemaLoader.initCubeDimension(
+            measuresCubeDimension, null, cubeHierarchyList);
+
         dimensionList.add(measuresCubeDimension);
         this.measuresHierarchy =
             measuresCubeDimension.getHierarchyList().get(0);
@@ -186,8 +183,7 @@ public class RolapCube extends CubeBase {
      * @see Util#deprecated(Object) make private
      */
     void setMeasuresHierarchyMemberReader(MemberReader memberReader) {
-        this.measuresHierarchy.getRolapHierarchy().setMemberReader(
-            memberReader);
+        this.measuresHierarchy.setMemberReader(memberReader);
         // this invalidates any cached schema reader
         this.schemaReader = null;
     }

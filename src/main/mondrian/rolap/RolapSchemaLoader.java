@@ -1489,7 +1489,7 @@ public class RolapSchemaLoader {
         validator.putXml(cube, xmlCube);
         deferAssignDefaultMember(
             cube,
-            cube.getMeasuresHierarchy().getRolapHierarchy(),
+            cube.getMeasuresHierarchy(),
             xmlCube,
             xmlCube.defaultMeasure);
 
@@ -1544,16 +1544,6 @@ public class RolapSchemaLoader {
             }
 
             cube.addDimension(dimension);
-        }
-
-        // Initialize dimensions before measure groups. (Measure groups contain
-        // dimension links, and these reference dimensions.)
-        for (RolapCubeDimension dimension : cube.getDimensionList()) {
-            if (dimension.isMeasures()) {
-                // already initialized
-                continue;
-            }
-            initDimension(dimension);
         }
 
         final NamedList<MondrianDef.MeasureGroup> xmlMeasureGroups =
@@ -2346,7 +2336,6 @@ public class RolapSchemaLoader {
                 .build();
         final RolapBaseCubeMeasure measure =
             new RolapBaseCubeMeasure(
-                cube,
                 measureGroup,
                 level,
                 xmlMeasure.name,
@@ -2800,14 +2789,7 @@ public class RolapSchemaLoader {
                         xmlHierarchy.description).build());
             validator.putXml(hierarchy, xmlHierarchy);
             dimension.addHierarchy(hierarchy);
-            hierarchy.initHierarchy(
-                this,
-                xmlHierarchy.allLevelName,
-                xmlHierarchy.allMemberName,
-                xmlHierarchy.allMemberCaption);
-            hierarchy.init1(
-                this,
-                null);
+            hierarchy.initHierarchy(this, xmlHierarchy.allLevelName);
             if (xmlHierarchy.getLevels().size() == 0) {
                 throw MondrianResource.instance().HierarchyHasNoLevels.ex(
                     hierarchy.getUniqueName());
@@ -2878,18 +2860,7 @@ public class RolapSchemaLoader {
                     this,
                     hierarchy.hasAll()
                         ? xmlAttribute.hierarchyAllLevelName
-                        : null,
-                    hierarchy.hasAll()
-                        ? first(
-                            xmlAttribute.hierarchyAllMemberName,
-                            "All " + xmlAttribute.name)
-                        : null,
-                    hierarchy.hasAll()
-                        ? xmlAttribute.hierarchyAllMemberCaption
                         : null);
-                hierarchy.init1(
-                    this,
-                    null);
                 hierarchy.levelList.add(
                     new RolapLevel(
                         hierarchy,
@@ -2946,25 +2917,25 @@ public class RolapSchemaLoader {
 
         // wrap the shared or regular dimension with a
         // rolap cube dimension object
-        final RolapCubeDimension cubeDimension = new RolapCubeDimension(
-            this,
-            cube,
-            dimension,
-            dimensionName,
-            xmlCubeDimension.source,
-            dimensionOrdinal,
-            cubeHierarchyList,
-            createLarder(
-                cube.getUniqueName() + "."
-                + Util.quoteMdxIdentifier(dimensionName) + ".dimension",
-                xmlCubeDimension.getAnnotations(),
+        final RolapCubeDimension cubeDimension =
+            new RolapCubeDimension(
+                cube,
+                dimension,
                 dimensionName,
-                first(xmlCubeDimension.caption, xmlDimension.caption),
-                first(
-                    xmlCubeDimension.description,
-                    xmlDimension.description))
-                .populate(dimension.getLarder())
-                .build());
+                dimensionOrdinal,
+                createLarder(
+                    cube.getUniqueName() + "."
+                        + Util.quoteMdxIdentifier(dimensionName) + ".dimension",
+                    xmlCubeDimension.getAnnotations(),
+                    dimensionName,
+                    first(xmlCubeDimension.caption, xmlDimension.caption),
+                    first(
+                        xmlCubeDimension.description,
+                        xmlDimension.description))
+                    .populate(dimension.getLarder())
+                    .build());
+        initCubeDimension(
+            cubeDimension, xmlCubeDimension.source, cubeHierarchyList);
         validator.putXml(cubeDimension, xmlCubeDimension);
 
         // Populate attribute map. (REVIEW: Should attributes go ONLY in the
@@ -3174,19 +3145,85 @@ public class RolapSchemaLoader {
     }
 
     /**
-     * Initializes a dimension within the context of a cube.
+     * Initializes a {@link RolapCubeDimension}, creating a
+     * {@link RolapCubeHierarchy} for each {@link RolapHierarchy} in the
+     * underlying dimension.
+     *
+     * @param cubeDimension Cube dimension
+     * @param dimSource Name of source dimension
+     * @param hierarchyList List of hierarchies in cube
      */
-    void initDimension(RolapCubeDimension dimension) {
-        for (RolapCubeHierarchy hierarchy : dimension.getHierarchyList()) {
-            initHierarchy(hierarchy);
+    void initCubeDimension(
+        RolapCubeDimension cubeDimension,
+        String dimSource,
+        List<RolapCubeHierarchy> hierarchyList)
+    {
+        final int originalSize = hierarchyList.size();
+        for (RolapHierarchy hierarchy
+            : cubeDimension.rolapDimension.getHierarchyList())
+        {
+            final String uniqueName =
+                hierarchy.getDimension().isMeasures()
+                    ? hierarchy.getUniqueName()
+                    : Util.makeFqName(cubeDimension, hierarchy.getName());
+            final RolapCubeHierarchy cubeHierarchy =
+                new RolapCubeHierarchy(
+                    this,
+                    cubeDimension,
+                    hierarchy,
+                    hierarchy.getName(),
+                    uniqueName,
+                    hierarchyList.size(),
+                    createLarder(
+                        cubeDimension.cube + "." + uniqueName + ".hierarchy",
+                        null,
+                        null,
+                        null,
+                        null)
+                        .populate(
+                            Larders.prefix(
+                                hierarchy.getLarder(),
+                                dimSource,
+                                cubeDimension.getName()))
+                        .build());
+            final MondrianDef.Hierarchy xmlHierarchy =
+                validator.getXml(hierarchy, false);
+            final MondrianDef.Attribute xmlAttribute =
+                validator.getXml(hierarchy.attribute, false);
+            initCubeHierarchy(
+                cubeHierarchy,
+                xmlAttribute != null
+                    ? first(
+                        xmlAttribute.hierarchyAllMemberName,
+                        "All " + xmlAttribute.name)
+                    : xmlHierarchy != null
+                    ? xmlHierarchy.allMemberName
+                    : null,
+                xmlAttribute != null
+                    ? xmlAttribute.hierarchyAllMemberCaption
+                    : xmlHierarchy != null
+                    ? xmlHierarchy.allMemberCaption
+                    : null);
+            hierarchyList.add(cubeHierarchy);
+            if (cubeHierarchy.isScenario) {
+                assert cubeDimension.cube.scenarioHierarchy == null;
+                cubeDimension.cube.scenarioHierarchy = cubeHierarchy;
+            }
         }
+        ((List) cubeDimension.getHierarchyList()).addAll(
+            hierarchyList.subList(originalSize, hierarchyList.size()));
     }
 
     /**
      * Initializes a hierarchy within the context of a cube.
      */
-    void initHierarchy(RolapCubeHierarchy hierarchy) {
-        hierarchy.init1(this, null);
+    void initCubeHierarchy(
+        RolapCubeHierarchy hierarchy,
+        String allMemberName,
+        String allMemberCaption)
+    {
+        hierarchy.initCubeHierarchy(
+            this, null, allMemberName, allMemberCaption);
         for (RolapCubeLevel level : hierarchy.getLevelList()) {
             level.initLevel(this, level.hasClosedPeer());
         }
@@ -5615,15 +5652,18 @@ public class RolapSchemaLoader {
         /** Assigns default member based on calculated members. */
         abstract void apply2();
 
-        void setDefaultMember(RolapHierarchy hierarchy, RolapMember member) {
+        protected void setDefaultMember(
+            RolapCubeHierarchy hierarchy,
+            RolapMember member)
+        {
             hierarchy.setDefaultMember(member);
+        }
+
+        protected List<RolapCubeHierarchy> cubeHierarchies() {
             final List<RolapCubeHierarchy> list = cubeHierMap.get(hierarchy);
-            if (list != null) {
-                for (RolapCubeHierarchy cubeHierarchy : list) {
-                    cubeHierarchy.setDefaultMember(
-                        cubeHierarchy.bootstrapLookup(member));
-                }
-            }
+            return list != null
+                ? list
+                : Collections.<RolapCubeHierarchy>emptyList();
         }
     }
 
@@ -5639,7 +5679,7 @@ public class RolapSchemaLoader {
         }
 
         @Override
-        protected RolapMember firstMember() {
+        protected RolapMember firstMember(RolapCubeHierarchy cubeHierarchy) {
             // A cube must include at least one measure. The [Fact Count]
             // measures that are created for measure groups do not count;
             // they are not visible.
@@ -5674,7 +5714,10 @@ public class RolapSchemaLoader {
         }
 
         @Override
-        protected RolapMember lookup(SchemaReader schemaReader) {
+        protected RolapMember lookup(
+            SchemaReader schemaReader,
+            RolapCubeHierarchy cubeHierarchy)
+        {
             return findMeasure(measureList, defaultMemberName);
         }
 
@@ -5701,42 +5744,36 @@ public class RolapSchemaLoader {
          * not available yet. */
         public AssignDefaultMember apply() {
             // Safe starting point.
-            setDefaultMember(hierarchy, hierarchy.getAllMember());
-
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                setDefaultMember(cubeHierarchy, cubeHierarchy.getAllMember());
+            }
             if (hierarchy.hasAll()) {
                 return null;
             }
-            RolapMember member = firstMember();
-            if (member != null) {
-                setDefaultMember(hierarchy, member);
-                return null;
+            int failedCount = 0;
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                RolapMember member = firstMember(cubeHierarchy);
+                if (member != null) {
+                    setDefaultMember(cubeHierarchy, member);
+                } else {
+                    ++failedCount;
+                }
             }
 
             // Indicate that our job is not done. RolapSchemaLoader will call
             // apply2. In the mean time, the 'all' member will be the default.
-            return this;
+            return failedCount > 0 ? this : null;
         }
 
-        protected RolapMember firstMember() {
+        protected RolapMember firstMember(RolapCubeHierarchy cubeHierarchy) {
             SchemaReader schemaReader = cube.getSchemaReader();
-            return deriveDefaultMember(hierarchy, schemaReader);
+            return deriveDefaultMember(cubeHierarchy, schemaReader);
         }
 
         RolapMember deriveDefaultMember(
-            RolapHierarchy hierarchy,
+            RolapCubeHierarchy hierarchy,
             SchemaReader schemaReader)
         {
-            if (hierarchy instanceof RolapCubeHierarchy) {
-                final RolapCubeHierarchy cubeHierarchy =
-                    (RolapCubeHierarchy) hierarchy;
-                RolapMember member = deriveDefaultMember(
-                    cubeHierarchy.getRolapHierarchy(),
-                    schemaReader);
-                if (member == null) {
-                    return null;
-                }
-                return cubeHierarchy.bootstrapLookup(member);
-            }
             List<RolapMember> rootMembers =
                 hierarchy.getMemberReader().getRootMembers();
             List<RolapMember> calcMemberList =
@@ -5764,12 +5801,18 @@ public class RolapSchemaLoader {
             // We are here because the hierarchy has no 'all' and no real
             // members. Look for calculated members.
             assert !hierarchy.hasAll();
-            RolapMember member = firstMember();
-            if (member != null) {
-                setDefaultMember(hierarchy, member);
-                return;
+            int failedCount = 0;
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                RolapMember member = firstMember(cubeHierarchy);
+                if (member != null) {
+                    setDefaultMember(cubeHierarchy, member);
+                } else {
+                    ++failedCount;
+                }
             }
-            fail();
+            if (failedCount > 0) {
+                fail();
+            }
         }
 
         protected void fail() {
@@ -5808,26 +5851,40 @@ public class RolapSchemaLoader {
          * not available yet. */
         public AssignDefaultMember apply() {
             // Safe starting point.
-            setDefaultMember(hierarchy, hierarchy.getAllMember());
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                setDefaultMember(cubeHierarchy, cubeHierarchy.getAllMember());
+            }
 
-            RolapMember member = lookup(cube.getSchemaReader());
-            if (member != null) {
-                setDefaultMember(hierarchy, member);
-                return null;
+            int failureCount = 0;
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                RolapMember member =
+                    lookup(cube.getSchemaReader(), cubeHierarchy);
+                if (member != null) {
+                    setDefaultMember(cubeHierarchy, member);
+                } else {
+                    ++failureCount;
+                }
             }
 
             // Indicate that our job is not done. RolapSchemaLoader will call
             // apply2. In the mean time, the 'all' member will be the default.
-            return this;
+            return failureCount > 0 ? this : null;
         }
 
         public void apply2() {
-            RolapMember member = lookup(cube.getSchemaReader());
-            if (member != null) {
-                setDefaultMember(hierarchy, member);
-                return;
+            int failureCount = 0;
+            for (RolapCubeHierarchy cubeHierarchy : cubeHierarchies()) {
+                RolapMember member =
+                    lookup(cube.getSchemaReader(), cubeHierarchy);
+                if (member != null) {
+                    setDefaultMember(cubeHierarchy, member);
+                } else {
+                    ++failureCount;
+                }
             }
-            fail();
+            if (failureCount > 0) {
+                fail();
+            }
         }
 
         protected void fail() {
@@ -5836,12 +5893,15 @@ public class RolapSchemaLoader {
                 + defaultMemberName + "\"", xml, null);
         }
 
-        protected RolapMember lookup(SchemaReader schemaReader) {
+        protected RolapMember lookup(
+            SchemaReader schemaReader,
+            RolapCubeHierarchy cubeHierarchy)
+        {
             // First look up from within this hierarchy. Works for
             // unqualified names, e.g. [USA].[CA].
             RolapMember member =
                 (RolapMember) new NameResolver().resolve(
-                    hierarchy,
+                    cubeHierarchy,
                     Util.toOlap4j(uniqueNameParts),
                     false,
                     Category.Member,
@@ -5857,7 +5917,7 @@ public class RolapSchemaLoader {
             // [Time].[Weekly].[1997].[Q2].
             return (RolapMember)
                 new NameResolver().resolve(
-                    new RolapHierarchy.DummyElement(hierarchy),
+                    new RolapHierarchy.DummyElement(cubeHierarchy),
                     Util.toOlap4j(uniqueNameParts),
                     false,
                     Category.Member,

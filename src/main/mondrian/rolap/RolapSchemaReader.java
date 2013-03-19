@@ -82,7 +82,7 @@ public class RolapSchemaReader
         MemberReader memberReader = hierarchyReaders.get(hierarchy);
         if (memberReader == null) {
             memberReader =
-                ((RolapHierarchy) hierarchy).createMemberReader(role);
+                ((RolapCubeHierarchy) hierarchy).createMemberReader(role);
             assert memberReader != null : hierarchy;
             hierarchyReaders.put(hierarchy, memberReader);
         }
@@ -177,7 +177,7 @@ public class RolapSchemaReader
     {
         final List<RolapMember> rolapMemberList = Util.cast(list);
         list.add(dataMember);
-        ((RolapHierarchy) hierarchy).getMemberReader().getMemberChildren(
+        ((RolapCubeHierarchy) hierarchy).getMemberReader().getMemberChildren(
             (RolapMember) dataMember, rolapMemberList);
     }
 
@@ -303,7 +303,7 @@ public class RolapSchemaReader
                 final MemberReader memberReader =
                     getMemberReader(level.getHierarchy());
                 rowCount =
-                    memberReader.getLevelMemberCount((RolapLevel) level);
+                    memberReader.getLevelMemberCount((RolapCubeLevel) level);
                 // Cache it for future.
                 ((RolapLevel) level).setApproxRowCount(rowCount);
             }
@@ -525,15 +525,15 @@ public class RolapSchemaReader
     }
 
     public List<Member> getLevelMembers(Level level, Evaluator context) {
-        final RolapLevel rolapLevel = (RolapLevel) level;
+        final RolapCubeLevel cubeLevel = (RolapCubeLevel) level;
         TupleConstraint constraint =
             sqlConstraintFactory.getLevelMembersConstraint(
                 context,
-                Collections.singletonList(rolapLevel));
+                Collections.singletonList(cubeLevel));
         final MemberReader memberReader =
             getMemberReader(level.getHierarchy());
         List<RolapMember> membersInLevel =
-            memberReader.getMembersInLevel(rolapLevel, constraint);
+            memberReader.getMembersInLevel(cubeLevel, constraint);
         return Util.cast(membersInLevel);
     }
 

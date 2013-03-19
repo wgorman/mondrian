@@ -35,7 +35,7 @@ class RolapVirtualCubeMeasure
     RolapVirtualCubeMeasure(
         RolapMeasureGroup measureGroup,
         RolapMember parentMember,
-        RolapLevel level,
+        RolapCubeLevel level,
         RolapStoredMeasure cubeMeasure,
         Larder larder)
     {
@@ -61,10 +61,6 @@ class RolapVirtualCubeMeasure
             value = cubeMeasure.getPropertyValue(property);
         }
         return value;
-    }
-
-    public RolapCube getCube() {
-        return cubeMeasure.getCube();
     }
 
     public RolapStar.Measure getStarMeasure() {

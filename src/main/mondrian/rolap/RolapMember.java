@@ -18,6 +18,58 @@ import java.util.*;
  * A <code>RolapMember</code> is a member of a {@link RolapHierarchy}. There are
  * sub-classes for {@link RolapStoredMeasure}, {@link RolapCalculatedMember}.
  *
+ * <h2>Task list for cleanup</h2>
+ *
+ * <ul>
+ * <li>{@link RolapCubeMember} -- is obsolete. replace all calls with
+ * {@link RolapMemberBase} or {@link RolapMember}</li>
+ *
+ * <li>TODO study and fix {@link mondrian.util.Bug#BugSegregateRolapCubeMemberFixed}</li>
+ *
+ * <li>TODO remove no-args {@link RolapMemberBase} constructor; it is only
+ * called by {@link DelegatingRolapMember}</li>
+ *
+ * <li>TODO remove {@link RolapCubeMember}</li>
+ *
+ * <li>TODO remove {@link mondrian.rolap.RolapMemberInCube}, now equivalent to
+ * {@link RolapMember}</li>
+ *
+ * <li>TODO slim down {@link mondrian.rolap.DelegatingRolapMember} so that it
+ * implements {@link RolapMember} but does not extend
+ * {@link RolapMemberBase}.</li>
+ *
+ * <li>TODO remove {@link RolapAllCubeMember}</li>
+ *
+ * <li>TODO reparent {@link mondrian.rolap.RolapHierarchy.LimitedRollupMember}</li>
+ *
+ * <li>DONE remove {@link RolapCubeHierarchy}.bootstrapLookup</li>
+ *
+ * <li>DONE remove {@link RolapCubeHierarchy}.cachingEnabled</li>
+ *
+ * <li>TODO remove
+ * {@link mondrian.rolap.RolapCubeHierarchy.NoCacheRolapCubeHierarchyMemberReader}
+ * obsolete</li>
+ *
+ * <li>TODO remove
+ * {@link mondrian.rolap.RolapCubeHierarchy.CacheRolapCubeHierarchyMemberReader}
+ * obsolete</li>
+ *
+ * <li>TODO remove {@link MondrianProperties#EnableRolapCubeMemberCache}</li>
+ *
+ * <li>DONE move {@link RolapHierarchy}.memberReader down to
+ * {@link RolapCubeHierarchy#memberReader}</li>
+ *
+ * <li>MAYBE move {@link RolapHierarchy#createMemberReader} to
+ * {@link RolapSchemaLoader}</li>
+ *
+ * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeStoredMeasure}</li>
+ *
+ * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeCalculatedMeasure}</li>
+ *
+ * <li>TODO obsolete {@link mondrian.rolap.RolapCubeHierarchy.RolapCubeStoredMeasure}</li>
+ *
+ * </ul>
+ *
  * @author jhyde
  * @since 10 August, 2001
  */
@@ -73,14 +125,27 @@ public interface RolapMember extends Member, RolapCalculation {
     Comparable getKeyCompact();
 
     RolapMember getParentMember();
-    RolapHierarchy getHierarchy();
-    RolapLevel getLevel();
+    RolapCubeHierarchy getHierarchy();
+    RolapCubeLevel getLevel();
 
     /** @deprecated Use {@link #isAll}; will be removed in mondrian-4.0 */
     boolean isAllMember();
 
     /** Returns the object that stores annotations and localized strings. */
     Larder getLarder();
+
+    /**
+     * Returns the cube this cube member belongs to.
+     *
+     * <p>This method is not in the {@link mondrian.rolap.RolapMember} interface, because
+     * regular members may be shared, and therefore do not belong to a specific
+     * cube.
+     *
+     * @return Cube this cube member belongs to, never null
+     */
+    RolapCube getCube();
+
+    RolapCubeDimension getDimension();
 
     /**
      * Collection of static methods to create and manipulate member key values.

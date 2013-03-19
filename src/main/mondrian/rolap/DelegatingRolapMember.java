@@ -28,7 +28,7 @@ public class DelegatingRolapMember extends RolapMemberBase {
         this.member = member;
     }
 
-    public RolapLevel getLevel() {
+    public RolapCubeLevel getLevel() {
         return member.getLevel();
     }
 
@@ -52,7 +52,7 @@ public class DelegatingRolapMember extends RolapMemberBase {
         return member.getParentMember();
     }
 
-    public RolapHierarchy getHierarchy() {
+    public RolapCubeHierarchy getHierarchy() {
         return member.getHierarchy();
     }
 
@@ -179,7 +179,7 @@ public class DelegatingRolapMember extends RolapMemberBase {
         return member.getQualifiedName();
     }
 
-    public Dimension getDimension() {
+    public RolapCubeDimension getDimension() {
         return member.getDimension();
     }
 

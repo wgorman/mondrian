@@ -567,10 +567,10 @@ public class RolapSchema extends OlapElementBase implements Schema {
     }
 
     /**
-     * Creates a {@link MemberReader} with which to Read a hierarchy.
+     * Creates a {@link MemberReader} with which to read a hierarchy.
      */
     MemberReader createMemberReader(
-        final RolapHierarchy hierarchy,
+        final RolapCubeHierarchy hierarchy,
         final String memberReaderClass)
     {
         if (memberReaderClass != null) {
@@ -680,7 +680,7 @@ public class RolapSchema extends OlapElementBase implements Schema {
     private static class HangerMemberSource extends ArrayMemberSource {
         /** Creates a HangerMemberSource. */
         public HangerMemberSource(
-            RolapHierarchy hierarchy,
+            RolapCubeHierarchy hierarchy,
             List<RolapMember> memberList)
         {
             super(hierarchy, memberList);

@@ -30,9 +30,9 @@ public class RolapCubeLevel extends RolapLevel {
      */
     private RolapCubeLevel closedPeerCubeLevel;
     protected LevelReader levelReader;
-    private final RolapCubeHierarchy cubeHierarchy;
+    final RolapCubeHierarchy cubeHierarchy;
     final RolapCubeDimension cubeDimension;
-    private final RolapCube cube;
+    final RolapCube cube;
     private final RolapCubeLevel parentCubeLevel;
     private RolapCubeLevel childCubeLevel;
 
@@ -90,16 +90,14 @@ public class RolapCubeLevel extends RolapLevel {
 
             RolapCubeDimension cubeDimension =
                 new RolapCubeDimension(
-                    schemaLoader,
                     getCube(),
                     dimension,
                     getDimension().getName() + "$Closure",
-                    null,
                     -1,
-                    getCube().hierarchyList,
                     Larders.EMPTY);
+            schemaLoader.initCubeDimension(
+                cubeDimension, null, getCube().hierarchyList);
 
-            schemaLoader.initDimension(cubeDimension);
             closedPeerCubeLevel =
                 cubeDimension
                     .getHierarchyList().get(0)
@@ -233,7 +231,7 @@ public class RolapCubeLevel extends RolapLevel {
          * null member)
          */
         boolean constrainRequest(
-            RolapCubeMember member,
+            RolapMember member,
             RolapMeasureGroup measureGroup,
             CellRequest request);
 
@@ -263,7 +261,7 @@ public class RolapCubeLevel extends RolapLevel {
         }
 
         public boolean constrainRequest(
-            RolapCubeMember member,
+            RolapMember member,
             RolapMeasureGroup measureGroup,
             CellRequest request)
         {
@@ -409,27 +407,24 @@ public class RolapCubeLevel extends RolapLevel {
     // final for performance
     static final class ParentChildLevelReaderImpl implements LevelReader {
         private final RegularLevelReader regularLevelReader;
-        private final RolapCubeLevel closedPeerCubeLevel;
-        private final RolapLevel closedPeerLevel;
+        private final RolapCubeLevel closedPeerLevel;
         private final RolapMember wrappedAllMember;
-        private final RolapCubeMember allMember;
+        private final RolapMember allMember;
 
         ParentChildLevelReaderImpl(RolapCubeLevel cubeLevel)
         {
             this.regularLevelReader = new RegularLevelReader(cubeLevel);
 
             // inline a bunch of fields for performance
-            this.closedPeerCubeLevel = cubeLevel.closedPeerCubeLevel;
-            this.closedPeerLevel = cubeLevel.rolapLevel.getClosedPeer();
+            this.closedPeerLevel = cubeLevel.closedPeerCubeLevel;
             this.wrappedAllMember =
                 closedPeerLevel.getHierarchy().getDefaultMember();
-            this.allMember =
-                closedPeerCubeLevel.getHierarchy().getDefaultMember();
+            this.allMember = closedPeerLevel.getHierarchy().getDefaultMember();
             assert allMember.isAll();
         }
 
         public boolean constrainRequest(
-            RolapCubeMember member,
+            RolapMember member,
             RolapMeasureGroup measureGroup,
             CellRequest request)
         {
@@ -444,7 +439,9 @@ public class RolapCubeLevel extends RolapLevel {
                     member, measureGroup, request);
             } else if (request.drillThrough) {
                 return regularLevelReader.constrainRequest(
-                    member.getDataMember(), measureGroup, request);
+                    (RolapMember) member.getDataMember(),
+                    measureGroup,
+                    request);
             } else {
                 // isn't creating a member on the fly a bad idea?
                 RolapMember wrappedMember =
@@ -456,15 +453,8 @@ public class RolapCubeLevel extends RolapLevel {
                         Util.makeFqName(
                             wrappedAllMember.getHierarchy(), member.getName()),
                         Larders.ofName(member.getName()));
-                member =
-                    new RolapCubeMember(
-                        // REVIEW pass the actual parent member instead of the
-                        // 'all member'?
-                        allMember,
-                        wrappedMember, closedPeerCubeLevel);
-
-                return closedPeerCubeLevel.getLevelReader().constrainRequest(
-                    member, measureGroup, request);
+                return closedPeerLevel.getLevelReader().constrainRequest(
+                    wrappedMember, measureGroup, request);
             }
         }
 
@@ -482,7 +472,7 @@ public class RolapCubeLevel extends RolapLevel {
      */
     static final class AllLevelReaderImpl implements LevelReader {
         public boolean constrainRequest(
-            RolapCubeMember member,
+            RolapMember member,
             RolapMeasureGroup measureGroup,
             CellRequest request)
         {
@@ -504,7 +494,7 @@ public class RolapCubeLevel extends RolapLevel {
      */
     static final class NullLevelReader implements LevelReader {
         public boolean constrainRequest(
-            RolapCubeMember member,
+            RolapMember member,
             RolapMeasureGroup measureGroup,
             CellRequest request)
         {

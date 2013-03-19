@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2004-2005 TONBELLER AG
-// Copyright (C) 2006-2011 Pentaho
+// Copyright (C) 2006-2013 Pentaho
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -189,9 +189,9 @@ public class RolapNativeCrossJoin extends RolapNativeSet {
         }
 
         // Verify that args are valid
-        List<RolapLevel> levels = new ArrayList<RolapLevel>();
+        List<RolapCubeLevel> levels = new ArrayList<RolapCubeLevel>();
         for (CrossJoinArg cjArg : cjArgs) {
-            RolapLevel level = cjArg.getLevel();
+            RolapCubeLevel level = cjArg.getLevel();
             if (level != null) {
                 // Only add non null levels. These levels have real
                 // constraints.
@@ -254,19 +254,19 @@ public class RolapNativeCrossJoin extends RolapNativeSet {
                 }
             }
             evaluator.setContext(evalMembers);
-    
-            // Use the combined CrossJoinArg for the tuple constraint, which will be
-            // translated to the SQL WHERE clause.
+
+            // Use the combined CrossJoinArg for the tuple constraint, which
+            // will be translated to the SQL WHERE clause.
             CrossJoinArg[] cargs = combineArgs(allArgs);
-    
+
             // Now construct the TupleConstraint that contains both the CJ
             // dimensions and the additional filter on them. It will make a copy
             // of the evaluator.
             TupleConstraint constraint =
                 buildConstraint(evaluator, fun, cargs, measureGroupList);
-    
-            // Use the just the CJ CrossJoiArg for the evaluator context, which will
-            // be translated to select list in sql.
+
+            // Use the just the CJ CrossJoiArg for the evaluator context, which
+            // will be translated to select list in sql.
             final SchemaReader schemaReader = evaluator.getSchemaReader();
             return new SetEvaluator(cjArgs, schemaReader, constraint);
         } finally {

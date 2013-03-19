@@ -6,7 +6,7 @@
 //
 // Copyright (C) 2004-2005 TONBELLER AG
 // Copyright (C) 2005-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -140,7 +140,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
         if (!SqlContextConstraint.checkValidContext(
                 evaluator,
                 true,
-                Collections.<RolapLevel>emptyList(),
+                Collections.<RolapCubeLevel>emptyList(),
                 restrictMemberTypes(),
                 measureGroupList))
         {
@@ -209,12 +209,12 @@ public class RolapNativeTopCount extends RolapNativeSet {
         final int savepoint = evaluator.savepoint();
         try {
             overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-    
+
             CrossJoinArg[] predicateArgs = null;
             if (allArgs.size() == 2) {
                 predicateArgs = allArgs.get(1);
             }
-    
+
             CrossJoinArg[] combinedArgs;
             if (predicateArgs != null) {
                 // Combined the CJ and the additional predicate args to form the
@@ -228,7 +228,8 @@ public class RolapNativeTopCount extends RolapNativeSet {
                 new TopCountConstraint(
                     count, combinedArgs, evaluator,
                     measureGroupList, orderByExpr, ascending);
-            SetEvaluator sev = new SetEvaluator(cjArgs, schemaReader, constraint);
+            SetEvaluator sev =
+                new SetEvaluator(cjArgs, schemaReader, constraint);
             sev.setMaxRows(count);
             return sev;
         } finally {

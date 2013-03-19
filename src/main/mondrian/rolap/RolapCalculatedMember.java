@@ -39,7 +39,7 @@ public class RolapCalculatedMember
      */
     RolapCalculatedMember(
         RolapMember parentMember,
-        RolapLevel level,
+        RolapCubeLevel level,
         String name,
         Formula formula)
     {

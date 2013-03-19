@@ -6,7 +6,7 @@
 //
 // Copyright (C) 2004-2005 TONBELLER AG
 // Copyright (C) 2005-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho
+// Copyright (C) 2005-2013 Pentaho
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -105,7 +105,7 @@ public class RolapNativeFilter extends RolapNativeSet {
         if (!SqlContextConstraint.checkValidContext(
                 evaluator,
                 true,
-                Collections.<RolapLevel>emptyList(),
+                Collections.<RolapCubeLevel>emptyList(),
                 restrictMemberTypes(),
                 measureGroupList))
         {
@@ -168,7 +168,7 @@ public class RolapNativeFilter extends RolapNativeSet {
         final int savepoint = evaluator.savepoint();
         try {
             overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-    
+
             // Now construct the TupleConstraint that contains both the CJ
             // dimensions and the additional filter on them.
             CrossJoinArg[] combinedArgs = cjArgs;
@@ -180,7 +180,7 @@ public class RolapNativeFilter extends RolapNativeSet {
                         Util.appendArrays(cjArgs, predicateArgs);
                 }
             }
-    
+
             TupleConstraint constraint =
                 new FilterConstraint(
                     combinedArgs, evaluator, measureGroupList, filterExpr);

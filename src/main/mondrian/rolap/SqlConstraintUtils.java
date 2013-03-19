@@ -1265,8 +1265,7 @@ public class SqlConstraintUtils {
 
                 String q;
                 final RolapStar.Column column;
-                if (level instanceof RolapCubeLevel) {
-                    assert measureGroup != null;
+                if (measureGroup != null) {
                     final RolapCubeLevel cubeLevel = (RolapCubeLevel) level;
                     column = measureGroup.getRolapStarColumn(
                         cubeLevel.cubeDimension,

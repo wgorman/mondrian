@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2004-2005 TONBELLER AG
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap;
@@ -4838,8 +4838,8 @@ public class NonEmptyTest extends BatchTestCase {
         RolapCube cube = (RolapCube) con.getSchema().lookupCube("Sales", true);
         RolapSchemaReader schemaReader =
             (RolapSchemaReader) cube.getSchemaReader();
-        RolapHierarchy hierarchy =
-            (RolapHierarchy) cube.lookupHierarchy(
+        RolapCubeHierarchy hierarchy =
+            (RolapCubeHierarchy) cube.lookupHierarchy(
                 new Id.NameSegment(hierName, Id.Quoting.UNQUOTED),
                 false);
         assertNotNull(hierarchy);
@@ -4862,8 +4862,8 @@ public class NonEmptyTest extends BatchTestCase {
             (RolapCubeHierarchy) cube.lookupHierarchy(
                 new Id.NameSegment(hierName, Id.Quoting.UNQUOTED), false);
         assertNotNull(hierarchy);
-        return (SmartMemberReader) hierarchy.getRolapHierarchy()
-            .createMemberReader(schemaReader.getRole());
+        return (SmartMemberReader)
+            hierarchy.createMemberReader(schemaReader.getRole());
     }
 
 
