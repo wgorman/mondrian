@@ -1419,7 +1419,7 @@ Util.deprecated("obsolete basecube parameter", false);
 
         // set the masks
         for (Target target : targets) {
-            RolapCubeLevel level = (RolapCubeLevel) target.level;
+            RolapCubeLevel level = target.level;
             if (!level.isAll()) {
                 RolapStar.Column starColumn =
                     level.getBaseStarKeyColumn(measureGroup);

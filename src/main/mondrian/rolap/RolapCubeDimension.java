@@ -15,8 +15,6 @@ import mondrian.olap.*;
 import org.olap4j.metadata.*;
 import org.olap4j.metadata.Dimension;
 
-import java.util.*;
-
 
 /**
  * RolapCubeDimension wraps a RolapDimension for a specific Cube.
@@ -56,6 +54,7 @@ public class RolapCubeDimension extends RolapDimension {
         this.rolapDimension = rolapDimension;
         this.cubeOrdinal = cubeOrdinal;
         this.cube = cube;
+        this.keyAttribute = rolapDimension.keyAttribute;
     }
 
     public RolapCube getCube() {

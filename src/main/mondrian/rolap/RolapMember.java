@@ -68,6 +68,10 @@ import java.util.*;
  * <li>DONE obsolete
  * {@code mondrian.rolap.RolapCubeHierarchy.RolapCubeCalculatedMeasure}</li>
  *
+ * <li>TODO obsolete {@link MemberNoCacheHelper}</li>
+ *
+ * <li>TODO obsolete {@link RolapCubeHierarchy.MemberNoCacheHelper}</li>
+ *
  * </ul>
  *
  * @author jhyde

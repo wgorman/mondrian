@@ -295,7 +295,7 @@ public class VisualTotalsFunDef extends FunDefBase {
             throw new UnsupportedOperationException();
         }
 
-        public Member getMember() {
+        public RolapMember getMember() {
             return member;
         }
 
