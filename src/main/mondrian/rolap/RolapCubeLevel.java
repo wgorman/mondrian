@@ -13,6 +13,7 @@ package mondrian.rolap;
 import mondrian.olap.*;
 import mondrian.rolap.agg.*;
 import mondrian.spi.MemberFormatter;
+import mondrian.util.Bug;
 
 import java.util.*;
 
@@ -28,7 +29,7 @@ public class RolapCubeLevel extends RolapLevel {
      * For a parent-child hierarchy with a closure provided by the schema,
      * the equivalent level in the closed hierarchy; otherwise null.
      */
-    private RolapCubeLevel closedPeerCubeLevel;
+    private final RolapCubeLevel closedPeerCubeLevel;
     protected LevelReader levelReader;
     final RolapCubeHierarchy cubeHierarchy;
     final RolapCubeDimension cubeDimension;
@@ -75,6 +76,10 @@ public class RolapCubeLevel extends RolapLevel {
             parentCubeLevel.childCubeLevel = this;
         }
         attribute = level.getAttribute();
+        closedPeerCubeLevel =
+            closure == null || !Bug.BugMondrian1502Fixed
+                ? null
+                : (RolapCubeLevel) closure.closedPeerLevel;
 
         assert closure == null
             || ((RolapCubeLevel) closure.closedPeerLevel).getRolapLevel()
@@ -82,15 +87,13 @@ public class RolapCubeLevel extends RolapLevel {
     }
 
     @Override
-    void initLevel(
-        RolapSchemaLoader schemaLoader,
-        boolean closure)
-    {
+    void initLevel(RolapSchemaLoader schemaLoader) {
+        super.initLevel(schemaLoader);
         if (isAll()) {
             this.levelReader = new AllLevelReaderImpl();
         } else if (getLevelType() == org.olap4j.metadata.Level.Type.NULL) {
             this.levelReader = new NullLevelReader();
-        } else if (rolapLevel.hasClosedPeer()) {
+        } else if (hasClosedPeer()) {
             this.levelReader = new ParentChildLevelReaderImpl(this);
         } else {
             this.levelReader = new RegularLevelReader(this);
@@ -102,7 +105,39 @@ public class RolapCubeLevel extends RolapLevel {
     }
 
     public boolean isMeasure() {
-        return cubeHierarchy.ordinal == 0;
+        return cubeHierarchy.getOrdinalInCube() == 0;
+    }
+
+    /**
+     * Determines whether the specified level is too ragged for native
+     * evaluation, which is able to handle one special case of a ragged
+     * hierarchy: when the level specified in the query is the leaf level of
+     * the hierarchy and HideMemberCondition for the level is IfBlankName.
+     * This is true even if higher levels of the hierarchy can be hidden
+     * because even in that case the only column that needs to be read is the
+     * column that holds the leaf. IfParentsName can't be handled even at the
+     * leaf level because in the general case we aren't reading the column
+     * that holds the parent. Also, IfBlankName can't be handled for non-leaf
+     * levels because we would have to read the column for the next level
+     * down for members with blank names.
+     *
+     * @return true if the specified level is too ragged for native
+     *         evaluation.
+     */
+    protected boolean isTooRagged() {
+        // Is this the special case of raggedness that native evaluation
+        // is able to handle?
+        if (getDepth() == getHierarchy().getLevelList().size() - 1) {
+            switch (getHideMemberCondition()) {
+            case Never:
+            case IfBlankName:
+                return false;
+            default:
+                return true;
+            }
+        }
+        // Handle the general case in the traditional way.
+        return getHierarchy().isRagged();
     }
 
     /**
@@ -117,10 +152,7 @@ public class RolapCubeLevel extends RolapLevel {
             return false;
         }
         // does not work for measures
-        if (isMeasure()) {
-            return false;
-        }
-        return true;
+        return !isMeasure();
     }
 
     /**
@@ -215,12 +247,14 @@ public class RolapCubeLevel extends RolapLevel {
                 && getCube().equals(level.getCube());
     }
 
-    @Override
+    /**
+     * Returns true when the level is part of a parent/child hierarchy and has
+     * an equivalent closed level.
+     */
     boolean hasClosedPeer() {
         return closedPeerCubeLevel != null;
     }
 
-    @Override
     public RolapCubeLevel getClosedPeer() {
         return closedPeerCubeLevel;
     }
@@ -479,7 +513,6 @@ public class RolapCubeLevel extends RolapLevel {
         private final RegularLevelReader regularLevelReader;
         private final RolapCubeLevel closedPeerLevel;
         private final RolapMember wrappedAllMember;
-        private final RolapMember allMember;
 
         ParentChildLevelReaderImpl(RolapCubeLevel cubeLevel)
         {
@@ -487,10 +520,7 @@ public class RolapCubeLevel extends RolapLevel {
 
             // inline a bunch of fields for performance
             this.closedPeerLevel = cubeLevel.closedPeerCubeLevel;
-            this.wrappedAllMember =
-                closedPeerLevel.getHierarchy().getDefaultMember();
-            this.allMember = closedPeerLevel.getHierarchy().getDefaultMember();
-            assert allMember.isAll();
+            this.wrappedAllMember = closedPeerLevel.getHierarchy().allMember;
         }
 
         public boolean constrainRequest(

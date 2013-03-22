@@ -131,7 +131,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
                     this,
                     schemaLoader.resourceMap,
                     null);
-            allLevel.initLevel(schemaLoader, false);
+            allLevel.initLevel(schemaLoader);
         }
 
         // Create an all member.

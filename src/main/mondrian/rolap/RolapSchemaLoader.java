@@ -2085,7 +2085,7 @@ public class RolapSchemaLoader {
         RolapCubeDimension dimension,
         RolapSchema.PhysPath path)
     {
-        for (RolapHierarchy hierarchy : dimension.getHierarchyList()) {
+        for (RolapCubeHierarchy hierarchy : dimension.getHierarchyList()) {
             registerHierarchy(measureGroup, hierarchy);
         }
         for (RolapAttribute attribute : dimension.attributeMap.values()) {
@@ -2095,18 +2095,18 @@ public class RolapSchemaLoader {
 
     private void registerHierarchy(
         RolapMeasureGroup measureGroup,
-        RolapHierarchy hierarchy)
+        RolapCubeHierarchy hierarchy)
     {
-        for (RolapLevel level : hierarchy.getLevelList()) {
+        for (RolapCubeLevel level : hierarchy.getLevelList()) {
             registerLevel(measureGroup, level);
         }
     }
 
     private void registerLevel(
         RolapMeasureGroup measureGroup,
-        RolapLevel level)
+        RolapCubeLevel level)
     {
-        final RolapLevel peer = level.getClosedPeer();
+        final RolapCubeLevel peer = level.getClosedPeer();
         if (peer != null) {
             registerLevel(measureGroup, peer);
         }
@@ -3304,7 +3304,7 @@ public class RolapSchemaLoader {
         hierarchy.initCubeHierarchy(
             this, allMemberName, allMemberCaption);
         for (RolapCubeLevel level : hierarchy.getLevelList()) {
-            level.initLevel(this, level.hasClosedPeer());
+            level.initLevel(this);
         }
         hierarchy.memberReader = schema.createMemberReader(hierarchy, null);
         Util.putMulti(cubeHierMap, hierarchy.getRolapHierarchy(), hierarchy);
