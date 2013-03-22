@@ -144,8 +144,8 @@ public class DelegatingRolapMember extends RolapMemberBase {
         return member.getDepth();
     }
 
-    public Member getDataMember() {
-        return member.getDataMember();
+    public RolapMember getDataMember() {
+        return (RolapMember) member.getDataMember();
     }
 
     @SuppressWarnings({"unchecked"})

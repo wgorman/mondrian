@@ -408,7 +408,7 @@ public class RolapCube extends CubeBase {
      * @param hierarchy virtual hierarchy
      * @return base cube hierarchy if found
      */
-    RolapHierarchy findBaseCubeHierarchy(RolapHierarchy hierarchy) {
+    RolapCubeHierarchy findBaseCubeHierarchy(RolapHierarchy hierarchy) {
         for (RolapCubeDimension dimension : dimensionList) {
             if (dimension.getName().equals(
                     hierarchy.getDimension().getName()))
@@ -678,13 +678,6 @@ public class RolapCube extends CubeBase {
             for (RolapMember member : _getCalculatedMembers()) {
                 if (member.getLevel().equals(level)) {
                     list.add(member);
-                }
-                if (member instanceof RolapCubeMember) {
-                    final RolapMember rolapMember =
-                        ((RolapCubeMember) member).getRolapMember();
-                    if (rolapMember.getLevel().equals(level)) {
-                        list.add(rolapMember);
-                    }
                 }
             }
             return list;

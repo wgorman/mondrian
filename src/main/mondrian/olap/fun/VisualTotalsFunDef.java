@@ -287,7 +287,7 @@ public class VisualTotalsFunDef extends FunDefBase {
             return member.getOrdinal();
         }
 
-        public Member getDataMember() {
+        public RolapMember getDataMember() {
             return member;
         }
 

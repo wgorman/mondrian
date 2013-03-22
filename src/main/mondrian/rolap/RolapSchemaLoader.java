@@ -2811,6 +2811,7 @@ public class RolapSchemaLoader {
             for (MondrianDef.Level xmlLevel : xmlHierarchy.getLevels()) {
                 RolapLevel level =
                     createLevel(
+                        cube,
                         hierarchy,
                         dimensionRelation,
                         hierarchy.levelList.size(),
@@ -2820,7 +2821,6 @@ public class RolapSchemaLoader {
                 }
                 hierarchy.levelList.add(level);
             }
-            hierarchy.init2(this);
             deferAssignDefaultMember(
                 cube, hierarchy, xmlHierarchy, xmlHierarchy.defaultMember);
         }
@@ -2898,16 +2898,15 @@ public class RolapSchemaLoader {
                             .populate(
                                 createLarder(
                                     cube + "."
-                                    + Util.makeFqName(
-                                        hierarchy, xmlAttribute.name)
-                                    + ".level",
+                                        + Util.makeFqName(
+                                            hierarchy, xmlAttribute.name)
+                                        + ".level",
                                     xmlAttribute.getAnnotations(),
                                     xmlAttribute.name,
                                     xmlAttribute.caption,
                                     xmlAttribute.description).build())
                             .build(),
                         resourceMap));
-                hierarchy.init2(this);
                 deferAssignDefaultMember(
                     cube, hierarchy, xmlAttribute,
                     xmlAttribute.hierarchyDefaultMember);
@@ -3267,6 +3266,7 @@ public class RolapSchemaLoader {
                 validator.getXml(hierarchy, false);
             final MondrianDef.Attribute xmlAttribute =
                 validator.getXml(hierarchy.attribute, false);
+            hierarchyList.add(cubeHierarchy);
             initCubeHierarchy(
                 cubeHierarchy,
                 first(
@@ -3283,7 +3283,6 @@ public class RolapSchemaLoader {
                     : xmlHierarchy != null
                     ? xmlHierarchy.allMemberCaption
                     : null);
-            hierarchyList.add(cubeHierarchy);
             if (cubeHierarchy.isScenario) {
                 assert cubeDimension.cube.scenarioHierarchy == null;
                 cubeDimension.cube.scenarioHierarchy = cubeHierarchy;
@@ -3307,7 +3306,7 @@ public class RolapSchemaLoader {
         for (RolapCubeLevel level : hierarchy.getLevelList()) {
             level.initLevel(this, level.hasClosedPeer());
         }
-        hierarchy.init2(this);
+        hierarchy.memberReader = schema.createMemberReader(hierarchy, null);
         Util.putMulti(cubeHierMap, hierarchy.getRolapHierarchy(), hierarchy);
     }
 
@@ -3324,24 +3323,22 @@ public class RolapSchemaLoader {
                 cube, cubeHierarchy.getRolapHierarchy(), xml,
                 hierarchyDefaultMember);
         } else {
+            AssignDefaultMember x;
             if (hierarchy.getDimension().isMeasures()) {
                 if (hierarchyDefaultMember == null) {
-                    assignDefaultMembers.add(
-                        new MeasureAssignDefaultMember(
-                            cube, hierarchy, (MondrianDef.Cube) xml));
+                    x = new MeasureAssignDefaultMember(
+                        cube, hierarchy, (MondrianDef.Cube) xml);
                 } else {
-                    assignDefaultMembers.add(
-                        new NamedMeasureAssignDefaultMember(
-                            cube, hierarchy, (MondrianDef.Cube) xml));
+                    x = new NamedMeasureAssignDefaultMember(
+                        cube, hierarchy, (MondrianDef.Cube) xml);
                 }
             } else if (hierarchyDefaultMember == null) {
-                assignDefaultMembers.add(
-                    new NamelessAssignDefaultMember(cube, hierarchy, xml));
+                x = new NamelessAssignDefaultMember(cube, hierarchy, xml);
             } else {
-                assignDefaultMembers.add(
-                    new NamedAssignDefaultMember(
-                        cube, hierarchy, xml, hierarchyDefaultMember));
+                x = new NamedAssignDefaultMember(
+                    cube, hierarchy, xml, hierarchyDefaultMember);
             }
+            assignDefaultMembers.add(x);
         }
     }
 
@@ -3564,6 +3561,7 @@ public class RolapSchemaLoader {
     }
 
     RolapLevel createLevel(
+        RolapCube cube,
         RolapHierarchy hierarchy,
         RolapSchema.PhysRelation relation,
         int depth,
@@ -3626,7 +3624,7 @@ public class RolapSchemaLoader {
         }
 
         final RolapClosure closure =
-            createClosure(relation, xmlLevel, dimension);
+            createClosure(cube, relation, xmlLevel, dimension);
 
         final RolapLevel level =
             new RolapLevel(
@@ -3652,6 +3650,7 @@ public class RolapSchemaLoader {
     }
 
     private RolapClosure createClosure(
+        RolapCube cube,
         RolapSchema.PhysRelation relation,
         MondrianDef.Level xmlLevel,
         RolapDimension dimension)
@@ -3673,7 +3672,7 @@ public class RolapSchemaLoader {
                 schema,
                 dimension.getName()
                     + "$" + xmlParentAttribute.name
-                    + "$Closure",
+                    + "$Parent",
                 false,
                 dimension.getDimensionType(),
                 false,
@@ -3686,7 +3685,7 @@ public class RolapSchemaLoader {
         xmlClosureDimension.name =
             dimension.getName()
             + "$" + xmlParentAttribute.name
-            + "$Closure";
+            + "$Parent";
         xmlClosureDimension.type = null;
         xmlClosureDimension.visible = false;
         xmlClosureDimension.hanger = false;
@@ -3796,6 +3795,10 @@ public class RolapSchemaLoader {
                     closureDim.getName(),
                     closureDim.getCaption(),
                     closureDim.getDescription()));
+        closureDim.addHierarchy(closureHierarchy);
+        deferAssignDefaultMember(
+            cube, closureHierarchy, null, null);
+        closureHierarchy.initHierarchy(this, null);
 
         // Create two levels, for parent & child each.
         final MondrianDef.Level xmlClosureLevel1 =
@@ -3806,7 +3809,7 @@ public class RolapSchemaLoader {
         xmlClosureLevel1.hideMemberIf =
             HideMemberCondition.Never.name(); // FIXME
         final RolapLevel closureLevel1 =
-            createLevel(closureHierarchy, relation, 1, xmlClosureLevel1);
+            createLevel(cube, closureHierarchy, relation, 1, xmlClosureLevel1);
 
         final MondrianDef.Level xmlClosureLevel2 =
             new MondrianDef.Level();
@@ -3817,7 +3820,7 @@ public class RolapSchemaLoader {
         xmlClosureLevel2.hideMemberIf =
             HideMemberCondition.Never.name(); // FIXME
         final RolapLevel closureLevel2 =
-            createLevel(closureHierarchy, relation, 2, xmlClosureLevel2);
+            createLevel(cube, closureHierarchy, relation, 2, xmlClosureLevel2);
 
         // Add those levels to the hierarchy.
         closureHierarchy.levelList.add(closureLevel1);
@@ -3829,8 +3832,10 @@ public class RolapSchemaLoader {
         if (xmlClosure.distanceColumn == null) {
             distanceExpr = null;
             getHandler().warning(
-                "Distance column omitted in closure element. Mondrian will assume that "
-                + "the closure table contains only tuples of parent-childs who are direct descendants (same as distance = 1).",
+                "Distance column omitted in closure element. Mondrian will "
+                + "assume that the closure table contains only tuples of "
+                + "parent-childs who are direct descendants (same as distance "
+                + "= 1).",
                 xmlClosure,
                 "distanceColumn");
         } else {
@@ -4742,13 +4747,12 @@ public class RolapSchemaLoader {
         calculatedMemberList.add(formula);
 
         final RolapMember member = (RolapMember) formula.getMdxMember();
-        RolapMember member1 = RolapUtil.strip(member);
-        ((RolapCalculatedMember) member1).setLarder(
-            Larders.LarderBuilder.of(member1.getLarder())
+        ((RolapCalculatedMember) member).setLarder(
+            Larders.LarderBuilder.of(member.getLarder())
                 .addAll(xmlCalcMember.getAnnotations())
                 .caption(second(xmlCalcMember.name, xmlCalcMember.caption))
                 .description(emptyNull(xmlCalcMember.description))
-                .addAll(resourceMap.get(cube + "." + member1 + ".member"))
+                .addAll(resourceMap.get(cube + "." + member + ".member"))
                 .add(Property.VISIBLE, toBoolean(xmlCalcMember.visible, true))
                 .build());
 

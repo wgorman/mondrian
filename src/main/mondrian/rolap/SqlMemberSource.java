@@ -625,7 +625,7 @@ class SqlMemberSource
         final RolapStarSet starSet = constraint.createStarSet(aggMeasureGroup);
         constraint.addMemberConstraint(sqlQuery, starSet, member);
 
-        RolapLevel level = member.getLevel().getChildLevel();
+        RolapCubeLevel level = member.getLevel().getChildLevel();
 /*
         boolean levelCollapsed =
             (aggStar != null)
@@ -750,7 +750,7 @@ class SqlMemberSource
         SqlTupleReader.ColumnLayoutBuilder layoutBuilder,
         SqlQuery sqlQuery,
         RolapSchema.SqlQueryBuilder queryBuilder,
-        RolapLevel level,
+        RolapCubeLevel level,
         List<RolapProperty> properties,
         Util.Function1<RolapSchema.PhysColumn, RolapSchema.PhysColumn> fn)
     {
@@ -853,10 +853,6 @@ class SqlMemberSource
         // this method will never be called in the context of a virtual cube
         // so baseCube isn't necessary for retrieving the correct column
 
-        // get the level using the current depth
-        RolapCubeLevel childLevel =
-            (RolapCubeLevel) member.getLevel().getChildLevel();
-
         // set a bit for each level which is constrained in the context
         final CellRequest request =
             RolapAggregationManager.makeRequest(members);
@@ -883,7 +879,7 @@ class SqlMemberSource
 
     private static RolapMeasureGroup chooseAggStar(
         MemberChildrenConstraint constraint,
-        RolapMember member)
+        final RolapMember member)
     {
         if (!MondrianProperties.instance().UseAggregates.get()) {
             return null;
@@ -912,14 +908,11 @@ class SqlMemberSource
         // we need to do more than this!  we need the rolap star ordinal, not
         // the rolap cube
 
-        RolapCubeMember cubeMember = (RolapCubeMember) member;
-        RolapCubeLevel cubeLevel = cubeMember.getLevel().getChildLevel();
-        for (RolapSchema.PhysColumn column
-            : cubeLevel.getAttribute().getKeyList())
-        {
+        final RolapCubeLevel level = member.getLevel().getChildLevel();
+        for (RolapSchema.PhysColumn column : level.attribute.getKeyList()) {
             RolapStar.Column starColumn =
                 measureGroup.getRolapStarColumn(
-                    cubeLevel.cubeDimension, column, false);
+                    level.cubeDimension, column, false);
             levelBitKey.set(starColumn.getBitPosition());
         }
         int ordinal = measure.getOrdinal();
@@ -1074,7 +1067,7 @@ class SqlMemberSource
     }
 
     private void getMemberChildren2(
-        RolapMember parentMember,
+        final RolapMember parentMember,
         List<RolapMember> children,
         MemberChildrenConstraint constraint)
     {
@@ -1120,7 +1113,6 @@ class SqlMemberSource
 
             final List<SqlStatement.Accessor> accessors = stmt.getAccessors();
             ResultSet resultSet = stmt.getResultSet();
-            RolapMember parentMember2 = RolapUtil.strip(parentMember);
             final SqlTupleReader.ColumnLayout fullLayout =
                 layoutBuilder.toLayout();
             final SqlTupleReader.LevelColumnLayout layout =
@@ -1195,7 +1187,7 @@ class SqlMemberSource
                     }
                     member =
                         makeMember(
-                            parentMember2, childLevel, keyClone, captionValue,
+                            parentMember, childLevel, keyClone, captionValue,
                             nameValue, orderKey, parentChild, stmt, layout);
                 }
                 if (Util.deprecated(false, false)
@@ -1397,7 +1389,7 @@ class SqlMemberSource
             "In the current implementation, parent/child hierarchies must "
             + "have only one level (plus the 'All' level).");
 
-        RolapLevel level = member.getLevel().getChildLevel();
+        final RolapCubeLevel level = member.getLevel().getChildLevel();
 
         Util.assertTrue(!level.isAll(), "all level cannot be parent-child");
 
@@ -1460,13 +1452,13 @@ class SqlMemberSource
                 layoutBuilder,
                 Collections.singletonList(
                     member.getLevel().attribute.getKeyList()));
-        RolapLevel level = member.getLevel();
+        RolapCubeLevel level = member.getLevel();
 
         final RolapClosure closure = level.getClosure();
         if (level.isParentChild() && closure != null) {
             level =
                 Util.first(
-                    closure.closedPeerLevel,
+                    (RolapCubeLevel) closure.closedPeerLevel,
                     level);
         }
 
@@ -1518,7 +1510,6 @@ class SqlMemberSource
         throw new UnsupportedOperationException();
     }
 
-
     public TupleReader.MemberBuilder getMemberBuilder() {
         return this;
     }
@@ -1562,7 +1553,7 @@ class SqlMemberSource
                 : 0;
         }
 
-        public Member getDataMember() {
+        public RolapMember getDataMember() {
             return dataMember;
         }
 

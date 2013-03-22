@@ -52,7 +52,7 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
         return false;
     }
 
-    public RolapMember removeMember(RolapLevel level, Object key) {
+    public RolapMember removeMember(RolapCubeLevel level, Object key) {
         return null;
     }
 
@@ -64,7 +64,7 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
         return false;
     }
 
-    public final RolapMember getMember(RolapLevel level, Object key) {
+    public final RolapMember getMember(RolapCubeLevel level, Object key) {
         return getMember(level, key, true);
     }
 
@@ -78,7 +78,7 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
     }
 
     public Object putMember(
-        RolapLevel level,
+        RolapCubeLevel level,
         final Object key,
         final RolapMember value)
     {
@@ -178,7 +178,7 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
     }
 
     public List<RolapMember> getLevelMembersFromCache(
-        final RolapLevel level,
+        final RolapCubeLevel level,
         final TupleConstraint constraint)
     {
         return null;
@@ -192,7 +192,7 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
     }
 
     public void putChildren(
-        final RolapLevel level,
+        final RolapCubeLevel level,
         final TupleConstraint constraint,
         final List<RolapMember> children)
     {

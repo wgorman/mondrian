@@ -44,11 +44,13 @@ public class RolapCubeLevel extends RolapLevel {
      * @param resourceMap Resource map, if there are resources to override
      *                    captions or descriptions of members in this level;
      *                    otherwise null
+     * @param closure Description of closure table, or null
      */
     public RolapCubeLevel(
         RolapLevel level,
         RolapCubeHierarchy cubeHierarchy,
-        Map<String, List<Larders.Resource>> resourceMap)
+        Map<String, List<Larders.Resource>> resourceMap,
+        RolapClosure closure)
     {
         super(
             cubeHierarchy,
@@ -59,7 +61,7 @@ public class RolapCubeLevel extends RolapLevel {
             level.parentAttribute,
             level.getOrderByList(),
             level.nullParentValue,
-            level.closure,
+            closure,
             level.getHideMemberCondition(),
             level.getLarder(),
             resourceMap);
@@ -73,6 +75,10 @@ public class RolapCubeLevel extends RolapLevel {
             parentCubeLevel.childCubeLevel = this;
         }
         attribute = level.getAttribute();
+
+        assert closure == null
+            || ((RolapCubeLevel) closure.closedPeerLevel).getRolapLevel()
+            == level.closure.closedPeerLevel;
     }
 
     @Override
@@ -85,24 +91,6 @@ public class RolapCubeLevel extends RolapLevel {
         } else if (getLevelType() == org.olap4j.metadata.Level.Type.NULL) {
             this.levelReader = new NullLevelReader();
         } else if (rolapLevel.hasClosedPeer()) {
-            RolapDimension dimension =
-                rolapLevel.getClosedPeer().getHierarchy().getDimension();
-
-            RolapCubeDimension cubeDimension =
-                new RolapCubeDimension(
-                    getCube(),
-                    dimension,
-                    getDimension().getName() + "$Closure",
-                    -1,
-                    Larders.EMPTY);
-            schemaLoader.initCubeDimension(
-                cubeDimension, null, getCube().hierarchyList);
-
-            closedPeerCubeLevel =
-                cubeDimension
-                    .getHierarchyList().get(0)
-                    .getLevelList().get(1);
-
             this.levelReader = new ParentChildLevelReaderImpl(this);
         } else {
             this.levelReader = new RegularLevelReader(this);
@@ -111,6 +99,28 @@ public class RolapCubeLevel extends RolapLevel {
 
     LevelReader getLevelReader() {
         return levelReader;
+    }
+
+    public boolean isMeasure() {
+        return cubeHierarchy.ordinal == 0;
+    }
+
+    /**
+     * Indicates that level is not ragged and not a parent/child level.
+     */
+    public boolean isSimple() {
+        // most ragged hierarchies are not simple -- see isTooRagged.
+        if (isTooRagged()) {
+            return false;
+        }
+        if (isParentChild()) {
+            return false;
+        }
+        // does not work for measures
+        if (isMeasure()) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -159,25 +169,30 @@ public class RolapCubeLevel extends RolapLevel {
     }
 
     // override with stricter return type
+    @Override
     public final RolapCubeDimension getDimension() {
         return cubeDimension;
     }
 
     // override with stricter return type
+    @Override
     public final RolapCubeHierarchy getHierarchy() {
         return cubeHierarchy;
     }
 
     // override with stricter return type
+    @Override
     public final RolapCubeLevel getChildLevel() {
         return childCubeLevel;
     }
 
     // override with stricter return type
+    @Override
     public final RolapCubeLevel getParentLevel() {
         return parentCubeLevel;
     }
 
+    @Override
     public String getCaption() {
         return rolapLevel.getCaption();
     }
@@ -200,19 +215,74 @@ public class RolapCubeLevel extends RolapLevel {
                 && getCube().equals(level.getCube());
     }
 
+    @Override
     boolean hasClosedPeer() {
         return closedPeerCubeLevel != null;
     }
 
+    @Override
     public RolapCubeLevel getClosedPeer() {
         return closedPeerCubeLevel;
     }
 
+    @Override
     public MemberFormatter getMemberFormatter() {
         return rolapLevel.getMemberFormatter();
     }
 
+    @Override
+    public OlapElement lookupChild(
+        SchemaReader schemaReader, Id.Segment name, MatchType matchType)
+    {
+        if (name instanceof Id.KeySegment) {
+            Id.KeySegment keySegment = (Id.KeySegment) name;
+            List<Comparable> keyValues = new ArrayList<Comparable>();
+            for (Id.NameSegment nameSegment : keySegment.getKeyParts()) {
+                final String keyValue = nameSegment.name;
+                if (RolapUtil.mdxNullLiteral().equalsIgnoreCase(keyValue)) {
+                    keyValues.add(RolapUtil.sqlNullValue);
+                } else {
+                    keyValues.add(keyValue);
+                }
+            }
+            Collections.reverse(keyValues);
+            final List<RolapSchema.PhysColumn> keyExps = attribute.getKeyList();
+            if (keyExps.size() != keyValues.size()) {
+                throw Util.newError(
+                    "Wrong number of values in member key; "
+                        + keySegment + " has " + keyValues.size()
+                        + " values, whereas level's key has " + keyExps.size()
+                        + " columns "
+                        + new AbstractList<String>() {
+                        public String get(int index) {
+                            return keyExps.get(keyExps.size() - 1 - index)
+                                .toSql();
+                        }
 
+                        public int size() {
+                            return keyExps.size();
+                        }
+                    }
+                        + ".");
+            }
+            return cubeHierarchy.getMemberReader().getMemberByKey(
+                this, keyValues);
+        }
+        final List<RolapMember> levelMembers =
+            Util.cast(schemaReader.getLevelMembers(this, true));
+        if (levelMembers.size() > 0) {
+            final RolapMember parent = levelMembers.get(0).getParentMember();
+            return
+                RolapUtil.findBestMemberMatch(
+                    levelMembers,
+                    parent,
+                    this,
+                    name,
+                    matchType,
+                    false);
+        }
+        return null;
+    }
 
     /**
      * Encapsulation of the difference between levels in terms of how

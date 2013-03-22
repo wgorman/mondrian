@@ -358,7 +358,7 @@ public final class ScenarioImpl implements Scenario {
             membersByOrdinal =
                 memberList.toArray(new Member[memberList.size()]);
             for (RolapMember member : members) {
-                final RolapHierarchy hierarchy = member.getHierarchy();
+                final RolapCubeHierarchy hierarchy = member.getHierarchy();
                 if (hierarchy.isScenario) {
                     assert member.isAll();
                 }

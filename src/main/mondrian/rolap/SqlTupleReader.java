@@ -136,7 +136,7 @@ public class SqlTupleReader implements TupleReader {
             return srcMembers;
         }
 
-        public RolapLevel getLevel() {
+        public RolapCubeLevel getLevel() {
             return level;
         }
 
@@ -950,8 +950,8 @@ Util.deprecated("obsolete basecube parameter", false);
         Evaluator evaluator = getEvaluator(constraint);
         final RolapStarSet starSet;
         if (measureGroup != null) {
-            final AggStar aggStar =
-                chooseAggStar(constraint, measureGroup, evaluator);
+            final AggStar aggStar = null;
+            // = chooseAggStar(constraint, measureGroup, evaluator);
             final RolapMeasureGroup aggMeasureGroup = null; // TODO:
             starSet =
                 new RolapStarSet(
@@ -1054,6 +1054,7 @@ Util.deprecated("obsolete basecube parameter", false);
      * their level values.</p>
      *
      *
+     *
      * @param sqlQuery     The query object being constructed
      * @param hierarchy    Hierarchy of the cube
      * @param levels       Levels in this hierarchy
@@ -1064,7 +1065,7 @@ Util.deprecated("obsolete basecube parameter", false);
     private boolean isGroupByNeeded(
         SqlQuery sqlQuery,
         RolapHierarchy hierarchy,
-        List<RolapLevel> levels,
+        List<? extends RolapCubeLevel> levels,
         int levelDepth)
     {
         // REVIEW: The functionality of this method in mondrian-3.x depended on
@@ -1098,14 +1099,14 @@ Util.deprecated("obsolete basecube parameter", false);
      */
     protected void addLevelMemberSql(
         RolapSchema.SqlQueryBuilder queryBuilder,
-        RolapLevel level,
+        RolapCubeLevel level,
         final RolapStarSet starSet,
         int selectOrdinal,
         int selectCount)
     {
         final SqlQuery sqlQuery = queryBuilder.sqlQuery;
         final ColumnLayoutBuilder layoutBuilder = queryBuilder.layoutBuilder;
-        RolapHierarchy hierarchy = level.getHierarchy();
+        RolapCubeHierarchy hierarchy = level.getHierarchy();
         RolapCubeDimension cubeDimension = null;
 
         // lookup RolapHierarchy of base cube that matches this hierarchy
@@ -1122,17 +1123,16 @@ Util.deprecated("obsolete basecube parameter", false);
             }
         }
 
-        final List<RolapLevel> levels = Util.cast(hierarchy.getLevelList());
-        int levelDepth = level.getDepth();
-
+        final int levelDepth = level.getDepth();
         boolean needsGroupBy =
-            isGroupByNeeded(sqlQuery, hierarchy, levels, levelDepth);
+            isGroupByNeeded(
+                sqlQuery, hierarchy, hierarchy.getLevelList(), levelDepth);
         boolean isUnion = selectCount > 1;
 
         final RolapMeasureGroup measureGroup = starSet.getMeasureGroup();
 
         for (int i = 0; i <= levelDepth; i++) {
-            final RolapLevel currLevel = levels.get(i);
+            final RolapCubeLevel currLevel = hierarchy.getLevelList().get(i);
             if (currLevel.isAll()) {
                 continue;
             }
@@ -1144,14 +1144,12 @@ Util.deprecated("obsolete basecube parameter", false);
             boolean levelCollapsed =
                 (starSet.getAggStar() != null)
                 && SqlMemberSource.isLevelCollapsed(
-                    starSet.getAggStar(), (RolapCubeLevel) level, measureGroup);
+                    starSet.getAggStar(), level, measureGroup);
             if (levelCollapsed) {
                 // an earlier check was made in chooseAggStar() to verify
                 // that this is a single column level
-                RolapCubeLevel currCubeLevel = (RolapCubeLevel) currLevel;
                 RolapStar.Column starColumn =
-                    currCubeLevel.getBaseStarKeyColumn(
-                        measureGroup);
+                    currLevel.getBaseStarKeyColumn(measureGroup);
                 int bitPos = starColumn.getBitPosition();
                 AggStar.Table.Column aggColumn =
                     starSet.getAggStar().lookupColumn(bitPos);
@@ -1481,8 +1479,8 @@ Util.deprecated("obsolete basecube parameter", false);
     static class ColumnLayoutBuilder {
         private final List<String> exprList = new ArrayList<String>();
         private final List<String> aliasList = new ArrayList<String>();
-        private final Map<RolapLevel, LevelLayoutBuilder> levelLayoutMap =
-            new IdentityHashMap<RolapLevel, LevelLayoutBuilder>();
+        private final Map<RolapCubeLevel, LevelLayoutBuilder> levelLayoutMap =
+            new IdentityHashMap<RolapCubeLevel, LevelLayoutBuilder>();
         LevelLayoutBuilder currentLevelLayout;
         final List<SqlStatement.Type> types =
             new ArrayList<SqlStatement.Type>();
@@ -1522,11 +1520,11 @@ Util.deprecated("obsolete basecube parameter", false);
             return new ColumnLayout(convert(levelLayoutMap.values()));
         }
 
-        private Map<RolapLevel, LevelColumnLayout> convert(
+        private Map<RolapCubeLevel, LevelColumnLayout> convert(
             Collection<LevelLayoutBuilder> builders)
         {
-            final Map<RolapLevel, LevelColumnLayout> map =
-                new IdentityHashMap<RolapLevel, LevelColumnLayout>();
+            final Map<RolapCubeLevel, LevelColumnLayout> map =
+                new IdentityHashMap<RolapCubeLevel, LevelColumnLayout>();
             for (LevelLayoutBuilder builder : builders) {
                 if (builder != null) {
                     map.put(builder.level, convert(builder));
@@ -1539,7 +1537,7 @@ Util.deprecated("obsolete basecube parameter", false);
             return builder == null ? null : builder.toLayout();
         }
 
-        public LevelLayoutBuilder createLayoutFor(RolapLevel level) {
+        public LevelLayoutBuilder createLayoutFor(RolapCubeLevel level) {
             LevelLayoutBuilder builder = levelLayoutMap.get(level);
             if (builder == null) {
                 builder = new LevelLayoutBuilder(level);
@@ -1563,9 +1561,9 @@ Util.deprecated("obsolete basecube parameter", false);
         final List<Integer> propertyOrdinalList = new ArrayList<Integer>();
         private final List<Integer> parentOrdinalList =
             new ArrayList<Integer>();
-        public final RolapLevel level;
+        public final RolapCubeLevel level;
 
-        public LevelLayoutBuilder(RolapLevel level) {
+        public LevelLayoutBuilder(RolapCubeLevel level) {
             this.level = level;
         }
 
@@ -1611,10 +1609,10 @@ Util.deprecated("obsolete basecube parameter", false);
      * Description of where to find attributes within each row.
      */
     static class ColumnLayout {
-        final Map<RolapLevel, LevelColumnLayout> levelLayoutMap;
+        final Map<RolapCubeLevel, LevelColumnLayout> levelLayoutMap;
 
         public ColumnLayout(
-            final Map<RolapLevel, LevelColumnLayout> levelLayoutMap)
+            final Map<RolapCubeLevel, LevelColumnLayout> levelLayoutMap)
         {
             this.levelLayoutMap = levelLayoutMap;
         }

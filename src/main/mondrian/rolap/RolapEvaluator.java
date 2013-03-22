@@ -637,8 +637,9 @@ public class RolapEvaluator implements Evaluator {
         }
     }
 
-    public final RolapMember getContext(Hierarchy hierarchy) {
-        return currentMembers[((RolapHierarchy) hierarchy).getOrdinalInCube()];
+    public final RolapMember getContext(Hierarchy _hierarchy) {
+        final RolapCubeHierarchy hierarchy = (RolapCubeHierarchy) _hierarchy;
+        return currentMembers[hierarchy.getOrdinalInCube()];
     }
 
     /**
@@ -648,7 +649,7 @@ public class RolapEvaluator implements Evaluator {
      * @param hierarchy Hierarchy
      * @return current member
      */
-    public final RolapMember getContext(RolapHierarchy hierarchy) {
+    public final RolapMember getContext(RolapCubeHierarchy hierarchy) {
         return currentMembers[hierarchy.getOrdinalInCube()];
     }
 

@@ -223,18 +223,18 @@ public class RolapCell implements Cell {
         // "membersForDrillthrough" array if any position member is not
         // in the array
         for (Position position : listOfPositions) {
-            for (Member member : position) {
-                RolapHierarchy rolapHierarchy =
-                    (RolapHierarchy) member.getHierarchy();
+            List<RolapMember> members = Util.cast(position);
+            for (RolapMember member : members) {
+                RolapCubeHierarchy hierarchy = member.getHierarchy();
                 // Check if the membersForDrillthrough constraint is identical
                 // to that of the position member
-                if (!membersForDrillthrough[rolapHierarchy.getOrdinalInCube()]
+                if (!membersForDrillthrough[hierarchy.getOrdinalInCube()]
                     .equals(member))
                 {
                     // There is a discrepancy, so un-constrain the
                     // membersForDrillthrough array
-                    membersForDrillthrough[rolapHierarchy.getOrdinalInCube()] =
-                        rolapHierarchy.getAllMember();
+                    membersForDrillthrough[hierarchy.getOrdinalInCube()] =
+                        hierarchy.getAllMember();
                 }
             }
         }
@@ -251,13 +251,13 @@ public class RolapCell implements Cell {
             List<StarPredicate> listOfStarPredicatesForCurrentPosition =
                 new ArrayList<StarPredicate>();
             // Iterate the members of the current position
-            for (Member member : position) {
-                RolapHierarchy rolapHierarchy =
-                    (RolapHierarchy) member.getHierarchy();
+            List<RolapMember> members = Util.cast(position);
+            for (RolapMember member : members) {
+                RolapCubeHierarchy hierarchy = member.getHierarchy();
                 // If the membersForDrillthrough is already constraining to
                 // this member, then there is no need to create additional
                 // predicate(s) for this member
-                if (!membersForDrillthrough[rolapHierarchy.getOrdinalInCube()]
+                if (!membersForDrillthrough[hierarchy.getOrdinalInCube()]
                    .equals(member))
                 {
                     // Walk up the member's hierarchy, adding a
@@ -378,7 +378,6 @@ public class RolapCell implements Cell {
         if (!member.isCalculated()) {
             return;
         }
-        member = RolapUtil.strip((RolapMember) member);
         // if "cm" is a calc member defined by
         // "with member cm as m" then
         // "cm" is equivalent to "m"
@@ -649,10 +648,7 @@ public class RolapCell implements Cell {
                     // measures we have seen
                     throw bomb;
                 }
-            } else if (member instanceof RolapCubeMember) {
-                handleMember(((RolapCubeMember) member).member);
-            } else if (member
-                instanceof RolapHierarchy.RolapCalculatedMeasure)
+            } else if (member instanceof RolapHierarchy.RolapCalculatedMeasure)
             {
                 RolapHierarchy.RolapCalculatedMeasure measure =
                     (RolapHierarchy.RolapCalculatedMeasure) member;

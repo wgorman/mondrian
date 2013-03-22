@@ -809,16 +809,7 @@ public abstract class RolapAggregationManager {
                 if (member.isMeasure()) {
                     continue;
                 }
-                final RolapCubeMember rolapMember;
-                if (member instanceof RolapCubeMember) {
-                    rolapMember = (RolapCubeMember) member;
-                } else {
-                    rolapMember = (RolapCubeMember)
-                        measureGroup.getCube().getSchemaReader()
-                            .getMemberByUniqueName(
-                                Util.parseIdentifier(member.getUniqueName()),
-                                true);
-                }
+                final RolapMember rolapMember = (RolapMember) member;
                 rolapMember.getLevel().getLevelReader().constrainRegion(
                     Predicates.memberPredicate(
                         new RolapSchema.CubeRouter(

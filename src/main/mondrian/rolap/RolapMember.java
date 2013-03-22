@@ -21,7 +21,7 @@ import java.util.*;
  * <h2>Task list for cleanup</h2>
  *
  * <ul>
- * <li>{@link RolapCubeMember} -- is obsolete. replace all calls with
+ * <li>DONE obsolete {@code RolapCubeMember}. replace all calls with
  * {@link RolapMemberBase} or {@link RolapMember}</li>
  *
  * <li>TODO study and fix {@link mondrian.util.Bug#BugSegregateRolapCubeMemberFixed}</li>
@@ -29,9 +29,7 @@ import java.util.*;
  * <li>TODO remove no-args {@link RolapMemberBase} constructor; it is only
  * called by {@link DelegatingRolapMember}</li>
  *
- * <li>TODO remove {@link RolapCubeMember}</li>
- *
- * <li>TODO remove {@link mondrian.rolap.RolapMemberInCube}, now equivalent to
+ * <li>DONE remove {@code mondrian.rolap.RolapMemberInCube}, now equivalent to
  * {@link RolapMember}</li>
  *
  * <li>TODO slim down {@link mondrian.rolap.DelegatingRolapMember} so that it
@@ -46,12 +44,12 @@ import java.util.*;
  *
  * <li>DONE remove {@link RolapCubeHierarchy}.cachingEnabled</li>
  *
- * <li>TODO remove
- * {@link mondrian.rolap.RolapCubeHierarchy.NoCacheRolapCubeHierarchyMemberReader}
+ * <li>DONE remove {@code
+ * mondrian.rolap.RolapCubeHierarchy.NoCacheRolapCubeHierarchyMemberReader}
  * obsolete</li>
  *
- * <li>TODO remove
- * {@link mondrian.rolap.RolapCubeHierarchy.CacheRolapCubeHierarchyMemberReader}
+ * <li>DONE remove
+ * {@code mondrian.rolap.RolapCubeHierarchy.CacheRolapCubeHierarchyMemberReader}
  * obsolete</li>
  *
  * <li>TODO remove {@link MondrianProperties#EnableRolapCubeMemberCache}</li>
@@ -68,11 +66,12 @@ import java.util.*;
  * <li>DONE obsolete
  * {@code mondrian.rolap.RolapCubeHierarchy.RolapCubeCalculatedMeasure}</li>
  *
- * <li>TODO obsolete {@link MemberNoCacheHelper}</li>
+ * <li>DONE obsolete {@code MemberNoCacheHelper}</li>
  *
- * <li>TODO obsolete {@link RolapCubeHierarchy.MemberNoCacheHelper}</li>
- *
+ * <li>DONE obsolete {@code RolapCubeHierarchy.MemberNoCacheHelper}</li>
  * </ul>
+ *
+ * <li>Investigate {@link RolapUtil#findBestMemberMatch}</li>
  *
  * @author jhyde
  * @since 10 August, 2001
@@ -215,7 +214,7 @@ public interface RolapMember extends Member, RolapCalculation {
          */
         public static boolean isValid(
             Object key,
-            RolapLevel level,
+            RolapCubeLevel level,
             MemberType memberType)
         {
             if (memberType == MemberType.FORMULA) {

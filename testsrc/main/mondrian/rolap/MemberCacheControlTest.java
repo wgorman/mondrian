@@ -428,7 +428,7 @@ public class MemberCacheControlTest extends FoodMartTestCase {
         final RolapMember rootMember = caMember.getParentMember();
         final RolapCubeHierarchy hierarchy = caMember.getHierarchy();
         final RolapMember berkeleyMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 caMember,
                 caMember.getLevel().getChildLevel(),
                 "Berkeley",
@@ -714,19 +714,19 @@ public class MemberCacheControlTest extends FoodMartTestCase {
         final MemberCache memberCache =
             ((SmartMemberReader) memberReader).getMemberCache();
         final RolapMember alamedaMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 caMember,
                 caMember.getLevel().getChildLevel(),
                 "Alameda",
                 null);
         final RolapMember sfMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 caMember,
                 caMember.getLevel().getChildLevel(),
                 "San Francisco",
                 null);
         final RolapMember storeMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 sfMember,
                 sfMember.getLevel().getChildLevel(),
                 "Store 14",
@@ -797,13 +797,13 @@ public class MemberCacheControlTest extends FoodMartTestCase {
         final MemberCache memberCache =
             ((SmartMemberReader) memberReader).getMemberCache();
         final RolapMember sfMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 caMember,
                 caMember.getLevel().getChildLevel(),
                 "San Francisco",
                 null);
         final RolapMember storeMember =
-            (RolapMember) hierarchy.createMember(
+            hierarchy.createMember(
                 sfMember,
                 sfMember.getLevel().getChildLevel(),
                 "Store 14",

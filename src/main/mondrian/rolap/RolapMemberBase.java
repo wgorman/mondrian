@@ -142,9 +142,6 @@ public class RolapMemberBase
         String uniqueName,
         Larder larder)
     {
-        assert !(parentMember instanceof RolapCubeMember)
-            || this instanceof RolapCalculatedMember
-            || this instanceof VisualTotalsFunDef.VisualTotalMember;
         assert Key.isValid(key, level, memberType)
             : "invalid key " + key + " for level " + level;
         assert larder != null;
@@ -243,7 +240,7 @@ public class RolapMemberBase
 
     /**
      * Returns whether this <code>Member</code>'s unique name is equal to, a
-     * child of, or a descendent of a member whose unique name is
+     * child of, or a descendant of a member whose unique name is
      * <code>uniqueName</code>.
      */
     public boolean isChildOrEqualTo(String uniqueName) {
@@ -292,7 +289,7 @@ public class RolapMemberBase
      * Returns the expression by which this member is calculated. The expression
      * is not null if and only if the member is not calculated.
      *
-     * @post (return != null) == (isCalculated())
+     * @see #isCalculated()
      */
     public Exp getExpression() {
         return null;
@@ -307,7 +304,7 @@ public class RolapMemberBase
         return ancestorList;
     }
 
-    public Member getDataMember() {
+    public RolapMember getDataMember() {
         return null;
     }
 
@@ -374,17 +371,10 @@ public class RolapMemberBase
         if (o == this) {
             return true;
         }
-        if (o instanceof RolapMemberBase && equals((RolapMemberBase) o)) {
-            return true;
+        if (!(o instanceof RolapMemberBase)) {
+            return false;
         }
-        if (o instanceof RolapCubeMember
-                && equals(((RolapCubeMember) o).getRolapMember()))
-        {
-            // TODO: remove, RolapCubeMember should never meet RolapMember
-            assert !Bug.BugSegregateRolapCubeMemberFixed;
-            return true;
-        }
-        return false;
+        return equals((RolapMemberBase) o);
     }
 
     public boolean equals(OlapElement o) {
@@ -409,10 +399,6 @@ public class RolapMemberBase
      *
      * <li>Returns false when comparing the member [Gender].[F] to the visual
      * total member [Gender].[F].</li>
-     *
-     * <li>Returns true when comparing two {@link RolapCubeMember} wrappers for
-     * [Gender].[F] in the same cube dimension. (Occurs when caching is
-     * disabled.)</li>
      *
      * <li>Returns true when applied to the same object.</li>
      *
@@ -451,9 +437,9 @@ public class RolapMemberBase
             || this instanceof VisualTotalsFunDef.VisualTotalMember
             || getDataMember() != null)))
         {
-            final RolapHierarchy hierarchy = getHierarchy();
-            final Dimension dimension = hierarchy.getDimension();
-            final RolapLevel level = getLevel();
+            final RolapCubeLevel level = getLevel();
+            final RolapCubeHierarchy hierarchy = level.cubeHierarchy;
+            final RolapCubeDimension dimension = hierarchy.getDimension();
             if (dimension.getDimensionType()
                 == org.olap4j.metadata.Dimension.Type.MEASURE
                 && hierarchy.getName().equals(dimension.getName()))
@@ -504,7 +490,7 @@ public class RolapMemberBase
      */
     protected static String deriveUniqueName(
         RolapMember parentMember,
-        RolapLevel level,
+        RolapCubeLevel level,
         String name,
         boolean calc)
     {
@@ -652,8 +638,7 @@ public class RolapMemberBase
 
             case Property.CHILDREN_CARDINALITY_ORDINAL:
                 return Locus.execute(
-                    ((RolapSchema) level.getDimension().getSchema())
-                        .getInternalConnection(),
+                    level.getDimension().getSchema().getInternalConnection(),
                     "Member.CHILDREN_CARDINALITY",
                     new Locus.Action<Integer>() {
                         public Integer execute() {
@@ -773,7 +758,7 @@ public class RolapMemberBase
     }
 
     void setOrderKey(Comparable orderKey) {
-        assert arity(orderKey) == ((RolapLevel) level).getOrderByKeyArity();
+        assert arity(orderKey) == level.getOrderByKeyArity();
         this.orderKey = orderKey;
     }
 
@@ -877,7 +862,7 @@ public class RolapMemberBase
     }
 
     public boolean isHidden() {
-        final RolapLevel rolapLevel = getLevel();
+        final RolapCubeLevel rolapLevel = getLevel();
         switch (rolapLevel.getHideMemberCondition()) {
         case Never:
             return false;
@@ -1025,8 +1010,6 @@ public class RolapMemberBase
         SchemaReader schemaReader,
         Member seedMember)
     {
-        seedMember = RolapUtil.strip((RolapMember) seedMember);
-
         // The following are times for executing different set ordinals
         // algorithms for both the FoodMart Sales cube/Store dimension
         // and a Large Data set with a dimension with about 250,000 members.
