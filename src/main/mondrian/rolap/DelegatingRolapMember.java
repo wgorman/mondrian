@@ -9,9 +9,10 @@
 */
 package mondrian.rolap;
 
+import mondrian.calc.Calc;
 import mondrian.olap.*;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * Implementation of {@link mondrian.rolap.RolapMember} that delegates all calls
@@ -20,11 +21,10 @@ import java.util.List;
  * @author jhyde
  * @since Mar 16, 2010
  */
-public class DelegatingRolapMember extends RolapMemberBase {
+public class DelegatingRolapMember implements RolapMember {
     protected final RolapMember member;
 
     protected DelegatingRolapMember(RolapMember member) {
-        super();
         this.member = member;
     }
 
@@ -145,7 +145,7 @@ public class DelegatingRolapMember extends RolapMemberBase {
     }
 
     public RolapMember getDataMember() {
-        return (RolapMember) member.getDataMember();
+        return member.getDataMember();
     }
 
     @SuppressWarnings({"unchecked"})
@@ -183,8 +183,56 @@ public class DelegatingRolapMember extends RolapMemberBase {
         return member.getDimension();
     }
 
-    public boolean isAllMember() {
-        return member.isAllMember();
+    public RolapCube getCube() {
+        return member.getCube();
+    }
+
+    public Object getPropertyValue(String propertyName) {
+        return member.getPropertyValue(propertyName);
+    }
+
+    public Object getPropertyValue(String propertyName, boolean matchCase) {
+        return member.getPropertyValue(propertyName, matchCase);
+    }
+
+    public String getPropertyFormattedValue(String propertyName) {
+        return member.getPropertyFormattedValue(propertyName);
+    }
+
+    public void setProperty(String propertyName, Object value) {
+        member.setProperty(propertyName, value);
+    }
+
+    public Map<String, Annotation> getAnnotationMap() {
+        return member.getAnnotationMap();
+    }
+
+    public String getCaption() {
+        return member.getCaption();
+    }
+
+    public String getLocalized(LocalizedProperty prop, Locale locale) {
+        return member.getLocalized(prop, locale);
+    }
+
+    public boolean isVisible() {
+        return member.isVisible();
+    }
+
+    public void setContextIn(RolapEvaluator evaluator) {
+        member.setContextIn(evaluator);
+    }
+
+    public int getHierarchyOrdinal() {
+        return member.getHierarchyOrdinal();
+    }
+
+    public Calc getCompiledExpression(RolapEvaluatorRoot root) {
+        return member.getCompiledExpression(root);
+    }
+
+    public boolean containsAggregateFunction() {
+        return member.containsAggregateFunction();
     }
 }
 

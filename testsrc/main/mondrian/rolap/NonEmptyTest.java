@@ -4821,8 +4821,8 @@ public class NonEmptyTest extends BatchTestCase {
                 new Id.NameSegment(hierName, Id.Quoting.UNQUOTED),
                 false);
         assertNotNull(hierarchy);
-        return (SmartMemberReader)
-            hierarchy.createMemberReader(schemaReader.getRole());
+        return (SmartMemberReader) RolapSchemaLoader.createMemberReader(
+            hierarchy, schemaReader.getRole());
     }
 
     SmartMemberReader getSharedSmartMemberReader(String hierName) {
@@ -4840,10 +4840,9 @@ public class NonEmptyTest extends BatchTestCase {
             (RolapCubeHierarchy) cube.lookupHierarchy(
                 new Id.NameSegment(hierName, Id.Quoting.UNQUOTED), false);
         assertNotNull(hierarchy);
-        return (SmartMemberReader)
-            hierarchy.createMemberReader(schemaReader.getRole());
+        return (SmartMemberReader) RolapSchemaLoader.createMemberReader(
+            hierarchy, schemaReader.getRole());
     }
-
 
     RolapEvaluator getEvaluator(Result res, int[] pos) {
         while (res instanceof NonEmptyResult) {

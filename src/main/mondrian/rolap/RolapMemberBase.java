@@ -30,11 +30,19 @@ import java.util.*;
 /**
  * Basic implementation of a member in a {@link RolapCubeHierarchy}.
  *
+ * <p>This class aims to be memory-efficient. There are as few fields as
+ * possible. We pack several properties into the {@link #flags} field, and
+ * we store optional attributes (along with annotations, localized resources and
+ * properties) in the larder. Minimizing the number of fields is also why this
+ * class does not inherit from {@link OlapElementBase}.</p>
+ *
+ * <b>Developers, please do not add fields to this
+ * class without design review</b>.</p>
+ *
  * @author jhyde
  * @since 10 August, 2001
  */
 public class RolapMemberBase
-    extends OlapElementBase
     implements RolapMember
 {
     protected RolapMember parentMember;
@@ -47,7 +55,6 @@ public class RolapMemberBase
      * otherwise null.
      */
     private Comparable orderKey;
-    private Boolean isParentChildLeaf;
 
     /**
      * Combines member type and other properties, such as whether the member
@@ -65,6 +72,8 @@ public class RolapMemberBase
      * <li>bit 6 ({@link MemberBase#FLAG_CALCULATED}) is set if this is a
      *     calculated member.
      * <li>bit 7 ({@link MemberBase#FLAG_MEASURE}) is set if this is a measure.
+     * <li>bits 8 and 9 support {@link #isParentChildLeaf()}.</li>
+     * <li>bits 10 and 11 support {@link #containsAggregateFunction()}.</li>
      * </ul>
      *
      * NOTE: jhyde, 2007/8/10. It is necessary to cache whether the member is
@@ -73,32 +82,21 @@ public class RolapMemberBase
      * made each subclass implement 'boolean isNull()' - it would be slower.
      * We use one flags field rather than 4 boolean fields to save space.
      */
-    protected final int flags;
+    protected int flags;
+
+    // Leaf takes bits 8 and 9. Bit 8 is whether known. Bit 9 is yes or no.
+    private static final int LEAF_MASK = (1 << 8) | (1 << 9);
+    private static final int LEAF_YES = (1 << 8) | (1 << 9);
+    private static final int LEAF_NO = (1 << 8);
+
+    // Contains aggregate function takes bits 10 and 11. Bit 10 is whether
+    // known. Bit 11 is yes or no.
+    private static final int AGG_FUN_MASK = (1 << 10) | (1 << 11);
+    private static final int AGG_FUN_YES = (1 << 10) | (1 << 11);
+    private static final int AGG_FUN_NO = (1 << 10);
 
     private static final Logger LOGGER = Logger.getLogger(RolapMember.class);
     private static final Object[] EMPTY_OBJECT_ARRAY = new Object[0];
-
-    /**
-     * Sets a member's parent.
-     *
-     * <p>Can screw up the caching structure. Only to be called by
-     * {@link mondrian.olap.CacheControl#createMoveCommand}.
-     *
-     * <p>New parent must be in same level as old parent.
-     *
-     * @param parentMember New parent member
-     *
-     * @see #getParentMember()
-     * @see #getParentUniqueName()
-     */
-    void setParentMember(RolapMember parentMember) {
-        final RolapMember previousParentMember = getParentMember();
-        if (previousParentMember.getLevel() != parentMember.getLevel()) {
-            throw new IllegalArgumentException(
-                "new parent belongs to different level than old");
-        }
-        this.parentMember = parentMember;
-    }
 
     /** Ordinal of the member within the hierarchy. Some member readers do not
      * use this property; in which case, they should leave it as its default,
@@ -115,11 +113,8 @@ public class RolapMemberBase
      */
     protected Larder larder;
 
-    /** TODO: remove this; takes too much space. */
-    private Boolean containsAggregateFunction = null;
-
     /**
-     * Creates a RolapMemberBase with larder.
+     * Creates a RolapMemberBase.
      *
      * <p>Larder must contain name (if different from that derived from the
      * key), caption (if different from that derived from the name),
@@ -151,26 +146,18 @@ public class RolapMemberBase
             | (memberType == MemberType.ALL ? MemberBase.FLAG_ALL : 0)
             | (memberType == MemberType.NULL ? MemberBase.FLAG_NULL : 0)
             | (computeCalculated(memberType) ? MemberBase.FLAG_CALCULATED : 0)
-            | (level.getHierarchy().getDimension().isMeasures()
-            ? MemberBase.FLAG_MEASURE
-            : 0);
+            | (level.isMeasure() ? MemberBase.FLAG_MEASURE : 0);
         this.key = key;
         this.ordinal = -1;
         this.larder = larder;
         this.uniqueName = uniqueName;
     }
 
-    protected RolapMemberBase() {
-        this.flags = 0;
-        this.level = null;
-        this.key = null;
-    }
-
     public String getQualifiedName() {
         return MondrianResource.instance().MdxMemberName.str(getUniqueName());
     }
 
-    public String getUniqueName() {
+    public final String getUniqueName() {
         return uniqueName;
     }
 
@@ -181,7 +168,29 @@ public class RolapMemberBase
         if (mf != null) {
             return mf.formatMember(this);
         }
-        return super.getCaption();
+        return Larders.getCaption(this, getLarder());
+    }
+
+    /**
+     * Sets a member's parent.
+     *
+     * <p>Can screw up the caching structure. Only to be called by
+     * {@link mondrian.olap.CacheControl#createMoveCommand}.
+     *
+     * <p>New parent must be in same level as old parent.
+     *
+     * @param parentMember New parent member
+     *
+     * @see #getParentMember()
+     * @see #getParentUniqueName()
+     */
+    void setParentMember(RolapMember parentMember) {
+        final RolapMember previousParentMember = getParentMember();
+        if (previousParentMember.getLevel() != parentMember.getLevel()) {
+            throw new IllegalArgumentException(
+                "new parent belongs to different level than old");
+        }
+        this.parentMember = parentMember;
     }
 
     public String getParentUniqueName() {
@@ -251,7 +260,10 @@ public class RolapMemberBase
         return isChildOrEqualTo(this, uniqueName);
     }
 
-    private static boolean isChildOrEqualTo(Member member, String uniqueName) {
+    private static boolean isChildOrEqualTo(
+        RolapMember member,
+        String uniqueName)
+    {
         while (true) {
             String thisUniqueName = member.getUniqueName();
             if (thisUniqueName.equals(uniqueName)) {
@@ -345,15 +357,19 @@ public class RolapMemberBase
         return level.cubeDimension;
     }
 
-    public RolapCubeLevel getLevel() {
+    public boolean isVisible() {
+        return true;
+    }
+
+    public final RolapCubeLevel getLevel() {
         return level;
     }
 
-    public RolapCubeHierarchy getHierarchy() {
+    public final RolapCubeHierarchy getHierarchy() {
         return level.cubeHierarchy;
     }
 
-    public RolapMember getParentMember() {
+    public final RolapMember getParentMember() {
         return parentMember;
     }
 
@@ -363,18 +379,18 @@ public class RolapMemberBase
         return larder;
     }
 
+    public String toString() {
+        return getUniqueName();
+    }
+
     public int hashCode() {
         return getUniqueName().hashCode();
     }
 
     public boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (!(o instanceof RolapMemberBase)) {
-            return false;
-        }
-        return equals((RolapMemberBase) o);
+        return o == this
+            || o instanceof RolapMemberBase
+            && equals((RolapMemberBase) o);
     }
 
     public boolean equals(OlapElement o) {
@@ -387,34 +403,6 @@ public class RolapMemberBase
         // Do not use equalsIgnoreCase; unique names should be identical, and
         // hashCode assumes this.
         return this.getUniqueName().equals(that.getUniqueName());
-    }
-
-    /**
-     * Whether this member is the same as another member.
-     *
-     * <p>Weaker than == but stronger than {@link #equals(Object)}. For
-     * example:</p>
-     *
-     * <ul>
-     *
-     * <li>Returns false when comparing the member [Gender].[F] to the visual
-     * total member [Gender].[F].</li>
-     *
-     * <li>Returns true when applied to the same object.</li>
-     *
-     * </ul>
-     *
-     * @param member Member to compare to.
-     * @return Whether this and member represent the same MDX object
-     */
-    public final boolean same(RolapMember member) {
-        if (this == member) {
-            return true;
-        }
-        if (this.getClass() != member.getClass()) {
-            return false;
-        }
-        return this.equals(member);
     }
 
     /** Call this very sparingly. */
@@ -705,11 +693,10 @@ public class RolapMemberBase
         }
     }
 
-    @Override
     public String getLocalized(LocalizedProperty prop, Locale locale) {
-        if (getLevel().resourceMap != null) {
+        if (level.resourceMap != null) {
             final List<Larders.Resource> resources =
-                getLevel().resourceMap.get(uniqueName + ".member");
+                level.resourceMap.get(uniqueName + ".member");
             if (resources != null) {
                 final String resource =
                     Larders.Resource.lookup(prop, locale, resources);
@@ -718,17 +705,12 @@ public class RolapMemberBase
                 }
             }
         }
-        return super.getLocalized(prop, locale);
+        return Larders.get(this, getLarder(), prop, locale);
     }
 
     protected boolean childLevelHasApproxRowCount() {
         return getLevel().getChildLevel().getApproxRowCount()
             > Integer.MIN_VALUE;
-    }
-
-    public boolean isAllMember() {
-        return getLevel().getHierarchy().hasAll()
-                && getLevel().getDepth() == 0;
     }
 
     public Property[] getProperties() {
@@ -924,12 +906,14 @@ public class RolapMemberBase
     }
 
     public boolean isParentChildLeaf() {
-        if (isParentChildLeaf == null) {
-            isParentChildLeaf = getLevel().isParentChild()
+        if ((flags & LEAF_MASK) == 0) {
+            boolean isParentChildLeaf = getLevel().isParentChild()
                 && getDimension().getSchema().getSchemaReader()
                 .getMemberChildren(this).size() == 0;
+            flags |= isParentChildLeaf ? LEAF_YES : LEAF_NO;
+            return isParentChildLeaf;
         }
-        return isParentChildLeaf;
+        return (flags & LEAF_MASK) == LEAF_YES;
     }
 
     /**
@@ -1209,6 +1193,10 @@ public class RolapMemberBase
         }
     }
 
+    public Map<String, Annotation> getAnnotationMap() {
+        return getLarder().getAnnotationMap();
+    }
+
     /**
      * <p>Interface definition for the pluggable factory used to decide
      * which implementation of {@link java.util.Map} to use to store
@@ -1277,11 +1265,13 @@ public class RolapMemberBase
 
     public boolean containsAggregateFunction() {
         // searching for agg functions is expensive, so cache result
-        if (containsAggregateFunction == null) {
-            containsAggregateFunction =
+        if ((flags & AGG_FUN_MASK) == 0) {
+            boolean containsAggregateFunction =
                 foundAggregateFunction(getExpression());
+            flags |= containsAggregateFunction ? AGG_FUN_YES : AGG_FUN_NO;
+            return containsAggregateFunction;
         }
-        return containsAggregateFunction;
+        return (flags & AGG_FUN_MASK) == AGG_FUN_YES;
     }
 
     /**

@@ -83,7 +83,8 @@ public class RolapSchemaReader
     {
         MemberReader memberReader = hierarchyReaders.get(hierarchy);
         if (memberReader == null) {
-            memberReader = hierarchy.createMemberReader(role);
+            memberReader =
+                RolapSchemaLoader.createMemberReader(hierarchy, role);
             assert memberReader != null : hierarchy;
             hierarchyReaders.put(hierarchy, memberReader);
         }

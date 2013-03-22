@@ -395,7 +395,8 @@ public abstract class RolapNativeSet extends RolapNative {
             MemberReader memberReader = hierarchyReaders.get(hierarchy);
             if (memberReader == null) {
                 memberReader =
-                    hierarchy.createMemberReader(schemaReader.getRole());
+                    RolapSchemaLoader.createMemberReader(
+                        hierarchy, schemaReader.getRole());
                 hierarchyReaders.put(hierarchy, memberReader);
             }
             return memberReader;

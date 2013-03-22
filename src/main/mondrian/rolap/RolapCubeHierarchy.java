@@ -29,7 +29,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
     /**
      * The raw member reader. For a member reader which incorporates access
      * control and deals with hidden members (if the hierarchy is ragged), use
-     * {@link #createMemberReader(Role)}.
+     * {@link RolapSchemaLoader#createMemberReader}).
      */
     MemberReader memberReader;
 
@@ -238,20 +238,6 @@ public class RolapCubeHierarchy extends RolapHierarchy {
 
     final MemberReader getMemberReader() {
         return memberReader;
-    }
-
-    /**
-     * Creates a member reader which enforces the access-control profile of
-     * <code>role</code>.
-     *
-     * <p>This method may not be efficient, so the caller should take care
-     * not to call it too often. A cache is a good idea.
-     *
-     * @param role Role (not null)
-     * @return Member reader that implements access control (never null)
-     */
-    MemberReader createMemberReader(Role role) {
-        return createMemberReader(this, role);
     }
 
     public final RolapCube getCube() {

@@ -82,10 +82,6 @@ class RolapVirtualCubeMeasure
     public RolapResult.ValueFormatter getFormatter() {
         return cubeMeasure.getFormatter();
     }
-
-    public Larder getLarder() {
-        return larder;
-    }
 }
 
 // End RolapVirtualCubeMeasure.java

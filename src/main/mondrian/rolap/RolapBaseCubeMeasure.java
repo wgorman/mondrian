@@ -108,11 +108,6 @@ public class RolapBaseCubeMeasure
         this.starMeasure = starMeasure;
     }
 
-    @Override
-    public Larder getLarder() {
-        return larder;
-    }
-
     public Dialect.Datatype getDatatype() {
         return datatype;
     }

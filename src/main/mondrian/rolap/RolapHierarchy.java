@@ -254,111 +254,6 @@ public class RolapHierarchy extends HierarchyBase {
 */
     }
 
-    protected static MemberReader createMemberReader(
-        final RolapCubeHierarchy hierarchy,
-        Role role)
-    {
-        final Access access = role.getAccess(hierarchy);
-        switch (access) {
-        case NONE:
-            role.getAccess(hierarchy); // todo: remove
-            throw Util.newInternal(
-                "Illegal access to members of hierarchy " + hierarchy);
-        case ALL:
-            return (hierarchy.isRagged())
-                ? new RestrictedMemberReader(hierarchy.getMemberReader(), role)
-                : hierarchy.getMemberReader();
-
-        case CUSTOM:
-            final Role.HierarchyAccess hierarchyAccess =
-                role.getAccessDetails(hierarchy);
-            final Role.RollupPolicy rollupPolicy =
-                hierarchyAccess.getRollupPolicy();
-            final NumericType returnType = new NumericType();
-            switch (rollupPolicy) {
-            case FULL:
-                return new RestrictedMemberReader(
-                    hierarchy.getMemberReader(), role);
-            case PARTIAL:
-                Type memberType1 =
-                    new mondrian.olap.type.MemberType(
-                        hierarchy.getDimension(), hierarchy,
-                        null,
-                        null);
-                SetType setType = new SetType(memberType1);
-                ListCalc listCalc =
-                    new AbstractListCalc(
-                        new DummyExp(setType), new Calc[0])
-                    {
-                        public TupleList evaluateList(
-                            Evaluator evaluator)
-                        {
-                            return
-                                new UnaryTupleList(
-                                    hierarchy.getLowestMembersForAccess(
-                                        evaluator, hierarchyAccess, null));
-                        }
-
-                        public boolean dependsOn(Hierarchy hierarchy) {
-                            return true;
-                        }
-                    };
-                final Calc partialCalc =
-                    new LimitedRollupAggregateCalc(
-                        returnType, listCalc);
-
-                final Exp partialExp =
-                    new ResolvedFunCall(
-                        new FunDefBase("$x", "x", "In") {
-                            public Calc compileCall(
-                                ResolvedFunCall call,
-                                ExpCompiler compiler)
-                            {
-                                return partialCalc;
-                            }
-
-                            public void unparse(Exp[] args, PrintWriter pw) {
-                                pw.print("$RollupAccessibleChildren()");
-                            }
-                        },
-                        new Exp[0],
-                        returnType);
-                return new LimitedRollupSubstitutingMemberReader(
-                    hierarchy.getMemberReader(),
-                    role,
-                    hierarchyAccess,
-                    partialExp);
-
-            case HIDDEN:
-                Exp hiddenExp =
-                    new ResolvedFunCall(
-                        new FunDefBase("$x", "x", "In") {
-                            public Calc compileCall(
-                                ResolvedFunCall call, ExpCompiler compiler)
-                            {
-                                return new ConstantCalc(returnType, null);
-                            }
-
-                            public void unparse(Exp[] args, PrintWriter pw) {
-                                pw.print("$RollupAccessibleChildren()");
-                            }
-                        },
-                        new Exp[0],
-                        returnType);
-                return new LimitedRollupSubstitutingMemberReader(
-                    hierarchy.getMemberReader(),
-                    role,
-                    hierarchyAccess,
-                    hiddenExp);
-
-            default:
-                throw Util.unexpected(rollupPolicy);
-            }
-        default:
-            throw Util.badValue(access);
-        }
-    }
-
     /**
      * Goes recursively down a hierarchy and builds a list of the
      * members that should be constrained on because of access controls.
@@ -564,8 +459,9 @@ public class RolapHierarchy extends HierarchyBase {
             return exp;
         }
 
-        protected boolean computeCalculated(final MemberType memberType) {
-            return true;
+        @Override
+        public Calc getCompiledExpression(RolapEvaluatorRoot root) {
+            return root.getCompiled(getExpression(), true, null);
         }
 
         public boolean isCalculated() {
@@ -582,7 +478,7 @@ public class RolapHierarchy extends HierarchyBase {
      * role has limited access to the hierarchy, replaces members with
      * dummy members which evaluate to the sum of only the accessible children.
      */
-    private static class LimitedRollupSubstitutingMemberReader
+    static class LimitedRollupSubstitutingMemberReader
         extends SubstitutingMemberReader
     {
         private final Role.HierarchyAccess hierarchyAccess;
@@ -647,7 +543,7 @@ public class RolapHierarchy extends HierarchyBase {
      * Compiled expression that computes rollup over a set of visible children.
      * The {@code listCalc} expression determines that list of children.
      */
-    private static class LimitedRollupAggregateCalc
+    static class LimitedRollupAggregateCalc
         extends AggregateFunDef.AggregateCalc
     {
         public LimitedRollupAggregateCalc(

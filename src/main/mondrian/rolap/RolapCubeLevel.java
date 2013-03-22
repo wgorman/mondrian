@@ -539,7 +539,7 @@ public class RolapCubeLevel extends RolapLevel {
                     member, measureGroup, request);
             } else if (request.drillThrough) {
                 return regularLevelReader.constrainRequest(
-                    (RolapMember) member.getDataMember(),
+                    member.getDataMember(),
                     measureGroup,
                     request);
             } else {
