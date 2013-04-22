@@ -51,7 +51,7 @@ public interface TupleConstraint extends SqlConstraint {
     public void addLevelConstraint(
         SqlQuery sqlQuery,
         RolapStarSet starSet,
-        RolapLevel level);
+        RolapCubeLevel level);
 
     /**
      * When the members of a level are fetched, the result is grouped

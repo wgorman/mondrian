@@ -56,7 +56,7 @@ import javax.sql.DataSource;
  *
  * <li>When reading members from a single level, then the constraint is not
  * required to join the fact table in
- * {@link TupleConstraint#addLevelConstraint(mondrian.rolap.sql.SqlQuery, RolapStarSet, RolapLevel)}
+ * {@link TupleConstraint#addLevelConstraint(mondrian.rolap.sql.SqlQuery, RolapStarSet, RolapCubeLevel)}
  * although it may do so to restrict
  * the result. Also it is permitted to cache the parent/children from all
  * members in MemberCache, so

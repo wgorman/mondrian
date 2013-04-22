@@ -341,13 +341,13 @@ public class SqlContextConstraint
     public void addLevelConstraint(
         SqlQuery sqlQuery,
         RolapStarSet starSet,
-        RolapLevel level)
+        RolapCubeLevel level)
     {
         if (!isJoinRequired()) {
             return;
         }
         SqlConstraintUtils.joinLevelTableToFactTable(
-            sqlQuery, starSet, evaluator, (RolapCubeLevel) level);
+            sqlQuery, starSet, evaluator, level);
     }
 
     public MemberChildrenConstraint getMemberChildrenConstraint(
