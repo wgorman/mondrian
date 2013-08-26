@@ -75,15 +75,18 @@ public class RolapNativeTopCount extends RolapNativeSet {
         }
 
         public void addConstraint(
-            SqlQuery sqlQuery,
+            SqlQueryBuilder queryBuilder,
             RolapStarSet starSet)
         {
             if (orderByExpr != null) {
+                Util.pauseIf(true); // add FROM
+                final SqlQuery sqlQuery = queryBuilder.sqlQuery;
                 RolapNativeSql sql =
                     new RolapNativeSql(
-                        sqlQuery, starSet.getAggStar(), getEvaluator(), null);
+                        sqlQuery, starSet.getAggStar(),
+                        getEvaluator(), null);
                 String orderBySql = sql.generateTopCountOrderBy(orderByExpr);
-                Dialect dialect = sqlQuery.getDialect();
+                Dialect dialect = queryBuilder.getDialect();
                 boolean nullable = deduceNullability(orderByExpr);
                 if (dialect.requiresOrderByAlias()) {
                     String alias = sqlQuery.nextColumnAlias();
@@ -94,7 +97,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
                     sqlQuery.addOrderBy(orderBySql, ascending, true, nullable);
                 }
             }
-            super.addConstraint(sqlQuery, starSet);
+            super.addConstraint(queryBuilder, starSet);
         }
 
         private boolean deduceNullability(Exp expr) {

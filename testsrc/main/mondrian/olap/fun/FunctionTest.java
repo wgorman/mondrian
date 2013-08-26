@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.olap.fun;
@@ -8401,23 +8401,32 @@ public class FunctionTest extends FoodMartTestCase {
 
     public void testOrderConstant1() {
         // sort by customerId (Abel = 7851, Adeline = 6442, Abe = 570)
-        assertQueryReturns(
-            "select \n"
-            + "  Order("
-            + "    {[Customers].[USA].[WA].[Issaquah].[Abe Tramel],"
-            + "     [Customers].[All Customers].[USA].[CA].[Woodland Hills].[Abel Young],"
-            + "     [Customers].[All Customers].[USA].[CA].[Santa Monica].[Adeline Chun]},"
-            + "    [Customers].[USA].OrderKey, BDESC, [Customers].currentMember.OrderKey, BASC) \n"
-            + "on 0 from [Sales]",
-            "Axis #0:\n"
-            + "{}\n"
-            + "Axis #1:\n"
-            + "{[Customer].[Customers].[USA].[WA].[Issaquah].[Abe Tramel]}\n"
-            + "{[Customer].[Customers].[USA].[CA].[Santa Monica].[Adeline Chun]}\n"
-            + "{[Customer].[Customers].[USA].[CA].[Woodland Hills].[Abel Young]}\n"
-            + "Row #0: 33\n"
-            + "Row #0: 33\n"
-            + "Row #0: 75\n");
+        getTestContext()
+            .withSubstitution(
+                new Util.Function1<String, String>() {
+                    public String apply(String param) {
+                        return param.replace(
+                            "<Attribute name='Name' keyColumn='customer_id' nameColumn='full_name' orderByColumn='full_name' hasHierarchy='false'/>",
+                            "<Attribute name='Name' keyColumn='customer_id' nameColumn='full_name' orderByColumn='customer_id' hasHierarchy='false'/>");
+                    }
+                }
+            ).assertQueryReturns(
+                "select \n"
+                + "  Order("
+                + "    {[Customers].[USA].[WA].[Issaquah].[Abe Tramel],"
+                + "     [Customers].[All Customers].[USA].[CA].[Woodland Hills].[Abel Young],"
+                + "     [Customers].[All Customers].[USA].[CA].[Santa Monica].[Adeline Chun]},"
+                + "    [Customers].[USA].OrderKey, BDESC, [Customers].currentMember.OrderKey, BASC) \n"
+                + "on 0 from [Sales]",
+                "Axis #0:\n"
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Customer].[Customers].[USA].[WA].[Issaquah].[Abe Tramel]}\n"
+                + "{[Customer].[Customers].[USA].[CA].[Santa Monica].[Adeline Chun]}\n"
+                + "{[Customer].[Customers].[USA].[CA].[Woodland Hills].[Abel Young]}\n"
+                + "Row #0: 33\n"
+                + "Row #0: 33\n"
+                + "Row #0: 75\n");
     }
 
     public void testOrderDifferentDim() {

@@ -48,7 +48,7 @@ public abstract class RolapAggregationManager {
      * null.
      *
      * @param members Set of members which constrain the cell
-     * @return Cell request, or null if the requst is unsatisfiable
+     * @return Cell request, or null if the request is unsatisfiable
      */
     public static CellRequest makeRequest(final Member[] members)
     {
@@ -97,7 +97,7 @@ public abstract class RolapAggregationManager {
     public static CellRequest makeRequest(
         RolapEvaluator evaluator)
     {
-        final Member[] currentMembers = evaluator.getNonAllMembers();
+        final RolapMember[] currentMembers = evaluator.getNonAllMembers();
         final List<List<List<Member>>> aggregationLists =
             evaluator.getAggregationLists();
 

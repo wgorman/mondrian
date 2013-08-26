@@ -1664,9 +1664,7 @@ public class RolapSchemaLoader {
                 if (measure.getAggregator() == RolapAggregator.Count) {
                     measureGroup.factCountMeasure = measure;
                 }
-                if (measure.getExpr() instanceof RolapSchema.PhysColumn) {
-                    RolapSchema.PhysColumn column =
-                        (RolapSchema.PhysColumn) measure.getExpr();
+                if (measure.getExpr() != null) {
                     // Only set if different from default (so that if two cubes
                     // share the same fact table, either can turn off caching
                     // and both are affected).
@@ -1854,11 +1852,9 @@ public class RolapSchemaLoader {
         for (RolapMeasureGroup measureGroup : cube.getMeasureGroups()) {
             // Create a RolapStar.Measure for each measure in this group.
             for (RolapStoredMeasure measure : measureGroup.measureList) {
-                final RolapSchema.PhysExpr expr = measure.getExpr();
-                if (expr instanceof RolapSchema.PhysColumn) {
-                    RolapSchema.PhysColumn column =
-                        (RolapSchema.PhysColumn) expr;
-                    assert measureGroup.getFactRelation() == column.relation;
+                final RolapSchema.PhysColumn expr = measure.getExpr();
+                if (expr != null) {
+                    assert measureGroup.getFactRelation() == expr.relation;
                 }
                 RolapStar star = measureGroup.getStar();
                 RolapStar.Table table = star.getFactTable();
@@ -2220,7 +2216,7 @@ public class RolapSchemaLoader {
     {
         // A measure can either have table & column attributes, or an included
         // MeasureExpression element.
-        RolapSchema.PhysExpr measureExp;
+        RolapSchema.PhysColumn measureExp;
 
         RolapSchema.PhysRelation table =
             last(measureGroupTable, xmlMeasure.table, xmlMeasure, "table");
@@ -2509,13 +2505,13 @@ public class RolapSchemaLoader {
 
         // Make sure that every attribute is registered as an expression in
         // the star.
-        if (false)
+        if (Util.deprecated(false, false))
         for (RolapAttribute attribute : dimension.attributeMap.values()) {
             RolapSchema.PhysSchemaGraph graph =
                 measureGroup.getFactRelation().getSchema().getGraph();
             final RolapSchema.PhysRelation relation =
                 uniqueTable(attribute.getKeyList());
-            if (relation == null && false) {
+            if (relation == null && Util.deprecated(false, false)) {
                 if (attribute.getKeyList().isEmpty()) {
                     throw Util.newInternal(
                         "attribute " + attribute + " has empty key");
@@ -2566,7 +2562,7 @@ public class RolapSchemaLoader {
      * inconsistent.
      *
      * @param columnList List of columns
-     * @return Null if list is empty or columns' relations are inconsitent
+     * @return Null if list is empty or columns' relations are inconsistent
      */
     RolapSchema.PhysRelation uniqueTable(
         List<RolapSchema.PhysColumn> columnList)
@@ -3680,6 +3676,15 @@ public class RolapSchemaLoader {
                 dimension.getDimensionType(),
                 false,
                 dimension.getLarder());
+        closureDim.key =
+            new Lazy<RolapSchema.PhysKey>(
+                new Util.Function0<RolapSchema.PhysKey>() {
+                    public RolapSchema.PhysKey apply() {
+                        return lookupKey(
+                            null, true, closureDim.keyAttribute);
+                    }
+                }
+            );
 
         final MondrianDef.Dimension xmlClosureDimension =
             new MondrianDef.Dimension();
@@ -3783,6 +3788,7 @@ public class RolapSchemaLoader {
             closureAttribute1.getName(), closureAttribute1);
         closureDim.attributeMap.put(
             closureAttribute2.getName(), closureAttribute2);
+        closureDim.keyAttribute = closureAttribute2;
 
         // Create a hierarchy where the closure will live.
         RolapHierarchy closureHierarchy =
@@ -5577,7 +5583,7 @@ public class RolapSchemaLoader {
          *
          * @param expr Expression
          * @param defaultRelation Default relation, for expressions that
-         *    do not explicitly beong to a relation (e.g. '1' or 'count(*)').
+         *    do not explicitly belong to a relation (e.g. '1' or 'count(*)').
          *    May be null if there are multiple relations to choose from
          * @param relationSet Set of relations to add to
          */

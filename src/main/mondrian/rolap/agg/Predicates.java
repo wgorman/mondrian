@@ -94,18 +94,6 @@ public abstract class Predicates
         return bitKey;
     }
 
-    public static List<RolapStar.Column> starify_old(
-        RolapStar star,
-        List<RolapSchema.PhysColumn> columnList)
-    {
-        Util.deprecated("not used", true);
-        List<RolapStar.Column> list = new ArrayList<RolapStar.Column>();
-        for (RolapSchema.PhysColumn column : columnList) {
-            list.add(star.getColumn(column, true));
-        }
-        return list;
-    }
-
     public static List<RolapStar.Column> starify(
         RolapStar star,
         List<PredicateColumn> columnList)

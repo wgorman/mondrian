@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2001-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 //
 // jhyde, 12 August, 2001
@@ -578,7 +578,7 @@ public class RolapStar {
      */
     public static class Column {
         private final Table table;
-        private final RolapSchema.PhysExpr expression;
+        private final RolapSchema.PhysColumn expression;
         private final Dialect.Datatype datatype;
         protected final SqlStatement.Type internalType;
         private final String name;
@@ -623,7 +623,7 @@ public class RolapStar {
         private Column(
             String name,
             Table table,
-            RolapSchema.PhysExpr expression,
+            RolapSchema.PhysColumn expression,
             Dialect.Datatype datatype,
             SqlStatement.Type internalType,
             Column nameColumn,
@@ -711,7 +711,7 @@ public class RolapStar {
             return nameColumn != null;
         }
 
-        public RolapSchema.PhysExpr getExpression() {
+        public RolapSchema.PhysColumn getExpression() {
             return expression;
         }
 
@@ -827,7 +827,7 @@ public class RolapStar {
             String cubeName,
             RolapAggregator aggregator,
             Table table,
-            RolapSchema.PhysExpr expression,
+            RolapSchema.PhysColumn expression,
             Dialect.Datatype datatype)
         {
             super(
@@ -991,7 +991,7 @@ public class RolapStar {
         }
 
         private boolean matches(String columnName, Column column) {
-            final RolapSchema.PhysExpr expr = column.getExpression();
+            final RolapSchema.PhysColumn expr = column.getExpression();
             if (expr instanceof RolapSchema.PhysRealColumn) {
                 RolapSchema.PhysRealColumn columnExpr =
                     (RolapSchema.PhysRealColumn) expr;
@@ -1022,7 +1022,7 @@ public class RolapStar {
          *     null)
          */
         public Column lookupColumnByExpression(
-            RolapSchema.PhysExpr expr,
+            RolapSchema.PhysColumn physColumn,
             boolean create,
             String name,
             String property)
@@ -1031,13 +1031,13 @@ public class RolapStar {
                 if (column instanceof Measure) {
                     continue;
                 }
-                if (column.getExpression().equals(expr)) {
+                if (column.getExpression().equals(physColumn)) {
                     return column;
                 }
             }
             if (create) {
-                if (name == null && expr instanceof RolapSchema.PhysColumn) {
-                    name = ((RolapSchema.PhysColumn) expr).name;
+                if (name == null) {
+                    name = physColumn.name;
                 }
                 Column column =
                     new RolapStar.Column(
@@ -1045,11 +1045,11 @@ public class RolapStar {
                             ? name
                             : name + " (" + property + ")",
                         this,
-                        expr,
-                        expr.getDatatype() == null
+                        physColumn,
+                        physColumn.getDatatype() == null
                             ? Dialect.Datatype.Numeric
-                            : expr.getDatatype(),
-                        expr.getInternalType(),
+                            : physColumn.getDatatype(),
+                        physColumn.getInternalType(),
                         // TODO: obsolete nameColumn
                         null,
                         // TODO: obsolete parentColumn
@@ -1129,7 +1129,7 @@ public class RolapStar {
 
         Measure makeMeasure(
             RolapBaseCubeMeasure measure,
-            RolapSchema.PhysExpr expr,
+            RolapSchema.PhysColumn expr,
             boolean rollup)
         {
             Dialect.Datatype datatype =
@@ -1249,15 +1249,19 @@ public class RolapStar {
             boolean joinToParent)
         {
             Util.deprecated("use PhysPath.addToFrom", false);
-            query.addFrom(relation, alias, failIfExists);
+            String parentAlias = null;
+            String joinCondition = null;
             if (joinToParent) {
                 if (parent != null) {
                     parent.addToFrom(query, failIfExists, joinToParent);
+                    parentAlias = parent.alias;
                 }
                 if (getLastHop() != null) {
-                    query.addWhere(getLastHop().link.toSql());
+                    joinCondition = getLastHop().link.toSql();
                 }
             }
+            query.addFrom(
+                relation, alias, parentAlias, joinCondition, failIfExists);
         }
 
         /**

@@ -2386,7 +2386,7 @@ public class NonEmptyTest extends BatchTestCase {
         Level nameLevel = levels.get(levels.size() - 1);
 
         // evaluator for [All Customers], [Store 14], [1/1/1997]
-        Evaluator context = getEvaluator(r, new int[]{0, 0});
+        RolapEvaluator context = getEvaluator(r, new int[]{0, 0});
 
         // make sure that [Customers].[Name].Members is NOT in cache
         TupleConstraint lmc = scf.getLevelMembersConstraint(null);
@@ -2444,7 +2444,7 @@ public class NonEmptyTest extends BatchTestCase {
         Level nameLevel = levels.get(levels.size() - 1);
 
         // evaluator for [All Customers], [Store 14], [1/1/1997]
-        Evaluator context = getEvaluator(r, new int[] {0, 0});
+        RolapEvaluator context = getEvaluator(r, new int[] {0, 0});
 
         // make sure that [Customers].[Name].Members IS in cache
         TupleConstraint lmc = scf.getLevelMembersConstraint(null);
@@ -2657,7 +2657,7 @@ public class NonEmptyTest extends BatchTestCase {
         MemberChildrenConstraint mcc = scf.getMemberChildrenConstraint(null);
         assertNull(ssmrch.mapMemberToChildren.get(burlingame, mcc));
         // but non empty children is
-        Evaluator evaluator = getEvaluator(result, new int[] {0, 0});
+        RolapEvaluator evaluator = getEvaluator(result, new int[] {0, 0});
         evaluator.setNonEmpty(true);
         mcc = scf.getMemberChildrenConstraint(evaluator);
         List<RolapMember> list =

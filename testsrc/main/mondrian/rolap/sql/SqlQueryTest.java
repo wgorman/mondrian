@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2004-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2013 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.rolap.sql;
@@ -55,7 +55,8 @@ public class SqlQueryTest extends BatchTestCase {
             sqlQuery.addSelect("c1", null);
             sqlQuery.addSelect("c2", null);
             sqlQuery.addGroupingFunction("gf0");
-            sqlQuery.addFromTable("s", "t1", "t1alias", null, null, true);
+            sqlQuery.addFromTable(
+                "s", "t1", "t1alias", null, null, null, null, true);
             sqlQuery.addWhere("a=b");
             ArrayList<String> groupingsetsList = new ArrayList<String>();
             groupingsetsList.add("gs1");
@@ -127,7 +128,8 @@ public class SqlQueryTest extends BatchTestCase {
             sqlQuery.addSelect("c1", null);
             sqlQuery.addSelect("c2", null);
             sqlQuery.addGroupingFunction("gf0");
-            sqlQuery.addFromTable("s", "t1", "t1alias", null, hints, true);
+            sqlQuery.addFromTable(
+                "s", "t1", "t1alias", null, hints, null, null, true);
             sqlQuery.addWhere("a=b");
             SqlPattern[] expected;
             if (!formatted) {
@@ -374,7 +376,8 @@ public class SqlQueryTest extends BatchTestCase {
             SqlQuery sqlQuery = new SqlQuery(getTestContext().getDialect(), b);
             sqlQuery.addSelect("c1", null);
             sqlQuery.addSelect("c2", null);
-            sqlQuery.addFromTable("s", "t1", "t1alias", null, null, true);
+            sqlQuery.addFromTable(
+                "s", "t1", "t1alias", null, null, null, null, true);
             sqlQuery.addWhere("a=b");
             sqlQuery.addGroupingFunction("g1");
             sqlQuery.addGroupingFunction("g2");
@@ -424,7 +427,8 @@ public class SqlQueryTest extends BatchTestCase {
             sqlQuery.addSelect("c1", null);
             sqlQuery.addSelect("c2", null);
             sqlQuery.addSelect("m1", null, "m1");
-            sqlQuery.addFromTable("s", "t1", "t1alias", null, null, true);
+            sqlQuery.addFromTable(
+                "s", "t1", "t1alias", null, null, null, null, true);
             sqlQuery.addWhere("a=b");
             sqlQuery.addGroupingFunction("c0");
             sqlQuery.addGroupingFunction("c1");

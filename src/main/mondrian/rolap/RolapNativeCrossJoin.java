@@ -229,7 +229,7 @@ public class RolapNativeCrossJoin extends RolapNativeSet {
         }
 
         // join with fact table will always filter out those members
-        // that dont have a row in the fact table
+        // that don't have a row in the fact table
         if (!evaluator.isNonEmpty()) {
             return null;
         }

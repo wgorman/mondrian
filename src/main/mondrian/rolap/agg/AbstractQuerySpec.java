@@ -98,7 +98,7 @@ public abstract class AbstractQuerySpec implements QuerySpec {
             }
             table.addToFrom(sqlQuery, false, true);
 
-            final RolapSchema.PhysExpr physExpr = column.getExpression();
+            final RolapSchema.PhysColumn physExpr = column.getExpression();
             String sql = physExpr.toSql();
 
             StarColumnPredicate predicate = getColumnPredicate(i);

@@ -17,7 +17,7 @@ import mondrian.olap.type.Type;
 import mondrian.resource.MondrianResource;
 import mondrian.rolap.aggmatcher.AggTableManager;
 import mondrian.rolap.aggmatcher.JdbcSchema;
-import mondrian.rolap.sql.SqlQuery;
+import mondrian.rolap.sql.*;
 import mondrian.server.*;
 import mondrian.server.Statement;
 import mondrian.spi.*;
@@ -145,8 +145,6 @@ public class RolapSchema extends OlapElementBase implements Schema {
     private final String id;
 
     public final Set<Locale> locales;
-
-    final List<String> translations = new ArrayList<String>();
 
     /**
      * Creates a schema.
@@ -1922,9 +1920,9 @@ public class RolapSchema extends OlapElementBase implements Schema {
      */
     public static class PhysLink implements DirectedGraph.Edge<PhysRelation> {
         final PhysKey sourceKey;
-        final PhysRelation targetRelation;
+        public final PhysRelation targetRelation;
         final List<PhysColumn> columnList;
-        final String sql;
+        public final String sql;
 
         /**
          * Creates a link from {@code targetTable} to {@code sourceTable} over
@@ -2014,6 +2012,26 @@ public class RolapSchema extends OlapElementBase implements Schema {
             Util.Function1<PhysColumn, Void> callback);
 
         /**
+         * Calls a callback for each embedded PhysColumn.
+         *
+         * @param queryBuilder Query builder
+         * @param joiner Joiner
+         */
+        public final void foreachColumn(
+            final SqlQueryBuilder queryBuilder,
+            final SqlQueryBuilder.Joiner joiner)
+        {
+            foreachColumn(
+                new Util.Function1<PhysColumn, Void>() {
+                    public Void apply(PhysColumn column) {
+                        joiner.addColumn(queryBuilder, column);
+                        return null;
+                    }
+                }
+            );
+        }
+
+        /**
          * Returns the data type of this expression, or null if not known.
          *
          * @return Data type
@@ -2031,13 +2049,13 @@ public class RolapSchema extends OlapElementBase implements Schema {
         /**
          * Joins the table underlying this expression to the root of the
          * corresponding star. Usually called after
-         * {@link SqlQueryBuilder#addToFrom(mondrian.rolap.RolapSchema.PhysExpr)}.
+         * {@link SqlQueryBuilder#addToFrom(mondrian.rolap.RolapSchema.PhysExpr, mondrian.rolap.sql.SqlQueryBuilder.Joiner)}.
          *
          * @see Util#deprecated(Object, boolean) Any query-building code calling
          * this method should instead use the root attribute of the hierarchy
          * as a 'starting point'. Then the query will automatically join.
          *
-         * @param sqlQuery Query whose FROM clause to add to
+         * @param queryBuilder Query whose FROM clause to add to
          * @param measureGroup If null, just add this expression's table; if
          *    not null, add a join path to the measure group's fact table
          * @param cubeDimension Dimension by which expression is joined to
@@ -2045,23 +2063,50 @@ public class RolapSchema extends OlapElementBase implements Schema {
          *    specified.
          */
         public final void joinToStarRoot(
-            final SqlQuery sqlQuery,
+            final SqlQueryBuilder queryBuilder,
             final RolapMeasureGroup measureGroup,
             final RolapCubeDimension cubeDimension)
         {
+            Util.deprecated(false, true);
             assert measureGroup != null;
             assert cubeDimension != null;
             foreachColumn(
-                new Util.Function1<PhysColumn, Void>() {
-                    public Void apply(PhysColumn column) {
+                queryBuilder,
+                new SqlQueryBuilder.Joiner() {
+                    public void addColumn(
+                        SqlQueryBuilder queryBuilder, PhysColumn column)
+                    {
                         final RolapStar.Column starColumn =
                             measureGroup.getRolapStarColumn(
                                 cubeDimension, column, true);
-                        starColumn.getTable().addToFrom(sqlQuery, false, true);
-                        return null;
+                        starColumn.getTable().addToFrom(
+                            queryBuilder.sqlQuery, false, true);
+
+                        // ? still needed?
+                        queryBuilder.addRelation(column.relation, this);
                     }
+
+                    public void addRelation(
+                        SqlQueryBuilder queryBuilder, PhysRelation relation)
+                    {
+                    }
+                });
+        }
+
+        public Iterable<? extends PhysColumn> columns() {
+            final Set<PhysColumn> set = new LinkedHashSet<PhysColumn>();
+            foreachColumn(null, new SqlQueryBuilder.Joiner() {
+                public void addColumn(
+                    SqlQueryBuilder queryBuilder, PhysColumn column)
+                {
+                    set.add(column);
                 }
-            );
+
+                public void addRelation(
+                    SqlQueryBuilder queryBuilder, PhysRelation relation) {
+                }
+            });
+            return set;
         }
     }
 
@@ -2074,12 +2119,6 @@ public class RolapSchema extends OlapElementBase implements Schema {
 
         public String toSql() {
             return text;
-        }
-
-        public void addToFrom(
-            SqlQueryBuilder queryBuilder)
-        {
-            // nothing to do
         }
 
         public void foreachColumn(Util.Function1<PhysColumn, Void> callback) {
@@ -2326,10 +2365,10 @@ public class RolapSchema extends OlapElementBase implements Schema {
             return buf.toString();
         }
 
-        public void foreachColumn(Util.Function1<PhysColumn, Void> callback) {
+        public void foreachColumn(Util.Function1<PhysColumn, Void> fn) {
             for (Object o : list) {
                 if (o instanceof PhysExpr) {
-                    ((PhysExpr) o).foreachColumn(callback);
+                    ((PhysExpr) o).foreachColumn(fn);
                 }
             }
         }
@@ -2447,7 +2486,7 @@ public class RolapSchema extends OlapElementBase implements Schema {
      * within a schema are equal, then they will always be the same object.</p>
      */
     public static class PhysPath {
-        final List<PhysHop> hopList;
+        public final List<PhysHop> hopList;
 
         public static final PhysPath EMPTY =
             new PhysPath(Collections.<PhysHop>emptyList());
@@ -2498,9 +2537,18 @@ public class RolapSchema extends OlapElementBase implements Schema {
             SqlQuery query,
             boolean failIfExists)
         {
+            Util.pauseIf(true);
+            String parentAlias = null;
             for (PhysHop physHop : hopList) {
                 final PhysRelation relation = physHop.relation;
-                query.addFrom(relation, relation.getAlias(), failIfExists);
+                if (physHop.link == null) {
+                    query.addFrom(relation, relation.getAlias(), failIfExists);
+                } else {
+                    query.addFrom(
+                        relation, relation.getAlias(), parentAlias,
+                        physHop.link.toSql(), failIfExists);
+                }
+                parentAlias = relation.getAlias();
             }
             // Add join conditions in reverse order so tests don't break - no
             // other reason - remove when everything works. Note that we stop
@@ -2520,12 +2568,12 @@ public class RolapSchema extends OlapElementBase implements Schema {
         private PhysPathBuilder() {
         }
 
-        PhysPathBuilder(PhysRelation relation) {
+        public PhysPathBuilder(PhysRelation relation) {
             this();
             hopList.add(new PhysHop(relation, null, true));
         }
 
-        PhysPathBuilder(PhysPath path) {
+        public PhysPathBuilder(PhysPath path) {
             this();
             hopList.addAll(path.hopList);
         }
@@ -2553,6 +2601,33 @@ public class RolapSchema extends OlapElementBase implements Schema {
         public PhysPathBuilder add(PhysHop hop)
         {
             hopList.add(hop);
+            return this;
+        }
+
+        public PhysPathBuilder prepend(
+            PhysKey sourceKey,
+            List<PhysColumn> columnList)
+        {
+            final PhysHop prevHop = hopList.get(0);
+            prepend(
+                new PhysLink(sourceKey, prevHop.relation, columnList),
+                sourceKey.relation,
+                true);
+            return this;
+        }
+
+        public PhysPathBuilder prepend(
+            PhysLink link,
+            PhysRelation relation,
+            boolean forward)
+        {
+            if (hopList.size() == 0) {
+                assert link == null;
+            } else {
+                final PhysHop hop0 = hopList.get(0);
+                hopList.set(0, new PhysHop(hop0.relation, link, forward));
+            }
+            hopList.add(0, new PhysHop(relation, null, true));
             return this;
         }
 
@@ -2675,7 +2750,7 @@ public class RolapSchema extends OlapElementBase implements Schema {
      * Checked exception for signaling errors in physical schemas.
      * These are intended to be caught and converted into validation exceptions.
      */
-    static class PhysSchemaException extends Exception {
+    public static class PhysSchemaException extends Exception {
         /**
          * Creates a PhysSchemaException.
          *
@@ -2766,139 +2841,6 @@ public class RolapSchema extends OlapElementBase implements Schema {
         {
             list.set(index, column);
             physCalcColumn.compute();
-        }
-    }
-
-    public static class SqlQueryBuilder {
-        public final SqlQuery sqlQuery;
-        public final SqlTupleReader.ColumnLayoutBuilder layoutBuilder;
-        private final Set<PhysRelation> relations =
-            new LinkedHashSet<PhysRelation>();
-        private final BitSet orderBitset = new BitSet();
-
-        /**
-         * Creates a SqlQueryBuilder.
-         *
-         * @param sqlQuery SQL query
-         * @param layoutBuilder Column layout builder
-         * @param keyListList Key of starting point for query; other attributes
-         *   will be joined to this
-         */
-        public SqlQueryBuilder(
-            SqlQuery sqlQuery,
-            SqlTupleReader.ColumnLayoutBuilder layoutBuilder,
-            List<List<RolapSchema.PhysColumn>> keyListList)
-        {
-            this.sqlQuery = sqlQuery;
-            this.layoutBuilder = layoutBuilder;
-
-            for (List<PhysColumn> keyList : keyListList) {
-                addListToFrom(keyList);
-            }
-        }
-
-        public final void addListToFrom(List<? extends PhysExpr> exprList) {
-            for (PhysExpr expr : exprList) {
-                addToFrom(expr);
-            }
-        }
-
-        public void addToFrom(PhysExpr expr) {
-            expr.foreachColumn(
-                new Util.Function1<PhysColumn, Void>() {
-                    public Void apply(PhysColumn column) {
-                        addRelation(column.relation);
-                        return null;
-                    }
-                }
-            );
-        }
-
-        final void addRelation(PhysRelation relation) {
-            addRelation(relation, true);
-        }
-
-        void addRelation(PhysRelation relation, boolean autoLink) {
-            if (relations.contains(relation)) {
-                return;
-            }
-            sqlQuery.addFrom(
-                relation,
-                relation.getAlias(),
-                false);
-            if (autoLink) {
-                if (!relations.isEmpty()) {
-                    try {
-                        final PhysPath path =
-                            relation.getSchema().getGraph().findPath(
-                                relation, relations, false);
-                        path.addToFrom(sqlQuery, false);
-                        for (PhysHop hop : path.hopList) {
-                            relations.add(hop.relation);
-                        }
-                    } catch (PhysSchemaException e) {
-                        throw Util.newInternal(
-                            e,
-                            "While adding relation " + relation + " to query");
-                    }
-                }
-            }
-            relations.add(relation);
-        }
-
-        public final Dialect getDialect() {
-            return sqlQuery.getDialect();
-        }
-
-        int addColumn(
-            PhysColumn column, SqlMemberSource.Sgo sgo)
-        {
-            if (column == null) {
-                return -1;
-            }
-            final String expString = column.toSql();
-            int ordinal = layoutBuilder.lookup(expString);
-            if (ordinal >= 0) {
-                switch (sgo) {
-                case SELECT_GROUP_ORDER:
-                case SELECT_ORDER:
-                    if (!orderBitset.get(ordinal)) {
-                        sqlQuery.addOrderBy(expString, true, false, true);
-                        orderBitset.set(ordinal);
-                    }
-                }
-                return ordinal;
-            }
-            addToFrom(column);
-            final String alias;
-            switch (sgo) {
-            case SELECT:
-                alias = sqlQuery.addSelect(expString, column.getInternalType());
-                break;
-            case SELECT_GROUP:
-                alias = sqlQuery.addSelectGroupBy(
-                    expString, column.getInternalType());
-                break;
-            case SELECT_ORDER:
-                sqlQuery.addOrderBy(expString, true, false, true);
-                alias = sqlQuery.addSelect(expString, column.getInternalType());
-                break;
-            case SELECT_GROUP_ORDER:
-                sqlQuery.addOrderBy(expString, true, false, true);
-                alias = sqlQuery.addSelectGroupBy(
-                    expString, column.getInternalType());
-                break;
-            default:
-                throw Util.unexpected(sgo);
-            }
-            ordinal = layoutBuilder.register(expString, alias);
-            switch (sgo) {
-            case SELECT_GROUP_ORDER:
-            case SELECT_ORDER:
-                sqlQuery.addOrderBy(expString, true, false, true);
-                orderBitset.set(ordinal);
-            }
-            return ordinal;
         }
     }
 
@@ -3015,20 +2957,18 @@ public class RolapSchema extends OlapElementBase implements Schema {
         }
 
         public int getColumnCardinality(
-            RolapSchema.PhysRelation relation,
-            RolapSchema.PhysExpr expression,
+            PhysRelation relation,
+            PhysColumn column,
             int approxCardinality)
         {
             if (approxCardinality >= 0) {
                 return approxCardinality;
             }
             if (relation instanceof RolapSchema.PhysTable
-                && expression instanceof RolapSchema.PhysRealColumn)
+                && column instanceof RolapSchema.PhysRealColumn)
             {
                 final RolapSchema.PhysTable table =
                     (RolapSchema.PhysTable) relation;
-                final RolapSchema.PhysColumn column =
-                    (RolapSchema.PhysColumn) expression;
                 return getColumnCardinality(
                     null,
                     table.getSchemaName(),
@@ -3037,7 +2977,7 @@ public class RolapSchema extends OlapElementBase implements Schema {
             } else {
                 final SqlQuery sqlQuery = new SqlQuery(dialect);
                 sqlQuery.setDistinct(true);
-                sqlQuery.addSelect(expression.toSql(), null);
+                sqlQuery.addSelect(column.toSql(), null);
                 sqlQuery.addFrom(relation, null, true);
                 return getQueryCardinality(sqlQuery.toString());
             }

@@ -379,7 +379,7 @@ public class TestAggregationManager extends BatchTestCase {
             new ValueColumnPredicate(
                 new PredicateColumn(
                     RolapSchema.BadRouter.INSTANCE,
-                    (RolapSchema.PhysColumn) storeTypeColumn.getExpression()),
+                    storeTypeColumn.getExpression()),
                 value));
         return request;
     }

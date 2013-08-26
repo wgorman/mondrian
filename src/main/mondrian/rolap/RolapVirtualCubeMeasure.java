@@ -71,7 +71,7 @@ class RolapVirtualCubeMeasure
         return measureGroup;
     }
 
-    public RolapSchema.PhysExpr getExpr() {
+    public RolapSchema.PhysColumn getExpr() {
         return cubeMeasure.getExpr();
     }
 

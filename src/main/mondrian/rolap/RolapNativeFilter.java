@@ -64,17 +64,17 @@ public class RolapNativeFilter extends RolapNativeSet {
         }
 
         public void addConstraint(
-            SqlQuery sqlQuery,
+            SqlQueryBuilder queryBuilder,
             RolapStarSet starSet)
         {
             // Use aggregate table to generate filter condition
             RolapNativeSql sql =
                 new RolapNativeSql(
-                    sqlQuery, starSet.getAggStar(), getEvaluator(),
+                    queryBuilder.sqlQuery, starSet.getAggStar(), getEvaluator(),
                     args[0].getLevel());
             String filterSql =  sql.generateFilterCondition(filterExpr);
-            sqlQuery.addHaving(filterSql);
-            super.addConstraint(sqlQuery, starSet);
+            queryBuilder.sqlQuery.addHaving(filterSql);
+            super.addConstraint(queryBuilder, starSet);
         }
 
         public Object getCacheKey() {

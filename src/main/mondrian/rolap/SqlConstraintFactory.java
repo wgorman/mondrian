@@ -51,7 +51,7 @@ public final class SqlConstraintFactory {
     }
 
     public MemberChildrenConstraint getMemberChildrenConstraint(
-        Evaluator context)
+        RolapEvaluator context)
     {
         if (!enabled) {
             return DefaultMemberChildrenConstraint.instance();
@@ -67,11 +67,11 @@ public final class SqlConstraintFactory {
         {
             return DefaultMemberChildrenConstraint.instance();
         }
-        return new SqlContextConstraint(
-            (RolapEvaluator) context, measureGroupList, false);
+        return new SqlContextConstraint(context, measureGroupList, false);
     }
 
-    public TupleConstraint getLevelMembersConstraint(Evaluator context) {
+    public TupleConstraint getLevelMembersConstraint(RolapEvaluator context) {
+        // NOTE: Always seems to be called with context == null, except tests.
         return getLevelMembersConstraint(
             context,
             Collections.<RolapCubeLevel>emptyList());
@@ -87,7 +87,7 @@ public final class SqlConstraintFactory {
      * @return Constraint
      */
     public TupleConstraint getLevelMembersConstraint(
-        Evaluator context,
+        RolapEvaluator context,
         List<RolapCubeLevel> levels)
     {
         assert levels != null;
@@ -113,12 +113,12 @@ public final class SqlConstraintFactory {
                 return new RolapNativeCrossJoin.NonEmptyCrossJoinConstraint(
                     joinArgs.toArray(
                         new CrossJoinArg[joinArgs.size()]),
-                    (RolapEvaluator) context,
+                    context,
                     measureGroupList);
             }
         }
         return new SqlContextConstraint(
-            (RolapEvaluator) context, measureGroupList, false);
+            context, measureGroupList, false);
     }
 
     public MemberChildrenConstraint getChildByNameConstraint(

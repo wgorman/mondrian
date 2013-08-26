@@ -163,8 +163,7 @@ class DrillThroughQuerySpec extends AbstractQuerySpec {
             ? Predicates.wildcard(
                 new PredicateColumn(
                     RolapSchema.BadRouter.INSTANCE,
-                    (RolapSchema.PhysColumn)
-                        request.getConstrainedColumns()[i].getExpression()),
+                    request.getConstrainedColumns()[i].getExpression()),
                 true)
             : constraint;
     }

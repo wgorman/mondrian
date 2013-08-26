@@ -334,6 +334,7 @@ public class Util extends XOMUtil {
             maxNbThreads,
             new ThreadFactory() {
                 final AtomicInteger counter = new AtomicInteger(0);
+
                 public Thread newThread(Runnable r) {
                     final Thread thread =
                         Executors.defaultThreadFactory().newThread(r);
@@ -1313,6 +1314,16 @@ public class Util extends XOMUtil {
         }
     }
 
+    /** Call this method to hit a break point. Remove calls to this method
+     * before checking in code. */
+    @Deprecated
+    public static <T> T pauseIf(boolean condition, T... args) {
+        if (condition) {
+            Util.discard(0); // put a breakpoint here
+        }
+        return args.length > 0 ? args[0] : null;
+    }
+
     public static List<Member> addLevelCalculatedMembers(
         SchemaReader reader,
         Level level,
@@ -1627,6 +1638,7 @@ public class Util extends XOMUtil {
      */
     public static <T> boolean isDistinct(Collection<T> collection) {
         return collection instanceof Set
+            || collection.size() < 2
             || new HashSet<T>(collection).size() == collection.size();
     }
 

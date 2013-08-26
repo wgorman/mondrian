@@ -444,7 +444,7 @@ public class RolapGalaxy {
             RolapStar.Measure measure)
         {
             BitKey bitKey = galaxy.prototypeBitKey.emptyCopy();
-            List<RolapSchema.PhysExpr> key =
+            List<RolapSchema.PhysColumn> key =
                 Collections.singletonList(measure.getExpression());
             for (RolapStar.Table table : star.getFactTable().getChildren()) {
                 if (table.getPath().getLinks().get(0).columnList.equals(key)) {
