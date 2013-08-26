@@ -294,7 +294,8 @@ public class SqlQuery {
             }
         } else {
             assert joinCondition == null;
-            assert from.isEmpty() || !dialect.allowsJoinOn() || Util.pauseIf(true, true);
+            assert from.isEmpty() || !dialect.allowsJoinOn()
+                || Util.pauseIf(true, true);
         }
 
         fromAliases.add(alias);

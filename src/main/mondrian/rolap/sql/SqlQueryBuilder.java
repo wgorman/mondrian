@@ -155,7 +155,7 @@ public class SqlQueryBuilder {
     private Table table(RolapStar.Table starTable) {
         Table table = tableMap2.get(starTable);
         if (table == null) {
-            final Pair<Table,RolapSchema.PhysLink> parent =
+            final Pair<Table, RolapSchema.PhysLink> parent =
                 parentTable(starTable);
             if (parent == null) {
                 table = new Table(null, null, starTable.getRelation(), null);
@@ -171,7 +171,7 @@ public class SqlQueryBuilder {
         return table;
     }
 
-    private Pair<Table,RolapSchema.PhysLink> parentTable(
+    private Pair<Table, RolapSchema.PhysLink> parentTable(
         RolapStar.Table starTable)
     {
         if (starTable.getParentTable() == null) {
@@ -481,7 +481,7 @@ public class SqlQueryBuilder {
     public static class Table {
         private final RolapSchema.PhysLink link;
         private final RolapSchema.PhysRelation physRelation;
-        private final RolapCubeDimension dimension; //optional
+        private final RolapCubeDimension dimension; // optional
         private final RolapSchema.PhysPath path;
         private final Table parent; // optional
 

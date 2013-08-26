@@ -2095,17 +2095,20 @@ public class RolapSchema extends OlapElementBase implements Schema {
 
         public Iterable<? extends PhysColumn> columns() {
             final Set<PhysColumn> set = new LinkedHashSet<PhysColumn>();
-            foreachColumn(null, new SqlQueryBuilder.Joiner() {
-                public void addColumn(
-                    SqlQueryBuilder queryBuilder, PhysColumn column)
-                {
-                    set.add(column);
-                }
+            foreachColumn(
+                null,
+                new SqlQueryBuilder.Joiner() {
+                    public void addColumn(
+                        SqlQueryBuilder queryBuilder, PhysColumn column)
+                    {
+                        set.add(column);
+                    }
 
-                public void addRelation(
-                    SqlQueryBuilder queryBuilder, PhysRelation relation) {
-                }
-            });
+                    public void addRelation(
+                        SqlQueryBuilder queryBuilder, PhysRelation relation)
+                    {
+                    }
+                });
             return set;
         }
     }

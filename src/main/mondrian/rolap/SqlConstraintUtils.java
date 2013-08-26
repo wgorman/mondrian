@@ -12,7 +12,6 @@
 package mondrian.rolap;
 
 import mondrian.olap.*;
-import mondrian.rolap.RolapSchema.PhysSchemaException;
 import mondrian.rolap.agg.*;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
@@ -268,11 +267,10 @@ public class SqlConstraintUtils {
             // Skip calculated members (except if leaf of parent-child hier)
             if (member.isCalculated() && !member.isParentChildLeaf()) {
                 memberList.remove(i--);
-            }
 
             // Remove members that are the default for their hierarchy,
             // except for the measures hierarchy.
-            else if (i > 0
+            } else if (i > 0
                 && member.getHierarchy().getDefaultMember().equals(member))
             {
                 memberList.remove(i--);

@@ -4628,7 +4628,9 @@ public class FunctionTest extends FoodMartTestCase {
     public void testDescendantsMLSelfBefore() {
         assertAxisReturns(
             "Descendants([Time].[1997], [Time].[Quarter], SELF_AND_BEFORE)",
-            year1997 + "\n" + quarters);
+            year1997
+            + "\n"
+            + quarters);
     }
 
     public void testDescendantsMLSelfBeforeAfter() {
@@ -4645,7 +4647,9 @@ public class FunctionTest extends FoodMartTestCase {
     public void testDescendantsMLBeforeAfter() {
         assertAxisReturns(
             "Descendants([Time].[1997], [Time].[Quarter], BEFORE_AND_AFTER)",
-            year1997 + "\n" + months);
+            year1997
+            + "\n"
+            + months);
     }
 
     public void testDescendantsMLAfter() {
@@ -4710,7 +4714,9 @@ public class FunctionTest extends FoodMartTestCase {
     public void testDescendantsMNY() {
         assertAxisReturns(
             "Descendants([Time].[1997], 1, BEFORE_AND_AFTER)",
-            year1997 + "\n" + months);
+            year1997
+            + "\n"
+            + months);
     }
 
     public void testDescendants2ndHier() {
@@ -9674,7 +9680,8 @@ public class FunctionTest extends FoodMartTestCase {
             + " ([Gender].[F], [Marital Status].[M])})", "3");
         // Tuple not in empty set
         assertExprReturns(
-            "Rank(([Gender].[F], [Marital Status].[M]), \n" + "{})", "0");
+            "Rank(([Gender].[F], [Marital Status].[M]), \n"
+            + "{})", "0");
         // Partially null tuple in set, returns null
         assertExprReturns(
             "Rank(([Gender].[F], [Marital Status].Parent), \n"

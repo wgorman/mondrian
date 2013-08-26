@@ -2011,8 +2011,9 @@ public class TestAggregationManager extends BatchTestCase {
                         int i = schema.indexOf("</MeasureGroup>");
                         assert i >= 0;
                         i += "</MeasureGroup>".length();
-                        return schema.substring(0, i) + "\n" + measureGroup
-                               + schema.substring(i);
+                        return schema.substring(0, i) + "\n"
+                                + measureGroup
+                                + schema.substring(i);
                     }
                 }
             );

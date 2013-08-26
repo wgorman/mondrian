@@ -1174,10 +1174,12 @@ public class SqlTupleReader implements TupleReader {
                         queryBuilder.addColumn(
                             queryBuilder.column(parentExp, level.cubeDimension),
                             clause, joiner));
-                    if (Util.deprecated(false, false) // move this logic into addColumn
+                    if (Util.deprecated(false, false)
+                        // move this logic into addColumn
                         && starSet.cube != null
                         && !levelCollapsed
-                        && measureGroup != null && Util.deprecated(false, false))
+                        && measureGroup != null
+                        && Util.deprecated(false, false))
                     {
                         parentExp.joinToStarRoot(
                             queryBuilder,
@@ -1312,7 +1314,9 @@ public class SqlTupleReader implements TupleReader {
                 final RolapSchema.PhysPath keyPath =
                     level.getDimension().getKeyPath(column);
                 keyPath.addToFrom(sqlQuery, false);
-            } else queryBuilder.joinToDimensionKey = true;
+            } else {
+                queryBuilder.joinToDimensionKey = true;
+            }
         }
     }
 

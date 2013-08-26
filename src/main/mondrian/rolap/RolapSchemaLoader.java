@@ -222,12 +222,14 @@ public class RolapSchemaLoader {
 
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
-                        "RolapSchema.load: content: \n" + catalogStr);
+                        "RolapSchema.load: content: \n"
+                        + catalogStr);
                 }
             } else {
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
-                        "RolapSchema.load: catalogStr: \n" + catalogStr);
+                        "RolapSchema.load: catalogStr: \n"
+                        + catalogStr);
                 }
 
                 def = xmlParser.parse(catalogStr);
@@ -259,7 +261,8 @@ public class RolapSchemaLoader {
                     useContentChecksum);
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug(
-                        "schema after conversion:\n" + xmlSchema.toXML());
+                        "schema after conversion:\n"
+                        + xmlSchema.toXML());
                 }
             } else {
                 checkSchemaVersion(def);

@@ -632,9 +632,9 @@ class SqlMemberSource
         //
         // TODO: always joining to dimension key table will automatically
         // filter out childless snowflake members.
-        if (Util.deprecated(true, false))
+        if (Util.deprecated(true, false)) {
             queryBuilder.joinToDimensionKey = true;
-        else if (level.getDimension().keyAttribute != null) {
+        } else if (level.getDimension().keyAttribute != null) {
             for (RolapSchema.PhysColumn column : level.attribute.getKeyList()) {
                 final RolapSchema.PhysPath keyPath =
                     level.getDimension().getKeyPath(column);

@@ -74,7 +74,6 @@ public class MemberKeyConstraint
         return "MemberKeyConstraint";
     }
 
-
     public Object getCacheKey() {
         return cacheKey;
     }
