@@ -1562,6 +1562,32 @@ public class Util extends XOMUtil {
     }
 
     /**
+     * Converts a list of a string, with commas between elements.
+     *
+     * For example,
+     * <code>commaList(Arrays.asList({"a", "b"}))</code>
+     * returns "a, b".
+     *
+     * @param list List
+     * @return String representation of string
+     */
+    public static <T> String commaList(List<T> list)
+    {
+        if (list.size() == 1) {
+            return list.get(0).toString();
+        }
+        final StringBuilder buf = new StringBuilder();
+        int k = -1;
+        for (T t : list) {
+            if (++k > 0) {
+                buf.append(", ");
+            }
+            buf.append(t);
+        }
+        return buf.toString();
+    }
+
+    /**
      * Makes a name distinct from other names which have already been used
      * and shorter than a length limit, adds it to the list, and returns it.
      *

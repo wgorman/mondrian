@@ -992,46 +992,35 @@ public class SqlConstraintUtils {
         // REVIEW: The following code mostly uses the name column (or name
         // expression) of the level. Shouldn't it use the key column (or key
         // expression)?
-        String columnString;
+        final List<String> columnList = new ArrayList<String>();
         if (columns != null) {
             if (aggStar != null) {
                 // this assumes that the name column is identical to the
                 // id column
-                columnString = null;
                 for (RolapStar.Column column : columns) {
                     int bitPos = column.getBitPosition();
                     AggStar.Table.Column aggColumn =
                         aggStar.lookupColumn(bitPos);
                     AggStar.Table table = aggColumn.getTable();
                     table.addToFrom(queryBuilder.sqlQuery, false, true);
-                    if (columnString == null) {
-                        columnString = "";
-                    } else {
-                        columnString += ", ";
-                    }
-                    columnString += aggColumn.getExpression().toSql();
+                    columnList.add(aggColumn.getExpression().toSql());
                 }
             } else {
-                columnString = null;
                 for (RolapStar.Column column : columns) {
-                    RolapStar.Table targetTable = column.getTable();
-                    targetTable.addToFrom(
-                        queryBuilder.sqlQuery, false, true);
-                    if (columnString == null) {
-                        columnString = "";
-                    } else {
-                        columnString += ", ";
-                    }
-                    columnString += column.getExpression().toSql();
+                    queryBuilder.addColumn(
+                        queryBuilder.column(
+                            column.getExpression(), column.getTable()),
+                        Clause.FROM);
+                    columnList.add(column.getExpression().toSql());
                 }
             }
         } else {
             assert aggStar == null;
             RolapSchema.PhysExpr nameExp = level.getAttribute().getNameExp();
-            columnString = nameExp.toSql();
+            columnList.add(nameExp.toSql());
         }
 
-        columnBuf.append(columnString);
+        columnBuf.append(Util.commaList(columnList));
         columnBuf.append(")");
 
         // generate the RHS of the IN predicate
