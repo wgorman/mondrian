@@ -1747,8 +1747,7 @@ public class RolapSchemaLoader {
                         fact,
                         measureGroup,
                         dimension,
-                        (MondrianDef.ForeignKeyLink)
-                            xmlDimensionLink);
+                        (MondrianDef.ForeignKeyLink) xmlDimensionLink);
                 } else if (xmlDimensionLink
                     instanceof MondrianDef.FactLink)
                 {
@@ -2185,12 +2184,7 @@ public class RolapSchemaLoader {
                 e, "Could not find path to " + expr.relation);
         }
         final RolapStar star = measureGroup.getStar();
-        RolapStar.Table starTable = star.getFactTable();
-        for (RolapSchema.PhysHop hop : pathBuilder.done().hopList) {
-            if (hop.link != null) {
-                starTable = starTable.findChild(hop, true);
-            }
-        }
+        RolapStar.Table starTable = star.getTable(pathBuilder.done());
         final RolapStar.Column starColumn =
             starTable.lookupColumnByExpression(
                 expr, true, name, property);
@@ -2541,12 +2535,7 @@ public class RolapSchemaLoader {
                         "Could not find path to " + column.relation);
                 }
                 final RolapStar star = measureGroup.getStar();
-                RolapStar.Table starTable = star.getFactTable();
-                for (RolapSchema.PhysHop hop : pathBuilder.done().hopList) {
-                    if (hop.link != null) {
-                        starTable = starTable.findChild(hop, true);
-                    }
-                }
+                RolapStar.Table starTable = star.getTable(pathBuilder.done());
                 final RolapStar.Column starColumn =
                     starTable.lookupColumnByExpression(
                         column, true, null, null);

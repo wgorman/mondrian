@@ -72,9 +72,6 @@ public class SqlConstraintUtils {
             removeMultiPositionSlicerMembers(members, evaluator);
         }
 
-        // make sure the columns we need to constrain can be referenced
-        addConstrainedMembersToFrom(queryBuilder, starSet, members);
-
         // get the constrained columns and their values
         final CellRequest request =
             RolapAggregationManager.makeRequest(
@@ -137,43 +134,6 @@ public class SqlConstraintUtils {
                 queryBuilder.column(column.getExpression(), column.getTable()),
                 Clause.FROM);
             queryBuilder.sqlQuery.addWhere(buf.toString());
-        }
-    }
-
-    private static void addConstrainedMembersToFrom(
-        SqlQueryBuilder queryBuilder,
-        RolapStarSet starSet,
-        List<RolapMember> members)
-    {
-        if (Util.pauseIf(true, true)) return; // method not needed
-        for (RolapMember member : members) {
-            if (member.isMeasure()
-                || member.getLevel().isAll())
-            {
-                // only looking for constrained members
-                continue;
-            }
-            final RolapCubeLevel level = member.getLevel();
-
-            final RolapCubeDimension dimension = level.getDimension();
-            for (RolapSchema.PhysColumn column
-                : level.attribute.getKeyList())
-            {
-                final RolapSchema.PhysPath keyPath =
-                    dimension.getKeyPath(column);
-                keyPath.addToFrom(queryBuilder.sqlQuery, false);
-            }
-            if (starSet.getMeasureGroup() != null) {
-                RolapSchema.PhysPath path;
-                if (starSet.getAggMeasureGroup() != null) {
-                    path = starSet.getAggMeasureGroup().getPath(dimension);
-                } else {
-                    path = starSet.getMeasureGroup().getPath(dimension);
-                }
-                if (path != null) {
-                    path.addToFrom(queryBuilder.sqlQuery, false);
-                }
-            }
         }
     }
 
@@ -676,10 +636,10 @@ public class SqlConstraintUtils {
                                 false,
                                 true);
                         } else {
-                            column.getTable().addToFrom(
-                                queryBuilder.sqlQuery,
-                                false,
-                                true);
+                            queryBuilder.addColumn(
+                                queryBuilder.column(
+                                    physColumn, p.getDimension()),
+                                Clause.FROM);
                         }
                     } else {
                         assert aggStar == null;

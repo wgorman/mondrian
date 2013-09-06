@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho
+// Copyright (C) 2005-2013 Pentaho
 // All Rights Reserved.
 */
 package mondrian.test;
@@ -288,13 +288,15 @@ public class DrillThroughTest extends FoodMartTestCase {
             + "      <Table name=\"store_ragged\"/>\n"
             + "      <Level name=\"Store Country\" column=\"store_country\" uniqueMembers=\"true\"/>\n"
             + "      <Level name=\"Store Id\" column=\"store_id\" captionColumn=\"store_name\" uniqueMembers=\"true\" type=\"Integer\"/>\n"
-            + "    </Hierarchy>\n" + "  </Dimension>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
             + "  <Dimension name=\"Store3\" foreignKey=\"store_id\">\n"
             + "    <Hierarchy hasAll=\"true\" primaryKey=\"store_id\">\n"
             + "      <Table name=\"store\"/>\n"
             + "      <Level name=\"Store Country\" column=\"store_country\" uniqueMembers=\"true\"/>\n"
             + "      <Level name=\"Store Id\" column=\"store_id\" captionColumn=\"store_name\" uniqueMembers=\"true\" type=\"Numeric\"/>\n"
-            + "    </Hierarchy>\n" + "  </Dimension>\n");
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n");
         Result result = testContext.executeQuery(
             "SELECT {[Store2].[Store Id].Members} on columns,\n"
             + " NON EMPTY([Store3].[Store Id].Members) on rows\n"
@@ -374,7 +376,8 @@ public class DrillThroughTest extends FoodMartTestCase {
             + "    <Hierarchy hasAll=\"true\" primaryKey=\"customer_id\">\n"
             + "      <Table name=\"customer\"/>\n"
             + "      <Level name=\"Education Level but with a very long name that will be too long if converted directly into a column\" column=\"education\" uniqueMembers=\"true\"/>\n"
-            + "    </Hierarchy>\n" + "  </Dimension>",
+            + "    </Hierarchy>\n"
+            + "  </Dimension>",
             null);
 
         Result result = testContext.executeQuery(
@@ -630,12 +633,14 @@ public class DrillThroughTest extends FoodMartTestCase {
         String sql = getDrillThroughSql(cell, true, true);
         getTestContext().assertSqlEquals(
             getDiffRepos(), "sql" + compound, sql, 1);
+        assertEquals(41956, cell.getDrillThroughCount());
 
         // A query with a slightly more complex multi-position compound slicer
         result =
             executeQuery(
                 "SELECT {[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + " {[Product].[All Products]} ON ROWS\n" + "FROM [Sales]\n"
+                + " {[Product].[All Products]} ON ROWS\n"
+                + "FROM [Sales]\n"
                 + "WHERE Crossjoin(Crossjoin({[Gender].[F]}, {[Marital Status].[M]}),"
                 + "                {[Time].[1997].[Q1], [Time].[1997].[Q2]})");
         cell = result.getCell(new int[]{0, 0});
@@ -646,6 +651,7 @@ public class DrillThroughTest extends FoodMartTestCase {
         // independent of the time portion of the slicer.
         getTestContext().assertSqlEquals(
             getDiffRepos(), "sql2" + compound, sql2, 1);
+        assertEquals(10430, cell.getDrillThroughCount());
 
         // A query with an even more complex multi-position compound slicer
         // (gender must be in the slicer predicate along with time)
@@ -663,6 +669,7 @@ public class DrillThroughTest extends FoodMartTestCase {
         // independent of the time portion of the slicer.
         getTestContext().assertSqlEquals(
             getDiffRepos(), "sql3" + compound, sql3, 1);
+        assertEquals(20971, cell.getDrillThroughCount());
 
         // A query with a simple multi-position compound slicer with
         // different levels (overlapping)
@@ -679,6 +686,7 @@ public class DrillThroughTest extends FoodMartTestCase {
         // With overlapping slicer members, the first slicer predicate is
         // redundant, but does not affect the query's results
         getTestContext().assertSqlEquals(getDiffRepos(), "sql4", sql4, 1);
+        assertEquals(21588, cell.getDrillThroughCount());
 
         // A query with a simple multi-position compound slicer with
         // different levels (non-overlapping)
@@ -691,7 +699,8 @@ public class DrillThroughTest extends FoodMartTestCase {
         cell = result.getCell(new int[]{0, 0});
         assertTrue(cell.canDrillThrough());
         String sql5 = getDrillThroughSql(cell, true, true);
-        getTestContext().assertSqlEquals(getDiffRepos(), "sql5", sql5, 27402);
+        getTestContext().assertSqlEquals(getDiffRepos(), "sql5", sql5, 1);
+        assertEquals(27402, cell.getDrillThroughCount());
     }
 
     public void testDrillthroughDisable() {

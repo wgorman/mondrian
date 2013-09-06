@@ -38,10 +38,10 @@ public class SqlQueryBuilder {
      * ensures that members without children are omitted. */
     public boolean joinToDimensionKey;
 
-    private final Map<TableKey, Table> tableMap =
+    private final Map<TableKey, Table> keyTableMap =
         new LinkedHashMap<TableKey, Table>();
-    private Map<RolapStar.Table, Table> tableMap2 =
-        new LinkedHashMap<RolapStar.Table, Table>();
+    private Map<RolapSchema.PhysPath, Table> pathTableMap =
+        new LinkedHashMap<RolapSchema.PhysPath, Table>();
     private Set<Table> tableSet = new LinkedHashSet<Table>();
 
     /**
@@ -59,7 +59,9 @@ public class SqlQueryBuilder {
         List<RolapSchema.PhysColumn> keyList)
     {
         this(sqlQuery, layoutBuilder);
-        addListToFrom(keyList, AutoJoiner.INSTANCE);
+        for (RolapSchema.PhysExpr expr : keyList) {
+            expr.foreachColumn(this, AutoJoiner.INSTANCE);
+        }
     }
 
     /**
@@ -91,31 +93,8 @@ public class SqlQueryBuilder {
         this.layoutBuilder = layoutBuilder;
     }
 
-    public final void addListToFrom(
-        List<? extends RolapSchema.PhysExpr> exprList,
-        Joiner joiner)
-    {
-        for (RolapSchema.PhysExpr expr : exprList) {
-            addToFrom(expr, joiner);
-        }
-    }
-
-    public void addToFrom(RolapSchema.PhysExpr expr, Joiner joiner) {
-        assert false; // TODO: obsolete calls to this method
-        expr.foreachColumn(this, joiner);
-    }
-
-
     public void addRelation(Table table, Joiner joiner) {
         fromList.add(Pair.of(table, joiner));
-    }
-
-    public boolean addRelation(
-        RolapSchema.PhysRelation relation, Joiner joiner)
-    {
-        Util.deprecated("TODO: obsolete calls to this method", true);
-        joiner.addRelation(this, relation);
-        return true;
     }
 
     void addRelation(
@@ -143,6 +122,16 @@ public class SqlQueryBuilder {
         return new Column(table, column);
     }
 
+    public Column column(
+        RolapSchema.PhysColumn column,
+        RolapSchema.PhysRouter router)
+    {
+        final RolapSchema.PhysPath path = router.path(column);
+        assert Util.last(path.hopList).relation == column.relation;
+        Table table = table(path);
+        return new Column(table, column);
+    }
+
     /** Creates a column from a star table. */
     public Column column(
         RolapSchema.PhysColumn column,
@@ -152,35 +141,32 @@ public class SqlQueryBuilder {
         return new Column(table, column);
     }
 
-    private Table table(RolapStar.Table starTable) {
-        Table table = tableMap2.get(starTable);
+    public Table table(RolapStar.Table starTable) {
+        return table(starTable.getPath());
+    }
+
+    public Table table(RolapSchema.PhysPath path) {
+        Table table = pathTableMap.get(path);
         if (table == null) {
-            final Pair<Table, RolapSchema.PhysLink> parent =
-                parentTable(starTable);
-            if (parent == null) {
-                table = new Table(null, null, starTable.getRelation(), null);
+            final RolapSchema.PhysHop lastHop = Util.last(path.hopList);
+            if (path.hopList.size() == 1) {
+                table = new Table(null, null, lastHop.relation, null);
             } else {
+                Table parentTable = table(butLast(path));
+                final RolapSchema.PhysLink link =
+                    Util.last(path.hopList).link;
                 table =
-                    new Table(
-                        parent.left, parent.right, starTable.getRelation(),
-                        null);
+                    new Table(parentTable, link, lastHop.relation, null);
             }
-            tableMap2.put(starTable, table);
+            pathTableMap.put(path, table);
             tableSet.add(table);
         }
         return table;
     }
 
-    private Pair<Table, RolapSchema.PhysLink> parentTable(
-        RolapStar.Table starTable)
-    {
-        if (starTable.getParentTable() == null) {
-            return null;
-        }
-        Table table = table(starTable.getParentTable());
-        final RolapSchema.PhysLink link =
-            Util.last(starTable.getPath().hopList).link;
-        return Pair.of(table, link);
+    private static RolapSchema.PhysPath butLast(RolapSchema.PhysPath path) {
+        return new RolapSchema.PhysPath(
+            path.hopList.subList(0, path.hopList.size() - 1));
     }
 
     public Table table(
@@ -191,7 +177,7 @@ public class SqlQueryBuilder {
         // then we should return the same table. Good enough for 99% of
         // schemas/queries right now, though.
         TableKey key = new TableKey(relation, dimension);
-        Table table = tableMap.get(key);
+        Table table = keyTableMap.get(key);
         if (table == null) {
             final Pair<Table, RolapSchema.PhysLink> parent =
                 parentTable(relation, dimension);
@@ -201,7 +187,7 @@ public class SqlQueryBuilder {
                 table =
                     new Table(parent.left, parent.right, relation, dimension);
             }
-            tableMap.put(key, table);
+            keyTableMap.put(key, table);
             tableSet.add(table);
         }
         return table;
@@ -211,7 +197,7 @@ public class SqlQueryBuilder {
         RolapSchema.PhysRelation physRelation, RolapCubeDimension dimension)
     {
         if (dimension == null) {
-            assert physRelation == fact.getFactRelation();
+            assert fact == null || physRelation == fact.getFactRelation();
             return null;
         }
         final RolapSchema.PhysPath path;
@@ -221,6 +207,10 @@ public class SqlQueryBuilder {
                 return null;
             } else {
                 path = fact.dimensionMap3.get(dimension);
+                if (path.getLinks().isEmpty()) {
+                    assert physRelation == fact.getFactRelation();
+                    return null; // degenerate dimension
+                }
                 final RolapSchema.PhysLink link = path.getLinks().get(0);
                 Table table = table(link.targetRelation, null);
                 return Pair.of(table, link);
@@ -255,15 +245,17 @@ public class SqlQueryBuilder {
         Joiner joiner)
     {
         for (RolapSchema.PhysColumn physColumn : columns) {
-            addColumn(column(physColumn, dimension), clause, joiner);
+            addColumn(column(physColumn, dimension), clause, joiner, null);
         }
     }
 
     public int addColumn(Column column, Clause clause) {
-        return addColumn(column, clause, NullJoiner.INSTANCE);
+        return addColumn(column, clause, NullJoiner.INSTANCE, null);
     }
 
-    public int addColumn(Column column, Clause clause, Joiner joiner) {
+    public int addColumn(
+        Column column, Clause clause, Joiner joiner, String alias0)
+    {
         if (column == null) {
             return -1;
         }
@@ -280,26 +272,28 @@ public class SqlQueryBuilder {
             }
             return ordinal;
         }
-        addToFrom(column.table, joiner);
+        addRelation(column.table, joiner);
         final String alias;
         switch (clause) {
         case SELECT:
             alias = sqlQuery.addSelect(
-                expString, column.physColumn.getInternalType());
+                expString, column.physColumn.getInternalType(), alias0);
             break;
         case SELECT_GROUP:
-            alias = sqlQuery.addSelectGroupBy(
-                expString, column.physColumn.getInternalType());
+            alias = sqlQuery.addSelect(
+                expString, column.physColumn.getInternalType(), alias0);
+            sqlQuery.addGroupBy(expString, alias);
             break;
         case SELECT_ORDER:
             sqlQuery.addOrderBy(expString, true, false, true);
             alias = sqlQuery.addSelect(
-                expString, column.physColumn.getInternalType());
+                expString, column.physColumn.getInternalType(), alias0);
             break;
         case SELECT_GROUP_ORDER:
             sqlQuery.addOrderBy(expString, true, false, true);
-            alias = sqlQuery.addSelectGroupBy(
-                expString, column.physColumn.getInternalType());
+            alias = sqlQuery.addSelect(
+                expString, column.physColumn.getInternalType(), alias0);
+            sqlQuery.addGroupBy(expString, alias);
             break;
         case FROM:
             return -1;
@@ -316,19 +310,15 @@ public class SqlQueryBuilder {
         return ordinal;
     }
 
-    private void addToFrom(Table table, Joiner joiner) {
-        fromList.add(Pair.of(table, joiner));
-    }
-
     /** Sends expressions to the underlying query. */
-    private void flush() {
+    public void flush() {
         if (joinToDimensionKey) {
             for (Pair<Table, Joiner> pair
                 : new ArrayList<Pair<Table, Joiner>>(fromList))
             {
                 final RolapCubeDimension dimension = pair.left.dimension;
                 if (dimension != null) {
-                    addToFrom(
+                    addRelation(
                         table(dimension.getKeyTable(), dimension),
                         NullJoiner.INSTANCE);
                 }
@@ -401,7 +391,7 @@ public class SqlQueryBuilder {
             SqlQueryBuilder queryBuilder,
             RolapSchema.PhysColumn column)
         {
-            queryBuilder.addRelation(column.relation, this);
+            addRelation(queryBuilder, column.relation);
         }
 
         public void addRelation(
@@ -449,7 +439,7 @@ public class SqlQueryBuilder {
             SqlQueryBuilder queryBuilder,
             RolapSchema.PhysColumn column)
         {
-            queryBuilder.addRelation(column.relation, this);
+            addRelation(queryBuilder, column.relation);
         }
 
         public void addRelation(

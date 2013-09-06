@@ -2046,53 +2046,6 @@ public class RolapSchema extends OlapElementBase implements Schema {
          */
         public abstract SqlStatement.Type getInternalType();
 
-        /**
-         * Joins the table underlying this expression to the root of the
-         * corresponding star. Usually called after
-         * {@link SqlQueryBuilder#addToFrom(mondrian.rolap.RolapSchema.PhysExpr, mondrian.rolap.sql.SqlQueryBuilder.Joiner)}.
-         *
-         * @see Util#deprecated(Object, boolean) Any query-building code calling
-         * this method should instead use the root attribute of the hierarchy
-         * as a 'starting point'. Then the query will automatically join.
-         *
-         * @param queryBuilder Query whose FROM clause to add to
-         * @param measureGroup If null, just add this expression's table; if
-         *    not null, add a join path to the measure group's fact table
-         * @param cubeDimension Dimension by which expression is joined to
-         *    fact table. Must be specified if and only if measure group is
-         *    specified.
-         */
-        public final void joinToStarRoot(
-            final SqlQueryBuilder queryBuilder,
-            final RolapMeasureGroup measureGroup,
-            final RolapCubeDimension cubeDimension)
-        {
-            Util.deprecated(false, true);
-            assert measureGroup != null;
-            assert cubeDimension != null;
-            foreachColumn(
-                queryBuilder,
-                new SqlQueryBuilder.Joiner() {
-                    public void addColumn(
-                        SqlQueryBuilder queryBuilder, PhysColumn column)
-                    {
-                        final RolapStar.Column starColumn =
-                            measureGroup.getRolapStarColumn(
-                                cubeDimension, column, true);
-                        starColumn.getTable().addToFrom(
-                            queryBuilder.sqlQuery, false, true);
-
-                        // ? still needed?
-                        queryBuilder.addRelation(column.relation, this);
-                    }
-
-                    public void addRelation(
-                        SqlQueryBuilder queryBuilder, PhysRelation relation)
-                    {
-                    }
-                });
-        }
-
         public Iterable<? extends PhysColumn> columns() {
             final Set<PhysColumn> set = new LinkedHashSet<PhysColumn>();
             foreachColumn(
@@ -2527,41 +2480,6 @@ public class RolapSchema extends OlapElementBase implements Schema {
                     return hopList.size() - 1;
                 }
             };
-        }
-
-        /**
-         * Adds the relations in this path to the FROM clause of a query.
-         *
-         * @param query Query to add to
-         * @param failIfExists Pass in false if you might have already added
-         *     the table before and if that happens you want to do nothing.
-         */
-        public final void addToFrom(
-            SqlQuery query,
-            boolean failIfExists)
-        {
-            Util.pauseIf(true);
-            String parentAlias = null;
-            for (PhysHop physHop : hopList) {
-                final PhysRelation relation = physHop.relation;
-                if (physHop.link == null) {
-                    query.addFrom(relation, relation.getAlias(), failIfExists);
-                } else {
-                    query.addFrom(
-                        relation, relation.getAlias(), parentAlias,
-                        physHop.link.toSql(), failIfExists);
-                }
-                parentAlias = relation.getAlias();
-            }
-            // Add join conditions in reverse order so tests don't break - no
-            // other reason - remove when everything works. Note that we stop
-            // at 1, because hop 0 has no link.
-            for (int i = hopList.size() - 1; i > 0; --i) {
-                PhysHop physHop = hopList.get(i);
-                final PhysRelation relation = physHop.relation;
-                query.addFrom(relation, relation.getAlias(), failIfExists);
-                query.addWhere(physHop.link.toSql());
-            }
         }
     }
 

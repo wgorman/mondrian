@@ -990,45 +990,11 @@ public class SqlTupleReader implements TupleReader {
         if (!unevaluatedTargets.isEmpty()) {
             if (measureGroup != null) {
                 queryBuilder.fact = measureGroup;
-
-                if (Util.deprecated(false, false))
-                for (RolapCubeDimension dimension : dimensions) {
-                    // Join each dimension to the measure group's fact table.
-                    queryBuilder.addListToFrom(
-                        (dimension.keyAttribute == null
-                         ? dimension.rolapDimension
-                         : dimension).keyAttribute.getKeyList(),
-                        SqlQueryBuilder.DimensionJoiner.of(
-                            measureGroup, dimension));
-                }
             } else if (MondrianProperties.instance()
                     .FilterChildlessSnowflakeMembers.get())
             {
                 queryBuilder.joinToDimensionKey = true;
-
-                // start at lowest level of each dimension
-                if (Util.deprecated(false, false))
-                for (RolapCubeDimension dimension : dimensions) {
-                    // skip degenerate dimensions, which have no key attribute
-                    if (dimension.keyAttribute != null) {
-                        final SqlQueryBuilder.Joiner joiner =
-                            SqlQueryBuilder.DimensionJoiner.of(
-                                measureGroup, dimension);
-                        queryBuilder.addListToFrom(
-                            dimension.keyAttribute.getKeyList(), joiner);
-                    }
-                }
-            } else {
-                // start at target level
-                if (Util.deprecated(false, false))
-                for (Target target : unevaluatedTargets) {
-                    queryBuilder.addListToFrom(
-                        target.level.attribute.getKeyList(),
-                        SqlQueryBuilder.DimensionJoiner.of(
-                            measureGroup, target.level.getDimension()));
-                }
             }
-
             for (Target target : unevaluatedTargets) {
                 addLevelMemberSql(
                     queryBuilder,
@@ -1173,19 +1139,7 @@ public class SqlTupleReader implements TupleReader {
                     levelLayoutBuilder.parentOrdinalList.add(
                         queryBuilder.addColumn(
                             queryBuilder.column(parentExp, level.cubeDimension),
-                            clause, joiner));
-                    if (Util.deprecated(false, false)
-                        // move this logic into addColumn
-                        && starSet.cube != null
-                        && !levelCollapsed
-                        && measureGroup != null
-                        && Util.deprecated(false, false))
-                    {
-                        parentExp.joinToStarRoot(
-                            queryBuilder,
-                            measureGroup,
-                            level.cubeDimension);
-                    }
+                            clause, joiner, null));
                 }
             }
 
@@ -1198,18 +1152,14 @@ public class SqlTupleReader implements TupleReader {
                 levelLayoutBuilder.orderByOrdinalList.add(
                     queryBuilder.addColumn(
                         queryBuilder.column(column, level.cubeDimension),
-                        clause, joiner));
+                        clause, joiner, null));
             }
 
             for (RolapSchema.PhysColumn column : attribute.getKeyList()) {
                 levelLayoutBuilder.keyOrdinalList.add(
                     queryBuilder.addColumn(
                         queryBuilder.column(column, level.cubeDimension),
-                        clause, joiner));
-                if (measureGroup != null && Util.deprecated(false, false)) {
-                    column.joinToStarRoot(
-                        queryBuilder, measureGroup, level.cubeDimension);
-                }
+                        clause, joiner, null));
             }
 
             levelLayoutBuilder.nameOrdinal =
@@ -1217,25 +1167,16 @@ public class SqlTupleReader implements TupleReader {
                     queryBuilder.column(
                         attribute.getNameExp(), level.cubeDimension),
                     Clause.SELECT.maybeGroup(needsGroupBy),
-                    joiner);
+                    joiner,
+                    null);
 
             levelLayoutBuilder.captionOrdinal =
                 queryBuilder.addColumn(
                     queryBuilder.column(
                         attribute.getCaptionExp(), level.cubeDimension),
                     Clause.SELECT.maybeGroup(needsGroupBy),
-                    joiner);
-            if (attribute.getCaptionExp() != null) {
-                if (starSet.cube != null) {
-                    Util.deprecated(
-                        "join to layoutbuilder key sufficient?",
-                        false);
-                    if (measureGroup != null && Util.deprecated(false, false)) {
-                        attribute.getCaptionExp().joinToStarRoot(
-                            queryBuilder, measureGroup, level.cubeDimension);
-                    }
-                }
-            }
+                    joiner,
+                    null);
 
             constraint.addLevelConstraint(
                 sqlQuery, starSet, currLevel);
@@ -1309,14 +1250,7 @@ public class SqlTupleReader implements TupleReader {
         // that have no children. For backwards compatibility, but less
         // efficient.
         if (measureGroup != null) {
-            if (Util.deprecated(false, false))
-            for (RolapSchema.PhysColumn column : level.attribute.getKeyList()) {
-                final RolapSchema.PhysPath keyPath =
-                    level.getDimension().getKeyPath(column);
-                keyPath.addToFrom(sqlQuery, false);
-            } else {
-                queryBuilder.joinToDimensionKey = true;
-            }
+            queryBuilder.joinToDimensionKey = true;
         }
     }
 
@@ -1499,7 +1433,7 @@ public class SqlTupleReader implements TupleReader {
         /**
          * Creates a ColumnLayoutBuilder.
          */
-        ColumnLayoutBuilder() {
+        public ColumnLayoutBuilder() {
         }
 
         /**

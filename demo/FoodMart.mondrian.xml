@@ -917,7 +917,7 @@
                 </Attributes>
             </Dimension>
             <Dimension source='Store'/>
-            <Dimension name='Has coffee bar'>
+            <Dimension name='Has coffee bar' key='Has coffee bar'>
                 <Attributes>
                     <Attribute name='Has coffee bar' table='store' datatype='Boolean' keyColumn='coffee_bar' hasHierarchy='true'/>
                 </Attributes>

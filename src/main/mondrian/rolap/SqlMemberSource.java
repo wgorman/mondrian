@@ -226,7 +226,11 @@ class SqlMemberSource
                         mustCount[0] = true;
                     }
                 }
-                queryBuilder.addToFrom(column, joiner);
+                queryBuilder.addColumn(
+                    queryBuilder.column(column, hierarchy.cubeDimension),
+                    Clause.FROM,
+                    joiner,
+                    null);
 
                 String keyExp = column.toSql();
                 if (columnCount > 0
@@ -247,26 +251,20 @@ class SqlMemberSource
                     sqlQuery.addOrderBy(exp, true, false, true);
                 }
             } else {
-                int i = 0;
-                StringBuilder sb = new StringBuilder();
+                List<String> list = new ArrayList<String>();
                 for (String colDef : columnList) {
-                    if (i > 0) {
-                        sb.append(", ");
-                    }
-                    sb.append(dialect.generateCountExpression(colDef));
+                    list.add(dialect.generateCountExpression(colDef));
                 }
                 sqlQuery.addSelect(
-                    "count(DISTINCT " + sb.toString() + ")", null);
+                    "count(DISTINCT " + Util.commaList(list) + ")", null);
             }
-            return sqlQuery.toString();
-
+            return queryBuilder.toSqlAndTypes().left;
         } else {
             sqlQuery.setDistinct(true);
             for (RolapSchema.PhysColumn column : attribute.getKeyList()) {
-                queryBuilder.addToFrom(column, joiner);
-                sqlQuery.addSelect(column.toSql(), column.getInternalType());
-                sqlQuery.addFrom(
-                    column.relation, column.relation.getAlias(), false);
+                queryBuilder.addColumn(
+                    queryBuilder.column(column, hierarchy.cubeDimension),
+                    Clause.SELECT);
             }
             SqlQuery outerQuery =
                 SqlQuery.newQuery(
@@ -277,6 +275,7 @@ class SqlMemberSource
             // Note: the "init" is for Postgres, which requires
             // FROM-queries to have an alias
             boolean failIfExists = true;
+            queryBuilder.flush();
             outerQuery.addFrom(sqlQuery, "init", failIfExists);
             return outerQuery.toString();
         }
@@ -632,15 +631,7 @@ class SqlMemberSource
         //
         // TODO: always joining to dimension key table will automatically
         // filter out childless snowflake members.
-        if (Util.deprecated(true, false)) {
-            queryBuilder.joinToDimensionKey = true;
-        } else if (level.getDimension().keyAttribute != null) {
-            for (RolapSchema.PhysColumn column : level.attribute.getKeyList()) {
-                final RolapSchema.PhysPath keyPath =
-                    level.getDimension().getKeyPath(column);
-                keyPath.addToFrom(sqlQuery, false);
-            }
-        }
+        queryBuilder.joinToDimensionKey = true;
         Util.Function1<RolapSchema.PhysColumn, RolapSchema.PhysColumn> fn =
             Util.identityFunctor();
         if (starSet.getMeasureGroup() != null) {
@@ -744,7 +735,7 @@ class SqlMemberSource
         Util.Function1<RolapSchema.PhysColumn, RolapSchema.PhysColumn> fn)
     {
         final SqlQueryBuilder.Joiner joiner =
-            SqlQueryBuilder.AutoJoiner.INSTANCE;
+            SqlQueryBuilder.NullJoiner.INSTANCE;
         final SqlTupleReader.LevelLayoutBuilder levelLayout =
             layoutBuilder.createLayoutFor(level);
 
@@ -753,7 +744,7 @@ class SqlMemberSource
             levelLayout.orderByOrdinalList.add(
                 queryBuilder.addColumn(
                     queryBuilder.column(fn.apply(key), dimension),
-                    Clause.SELECT_GROUP_ORDER, joiner));
+                    Clause.SELECT_GROUP_ORDER, joiner, null));
         }
 
         for (RolapSchema.PhysColumn column : level.attribute.getKeyList()) {
@@ -761,7 +752,7 @@ class SqlMemberSource
             levelLayout.keyOrdinalList.add(
                 queryBuilder.addColumn(
                     queryBuilder.column(fn.apply(column), dimension),
-                    Clause.SELECT_GROUP, joiner));
+                    Clause.SELECT_GROUP, joiner, null));
         }
 
         if (level.attribute.getNameExp() != null) {
@@ -770,7 +761,7 @@ class SqlMemberSource
             levelLayout.nameOrdinal =
                 queryBuilder.addColumn(
                     queryBuilder.column(exp, dimension),
-                    Clause.SELECT_GROUP, joiner);
+                    Clause.SELECT_GROUP, joiner, null);
         }
 
         if (level.attribute.getCaptionExp() != null) {
@@ -779,18 +770,13 @@ class SqlMemberSource
             levelLayout.captionOrdinal =
                 queryBuilder.addColumn(
                     queryBuilder.column(exp, dimension),
-                    Clause.SELECT_GROUP, joiner);
+                    Clause.SELECT_GROUP, joiner, null);
         }
 
         for (RolapProperty property : properties) {
             // TODO: properties that are composite, or have key != name exp
             final RolapSchema.PhysColumn exp =
                 fn.apply(property.attribute.getNameExp());
-            if (Util.deprecated(false, false)) {
-                queryBuilder.addToFrom(exp, joiner);
-                final String s = exp.toSql();
-                int ordinal = layoutBuilder.lookup(s);
-            }
 
             // Some dialects allow us to eliminate properties from the
             // group by that are functionally dependent on the level value
@@ -804,7 +790,7 @@ class SqlMemberSource
             }
             levelLayout.propertyOrdinalList.add(
                 queryBuilder.addColumn(
-                    queryBuilder.column(exp, dimension), clause, joiner));
+                    queryBuilder.column(exp, dimension), clause, joiner, null));
         }
 
         final Pair<String, List<SqlStatement.Type>> pair =
@@ -1384,17 +1370,14 @@ class SqlMemberSource
                 "while generating query to retrieve children of parent/child "
                 + "hierarchy member " + member,
                 layoutBuilder);
-        queryBuilder.addListToFrom(
-            member.getLevel().attribute.getKeyList(),
-            SqlQueryBuilder.AutoJoiner.INSTANCE);
-        Util.assertTrue(
-            member.isAll(),
-            "In the current implementation, parent/child hierarchies must "
-            + "have only one level (plus the 'All' level).");
+
+        assert member.isAll()
+            : "In the current implementation, parent/child hierarchies must "
+            + "have only one level (plus the 'All' level).";
 
         final RolapCubeLevel level = member.getLevel().getChildLevel();
 
-        Util.assertTrue(!level.isAll(), "all level cannot be parent-child");
+        assert !level.isAll() : "all level cannot be parent-child";
 
         StringBuilder condition = new StringBuilder(64);
         for (RolapSchema.PhysColumn parentKey

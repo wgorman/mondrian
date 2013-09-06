@@ -2466,6 +2466,11 @@ public class Util extends XOMUtil {
         };
     }
 
+    /** Returns a list with all elements from {@code from} onwards. */
+    public static <E> List<E> subList(List<E> list, int from) {
+        return list.subList(from, list.size());
+    }
+
     public static class ErrorCellValue {
         public String toString() {
             return "#ERR";

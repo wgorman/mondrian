@@ -220,8 +220,16 @@ public class RolapSchemaUpgrader {
         final Map<String, String> dimensionNameFks =
             new LinkedHashMap<String, String>();
         for (Mondrian3Def.CubeDimension dimension : xmlLegacyCube.dimensions) {
-            dimensionNameFks.put(
-                dimension.name, dimension.foreignKey);
+            String foreignKey = dimension.foreignKey;
+            if (foreignKey != null
+                && isDegenerate(dimension, xmlLegacySchema, xmlFact))
+            {
+                // Ignore the foreignKey if the dimension is degenerate (that
+                // is, its hierarchies have no <Table/> element). Turns out
+                // that the SteelWheels schema has this problem.
+                foreignKey = null;
+            }
+            dimensionNameFks.put(dimension.name, foreignKey);
         }
         convertMeasureLinks(
             xmlLegacyCube,

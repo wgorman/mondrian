@@ -108,6 +108,8 @@ public class SqlQuery {
     private final Map<String, String> columnAliases =
         new HashMap<String, String>();
 
+    private final List<String> columnAliases2 = new ArrayList<String>();
+
     private static final String INDENT = "    ";
 
     /**
@@ -214,7 +216,7 @@ public class SqlQuery {
         dialect.quoteIdentifier(alias, buf);
 
         if (parentAlias != null) {
-            assert parentAlias.equals(Util.last(fromAliases));
+            assert fromAliases.contains(parentAlias);
             assert joinCondition != null;
             if (dialect.allowsJoinOn()) {
                 buf.append(" on ").append(joinCondition);
@@ -416,16 +418,7 @@ public class SqlQuery {
      * column alias.
      */
     public String addSelect(final String expression, SqlStatement.Type type) {
-        // Some DB2 versions (AS/400) throw an error if a column alias is
-        //  *not* used in a subsequent order by (Group by).
-        // Derby fails on 'SELECT... HAVING' if column has alias.
-        switch (dialect.getDatabaseProduct()) {
-        case DB2_AS400:
-        case DERBY:
-            return addSelect(expression, type, null);
-        default:
-            return addSelect(expression, type, nextColumnAlias());
-        }
+        return addSelect(expression, type, null);
     }
 
     /**
@@ -467,8 +460,20 @@ public class SqlQuery {
         final SqlStatement.Type type,
         String alias)
     {
-        buf.setLength(0);
+        if (alias == null) {
+            alias = nextColumnAlias();
+        }
 
+        // Some DB2 versions (AS/400) throw an error if a column alias is
+        // *not* used in a subsequent order by (Group by).
+        // Derby fails on 'SELECT... HAVING' if column has alias.
+        switch (dialect.getDatabaseProduct()) {
+        case DB2_AS400:
+        case DERBY:
+            alias = null;
+        }
+
+        buf.setLength(0);
         buf.append(expression);
         if (alias != null) {
             buf.append(" as ");
@@ -476,13 +481,18 @@ public class SqlQuery {
         }
 
         select.add(buf.toString());
-        addType(type);
+        types.add(type);
+        columnAliases2.add(alias);
         columnAliases.put(expression, alias);
         return alias;
     }
 
     public String getAlias(String expression) {
         return columnAliases.get(expression);
+    }
+
+    public String getAlias(int i) {
+        return columnAliases2.get(i);
     }
 
     public void addWhere(final String expression) {
@@ -641,10 +651,6 @@ public class SqlQuery {
         // A grouping function will end up in the select clause implicitly. It
         // needs a corresponding type.
         types.add(null);
-    }
-
-    private void addType(SqlStatement.Type type) {
-        types.add(type);
     }
 
     public String toSql() {
