@@ -429,7 +429,11 @@ public class MondrianFoodMartLoader {
             }
         }
 
-        if (dialect.getDatabaseProduct() == Dialect.DatabaseProduct.LUCIDDB) {
+        switch (dialect.getDatabaseProduct()) {
+        case PHOENIX:
+            indexes = true;
+            // fall through
+        case LUCIDDB:
             // LucidDB doesn't support CREATE UNIQUE INDEX, but it
             // does support standard UNIQUE constraints
             generateUniqueConstraints = true;
@@ -739,7 +743,11 @@ public class MondrianFoodMartLoader {
                 } else {
                     massagedLine.setLength(0);
                     massagedLine
-                        .append("INSERT INTO ")
+                        .append(
+                            dialect.getDatabaseProduct()
+                            == Dialect.DatabaseProduct.PHOENIX
+                                ? "UPSERT INTO "
+                                : "INSERT INTO ")
                         .append(quotedTableName)
                         .append(quotedColumnNames)
                         .append(" VALUES (");
@@ -1321,7 +1329,15 @@ public class MondrianFoodMartLoader {
                 // Don't use batching if there's only one item. This allows
                 // us to work around bugs in the JDBC driver by setting
                 // outputJdbcBatchSize=1.
-                stmt.execute(sqls.get(0));
+                try {
+                    stmt.execute(sqls.get(0));
+                } catch (RuntimeException e) {
+                    LOGGER.error("Error in SQL statement: " + sqls.get(0));
+                    throw e;
+                } catch (SQLException e) {
+                    LOGGER.error("Error in SQL statement: " + sqls.get(0));
+                    throw e;
+                }
             } else {
                 for (String sql : sqls) {
                     stmt.addBatch(sql);
@@ -1663,13 +1679,27 @@ public class MondrianFoodMartLoader {
                 tableConstraints.get(name);
 
             if (uniqueConstraints != null) {
+                loop:
                 for (UniqueConstraint uniqueConstraint : uniqueConstraints) {
-                    buf.append(",");
+                    switch (dialect.getDatabaseProduct()) {
+                    case PHOENIX:
+                        break;
+                    default:
+                        buf.append(",");
+                    }
                     buf.append(nl);
                     buf.append("    ");
                     buf.append("CONSTRAINT ");
                     buf.append(quoteId(uniqueConstraint.name));
-                    buf.append(" UNIQUE(");
+                    buf.append(" ");
+                    switch (dialect.getDatabaseProduct()) {
+                    case PHOENIX:
+                        buf.append("PRIMARY KEY");
+                        break;
+                    default:
+                        buf.append("UNIQUE");
+                    }
+                    buf.append(" (");
                     String [] columnNames = uniqueConstraint.columnNames;
                     for (int i = 0; i < columnNames.length; i++) {
                         if (i > 0) {
@@ -1678,6 +1708,11 @@ public class MondrianFoodMartLoader {
                         buf.append(quoteId(columnNames[i]));
                     }
                     buf.append(")");
+                    switch (dialect.getDatabaseProduct()) {
+                    case PHOENIX:
+                        // phoenix can only handle one PRIMARY KEY
+                        break loop;
+                    }
                 }
             }
 
@@ -1686,6 +1721,10 @@ public class MondrianFoodMartLoader {
             case NEOVIEW:
                 // no unique keys defined
                 buf.append(" NO PARTITION");
+                break;
+            case PHOENIX:
+                // Flag allows more indexing with less overhead.
+                buf.append(" IMMUTABLE_ROWS=true");
             }
 
             final String ddl = buf.toString();
@@ -1980,6 +2019,16 @@ public class MondrianFoodMartLoader {
             case LUCIDDB:
             case NEOVIEW:
                 return "TIMESTAMP " + columnValue;
+            case PHOENIX:
+                // Phoenix cannot handle dates before 1970.
+                columnValue = columnValue
+                    .replace("'191", "'201")
+                    .replace("'192", "'202")
+                    .replace("'193", "'203")
+                    .replace("'194", "'198")
+                    .replace("'195", "'199")
+                    .replace("'196", "'200");
+                return "TO_DATE(" + columnValue + ")";
             }
 
             // Output for a DATE
@@ -1989,6 +2038,18 @@ public class MondrianFoodMartLoader {
             case LUCIDDB:
             case NEOVIEW:
                 return "DATE " + columnValue;
+            case PHOENIX:
+                // Phoenix cannot handle dates before 1970.
+                columnValue = columnValue
+                    .replace("'191", "'201")
+                    .replace("'192", "'202")
+                    .replace("'193", "'203")
+                    .replace("'194", "'198")
+                    .replace("'195", "'199")
+                    .replace("'196", "'200");
+                return "TO_DATE("
+                    + columnValue.substring(0, columnValue.length() - 1)
+                    + " 00:00:00')";
             }
 
             // Output for a BOOLEAN (Postgres) or BIT (other DBMSs)
@@ -2022,6 +2083,14 @@ public class MondrianFoodMartLoader {
                     return "false";
                 }
                 break;
+            }
+        } else if (column.type == Type.Real) {
+            switch (product) {
+            case PHOENIX:
+                // Work around "Type mismatch. FLOAT and DECIMAL for 0.0".
+                if (columnValue.equals("0.0 ")) {
+                    columnValue = "0 ";
+                }
             }
         }
         return columnValue;
@@ -2214,23 +2283,50 @@ public class MondrianFoodMartLoader {
             case TINYINT:
             case VARCHAR:
             case VARBINARY:
-            case REAL:
                 return name;
+            case REAL:
+                switch (dialect.getDatabaseProduct()) {
+                case PHOENIX:
+                    return "FLOAT";
+                default:
+                    return name;
+                }
             case BOOLEAN:
                 switch (dialect.getDatabaseProduct()) {
-                case POSTGRESQL:
-                case GREENPLUM:
-                case LUCIDDB:
-                case NETEZZA:
-                case HSQLDB:
-                    return name;
+                case ACCESS:
+                case UNKNOWN:
+                case DERBY:
+                case DB2_OLD_AS400:
+                case DB2_AS400:
+                case DB2:
+                case FIREBIRD:
+                case HIVE:
+                case IMPALA:
+                case INFORMIX:
+                case INGRES:
+                case INTERBASE:
+                case MONETDB:
+                case NEOVIEW:
+                case ORACLE:
+                case REDSHIFT:
+                case SYBASE:
+                case TERADATA:
+                case VERTICA:
+                case VECTORWISE:
+                    return Smallint.name;
                 case MYSQL:
                 case INFOBRIGHT:
                     return "TINYINT(1)";
                 case MSSQL:
                     return "BIT";
+                case POSTGRESQL:
+                case GREENPLUM:
+                case LUCIDDB:
+                case NETEZZA:
+                case HSQLDB:
+                case PHOENIX:
                 default:
-                    return Smallint.name;
+                    return name;
                 }
             case BIGINT:
                 switch (dialect.getDatabaseProduct()) {
@@ -2536,8 +2632,8 @@ public class MondrianFoodMartLoader {
                     new Column("management_role", Type.Varchar30, true));
                 loader.createTable(
                     "employee_closure", tableFilter,
-                    new Column("employee_id", Type.Integer, false),
                     new Column("supervisor_id", Type.Integer, false),
+                    new Column("employee_id", Type.Integer, false),
                     new Column("distance", Type.Integer, true));
                 loader.createTable(
                     "expense_fact", tableFilter,
@@ -2720,6 +2816,8 @@ public class MondrianFoodMartLoader {
                 boolean summaryTables,
                 Util.Predicate1<String> tableFilter)
             {
+                boolean pk = loader.dialect.getDatabaseProduct()
+                    == Dialect.DatabaseProduct.PHOENIX;
                 loader.createIndex(
                     true,
                     "account",
@@ -2896,6 +2994,16 @@ public class MondrianFoodMartLoader {
                     baseTables,
                     summaryTables,
                     tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "inventory_fact_1997",
+                        "i_inv_97_pk",
+                        new String[] {"product_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "inventory_fact_1997",
@@ -2928,6 +3036,16 @@ public class MondrianFoodMartLoader {
                     baseTables,
                     summaryTables,
                     tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "inventory_fact_1998",
+                        "i_inv_98_pk",
+                        new String[] {"product_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "inventory_fact_1998",
@@ -3010,6 +3128,14 @@ public class MondrianFoodMartLoader {
                     tableFilter);
                 loader.createIndex(
                     true,
+                    "product_class",
+                    "i_prod_class_pk",
+                    new String[] {"product_class_id"},
+                    baseTables,
+                    summaryTables,
+                    tableFilter);
+                loader.createIndex(
+                    true,
                     "promotion",
                     "i_promotion_id",
                     new String[] {"promotion_id"},
@@ -3080,6 +3206,16 @@ public class MondrianFoodMartLoader {
                     baseTables,
                     summaryTables,
                     tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "sales_fact_1997",
+                        "i_sls_97_pk",
+                        new String[] {"product_id", "time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "sales_fact_1997",
@@ -3112,6 +3248,16 @@ public class MondrianFoodMartLoader {
                     baseTables,
                     summaryTables,
                     tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "sales_fact_dec_1998",
+                        "i_sls_dec98_pk",
+                        new String[] {"product_id", "time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "sales_fact_dec_1998",
@@ -3152,6 +3298,16 @@ public class MondrianFoodMartLoader {
                     baseTables,
                     summaryTables,
                     tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "sales_fact_1998",
+                        "i_sls_98_pk",
+                        new String[] {"product_id", "time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "sales_fact_1998",
@@ -3265,6 +3421,16 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_pl_01_sales_fact_1997",
+                        "i_agg_pl_01_sales_fact_1997_pk",
+                        new String[] {"product_id", "time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_pl_01_sales_fact_1997",
@@ -3290,6 +3456,16 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_ll_01_sales_fact_1997",
+                        "i_agg_ll_01_sales_fact_1997_pk",
+                        new String[] {"product_id", "time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_ll_01_sales_fact_1997",
@@ -3315,6 +3491,38 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_l_03_sales_fact_1997",
+                        "i_agg_l_03_sales_fact_1997_pk",
+                        new String[] {"time_id", "customer_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_l_04_sales_fact_1997",
+                        "i_agg_l_04_sales_fact_1997_pk",
+                        new String[] {"time_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_l_05_sales_fact_1997",
+                        "i_agg_l_05_sales_fact_1997_pk",
+                        new String[] {
+                            "product_id", "customer_id", "promotion_id",
+                            "store_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_l_05_sales_fact_1997",
@@ -3348,6 +3556,28 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_c_10_sales_fact_1997",
+                        "i_agg_c_10_sales_fact_1997_pk",
+                        new String[] {"month_of_year", "quarter", "the_year"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_c_14_sales_fact_1997",
+                        "i_agg_c_14_sales_fact_1997_pk",
+                        new String[] {
+                            "product_id", "customer_id", "store_id",
+                            "promotion_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_c_14_sales_fact_1997",
@@ -3381,6 +3611,17 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_lc_100_sales_fact_1997",
+                        "i_agg_lc_100_sales_fact_1997_pk",
+                        new String[] {
+                            "product_id", "customer_id", "quarter", "the_year"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_lc_100_sales_fact_1997",
@@ -3398,6 +3639,19 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_c_special_sales_fact_1997",
+                        "i_agg_c_special_sales_fact_1997_pk",
+                        new String[] {
+                            "product_id", "promotion_id", "customer_id",
+                            "store_id", "time_month", "time_quarter",
+                            "time_year"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_c_special_sales_fact_1997",
@@ -3431,6 +3685,19 @@ public class MondrianFoodMartLoader {
                     summaryTables,
                     tableFilter);
 
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_g_ms_pcat_sales_fact_1997",
+                        "i_agg_g_ms_pcat_sales_fact_1997_pk",
+                        new String[] {
+                            "gender", "marital_status", "product_family",
+                            "product_department", "product_category",
+                            "month_of_year", "quarter", "the_year"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
                 loader.createIndex(
                     false,
                     "agg_g_ms_pcat_sales_fact_1997",
@@ -3492,6 +3759,71 @@ public class MondrianFoodMartLoader {
                     "agg_g_ms_pcat_sales_fact_1997",
                     "i_sls97gmp_tyear",
                     new String[] {"the_year"},
+                    baseTables,
+                    summaryTables,
+                    tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "agg_lc_06_sales_fact_1997",
+                        "i_agg_lc_06_sales_fact_1997_pk",
+                        new String[] {
+                            "time_id", "city", "state_province", "country"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "days",
+                        "i_days_pk",
+                        new String[] {"day"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "expense_fact",
+                        "i_expense_fact_pk",
+                        new String[] {"store_id", "account_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                loader.createIndex(
+                    true,
+                    "region",
+                    "i_region_pk",
+                    new String[] {"region_id"},
+                    baseTables,
+                    summaryTables,
+                    tableFilter);
+                if (pk) {
+                    loader.createIndex(
+                        true,
+                        "salary",
+                        "i_salary_pk",
+                        new String[] {"pay_date", "employee_id"},
+                        baseTables,
+                        summaryTables,
+                        tableFilter);
+                }
+                loader.createIndex(
+                    true,
+                    "warehouse",
+                    "i_warehouse_pk",
+                    new String[] {"warehouse_id"},
+                    baseTables,
+                    summaryTables,
+                    tableFilter);
+                loader.createIndex(
+                    true,
+                    "warehouse_class",
+                    "i_warehouse_class_pk",
+                    new String[] {"warehouse_class_id"},
                     baseTables,
                     summaryTables,
                     tableFilter);
