@@ -513,6 +513,7 @@ public enum RowsetDefinition {
             MdschemaActionsRowset.ActionName,
             MdschemaActionsRowset.Coordinate,
             MdschemaActionsRowset.CoordinateType,
+            MdschemaActionsRowset.CubeSource,
         }, new Column[] {
             // Spec says sort on CATALOG_NAME, SCHEMA_NAME, CUBE_NAME,
             // ACTION_NAME.
@@ -570,7 +571,8 @@ public enum RowsetDefinition {
             MdschemaCubesRowset.Description,
             MdschemaCubesRowset.Dimensions,
             MdschemaCubesRowset.Sets,
-            MdschemaCubesRowset.Measures
+            MdschemaCubesRowset.Measures,
+            MdschemaCubesRowset.CubeSource
         },
         new Column[] {
             MdschemaCubesRowset.CatalogName,
@@ -626,6 +628,7 @@ public enum RowsetDefinition {
             MdschemaDimensionsRowset.DimensionMasterUniqueName,
             MdschemaDimensionsRowset.DimensionIsVisible,
             MdschemaDimensionsRowset.Hierarchies,
+            MdschemaDimensionsRowset.CubeSource,
         },
         new Column[] {
             MdschemaDimensionsRowset.CatalogName,
@@ -739,6 +742,7 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.DimensionIsShared,
             MdschemaHierarchiesRowset.ParentChild,
             MdschemaHierarchiesRowset.Levels,
+            MdschemaHierarchiesRowset.CubeSource,
         },
         new Column[] {
             MdschemaHierarchiesRowset.CatalogName,
@@ -811,6 +815,7 @@ public enum RowsetDefinition {
             MdschemaLevelsRowset.LevelUniqueSettings,
             MdschemaLevelsRowset.LevelIsVisible,
             MdschemaLevelsRowset.Description,
+            MdschemaLevelsRowset.CubeSource,
         },
         new Column[] {
             MdschemaLevelsRowset.CatalogName,
@@ -874,6 +879,7 @@ public enum RowsetDefinition {
             MdschemaMeasuresRowset.LevelsList,
             MdschemaMeasuresRowset.Description,
             MdschemaMeasuresRowset.FormatString,
+            MdschemaMeasuresRowset.CubeSource,
         },
         new Column[] {
             MdschemaMeasuresRowset.CatalogName,
@@ -942,6 +948,7 @@ public enum RowsetDefinition {
             MdschemaMembersRowset.ParentCount,
             MdschemaMembersRowset.TreeOp_,
             MdschemaMembersRowset.Depth,
+            MdschemaMembersRowset.CubeSource,
         },
         new Column[] {
             MdschemaMembersRowset.CatalogName,
@@ -1021,7 +1028,8 @@ public enum RowsetDefinition {
             MdschemaPropertiesRowset.PropertyType,
             MdschemaPropertiesRowset.DataType,
             MdschemaPropertiesRowset.PropertyContentType,
-            MdschemaPropertiesRowset.Description
+            MdschemaPropertiesRowset.Description,
+            MdschemaPropertiesRowset.CubeSource,
         },
         null /* not sorted */)
     {
@@ -1058,6 +1066,7 @@ public enum RowsetDefinition {
             MdschemaSetsRowset.CubeName,
             MdschemaSetsRowset.SetName,
             MdschemaSetsRowset.Scope,
+            MdschemaSetsRowset.CubeSource,
         },
         new Column[] {
             MdschemaSetsRowset.CatalogName,
@@ -3400,6 +3409,15 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 null);
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
+        
         /*
             TODO: optional columns
         ACTION_TYPE
@@ -3433,6 +3451,14 @@ TODO: see above
         public static final String MD_CUBTYPE_CUBE = "CUBE";
         public static final String MD_CUBTYPE_VIRTUAL_CUBE = "VIRTUAL CUBE";
 
+        private static final Column CubeSource = 
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (1, 2 or 3)");
         private static final Column CatalogName =
             new Column(
                 "CATALOG_NAME",
@@ -3621,6 +3647,7 @@ TODO: see above
                         //row.set(SchemaUpdatedBy.name, "");
                         //row.set(LastDataUpdate.name, "");
                         //row.set(DataUpdatedBy.name, "");
+                        row.set(CubeSource.name, 2);
                         row.set(IsDrillthroughEnabled.name, true);
                         row.set(IsWriteEnabled.name, false);
                         row.set(IsLinkable.name, false);
@@ -3756,6 +3783,14 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 "The unique name of the dimension.");
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
         private static final Column DimensionGuid =
             new Column(
                 "DIMENSION_GUID",
@@ -4282,6 +4317,14 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 "The unique name of the hierarchy.");
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
 
         private static final Column HierarchyGuid =
             new Column(
@@ -4699,6 +4742,14 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 "The properly escaped unique name of the level.");
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
         private static final Column LevelGuid =
             new Column(
                 "LEVEL_GUID",
@@ -5029,6 +5080,14 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 "The name of the cube to which this measure belongs.");
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
         private static final Column MeasureName =
             new Column(
                 "MEASURE_NAME",
@@ -5446,7 +5505,14 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "depth");
-
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,
@@ -5882,7 +5948,14 @@ TODO: see above
                 false,
                 true,
                 "A human-readable description of the measure.");
-
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,
@@ -6053,7 +6126,15 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "A human-readable description of the measure.");
-
+        private static final Column CubeSource =
+            new Column(
+                "CUBE_SOURCE",
+                Type.Integer,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "The type of source cube (cube=1, dimension=2).  Not Supported.");
+        
         protected boolean needConnection() {
             return false;
         }

@@ -763,9 +763,9 @@ public class XmlaHandler {
             writer.startDocument();
 
             writer.startElement(
-                prefix + ":ExecuteResponse",
-                "xmlns:" + prefix, NS_XMLA);
-            writer.startElement(prefix + ":return");
+                "ExecuteResponse",
+                "xmlns", NS_XMLA);
+            writer.startElement("return");
             boolean rowset =
                 request.isDrillThrough()
                 || Format.Tabular.name().equals(
@@ -1719,7 +1719,7 @@ public class XmlaHandler {
                     dataSet =
                         new MDDataSet_Multidimensional(
                             cellSet,
-                            content != Content.DataIncludeDefaultSlicer,
+                            false, // content != Content.DataIncludeDefaultSlicer,
                             responseMimeType
                             == Enumeration.ResponseMimeType.JSON);
                 } else {
@@ -1771,9 +1771,11 @@ public class XmlaHandler {
         final String formatName =
             request.getProperties().get(
                 PropertyDefinition.Format.name());
-        return Util.lookup(
+        Format f = Util.lookup(
             Format.class,
             formatName, defaultValue);
+        if (f == Format.Native) return Format.Multidimensional;
+        return f;
     }
 
     private static Content getContent(XmlaRequest request) {
@@ -2843,9 +2845,9 @@ public class XmlaHandler {
         writer.startDocument();
 
         writer.startElement(
-            prefix + ":DiscoverResponse",
-            "xmlns:" + prefix, NS_XMLA);
-        writer.startElement(prefix + ":return");
+            "DiscoverResponse",
+            "xmlns", NS_XMLA);
+        writer.startElement("return");
         writer.startElement(
             "root",
             "xmlns", NS_XMLA_ROWSET,
