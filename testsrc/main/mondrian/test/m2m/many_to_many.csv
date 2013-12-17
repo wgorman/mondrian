@@ -1,0 +1,62 @@
+# many_to_many.csv
+## TableName: m2m_bridge_accountcustomer
+## ColumnNames: id_account,id_customer
+## ColumnTypes: INTEGER,INTEGER
+## NosOfRows: 8
+1,1
+2,2
+3,2
+4,2
+3,3
+5,3
+4,4
+6,4
+## TableName: m2m_dim_account
+## ColumnNames: id_account,nm_account
+## ColumnTypes: INTEGER,VARCHAR(20)
+## NosOfRows: 6
+1,Luke
+2,Mark
+3,Mark-Paul
+4,Mark-Robert
+5,Paul
+6,Robert
+## TableName: m2m_dim_customer
+## ColumnNames: id_customer,nm_customer
+## ColumnTypes: INTEGER,VARCHAR(20)
+## NosOfRows: 4
+1,Luke
+2,Mark
+3,Paul
+4,Robert
+## TableName: m2m_dim_date
+## ColumnNames: id_date,nm_date
+## ColumnTypes: INTEGER,VARCHAR(20)
+## NosOfRows: 2
+1,Day 1
+2,Day 2
+## TableName: m2m_fact_balance
+## ColumnNames: id_account,id_date,amount
+## ColumnTypes: INTEGER,INTEGER,INTEGER
+## NosOfRows: 11
+1,1,100
+2,1,100
+3,1,100
+4,1,100
+5,1,100
+6,1,100
+1,2,105
+2,2,105
+4,2,105
+5,2,105
+6,2,105
+## TableName: m2m_fact_count
+## ColumnNames: id_account,total
+## ColumnTypes: INTEGER,INTEGER
+## NosOfRows: 6
+1,1
+2,1
+3,1
+4,1
+5,1
+6,1

@@ -15,6 +15,8 @@ import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.olap.Role.RollupPolicy;
 import mondrian.rolap.RolapAggregator;
+import mondrian.rolap.RolapCubeHierarchy;
+import mondrian.rolap.RolapCubeMember;
 import mondrian.rolap.RolapEvaluator;
 
 import org.eigenbase.util.property.IntegerProperty;
@@ -107,6 +109,154 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
                     "Don't know how to rollup aggregator '" + aggregator + "'");
             }
             if (aggregator != RolapAggregator.DistinctCount) {
+
+              boolean m2m = false;
+              List<Integer> m2mIndexes = new ArrayList<Integer>();
+              List<RolapCubeHierarchy> m2mHierarchies = new ArrayList<RolapCubeHierarchy>();
+              List<Member> t = tupleList.get(0);
+              for (int i = 0; i < t.size(); i++) {
+                Member m = t.get(i);
+                // Use annotations to determine if this is a many to many dim
+                if (m.getHierarchy().getAnnotationMap().containsKey("hierarchyType") &&
+                    m.getHierarchy().getAnnotationMap().get("hierarchyType").getValue().equals("m2m")) {
+                  m2mIndexes.add(i);
+                  String m2mHierarchyName = m.getHierarchy().getAnnotationMap().get("m2mParent").getValue().toString();
+                  for (Hierarchy hier : ((RolapCubeMember)m).getCube().getHierarchies()) {
+                    if (hier.getName().equals(m2mHierarchyName)) {
+                      m2mHierarchies.add((RolapCubeHierarchy)hier);
+                      break;
+                    }
+                  }
+                  // TODO: throw exception if m2mParent hierarchy does not exist
+                  m2m = true;
+                }
+              }
+              // note that another check that we can perform is if this m2m is using only 1 member from each m2m dim,
+              // if so, no need to use alternative join paths
+              if (m2m) {
+                // not sure if we need to remove duplicates yet or if that will be done automagically
+                TupleList newList = new ListTupleList(tupleList.getArity() + 1, new ArrayList<Member>());
+                final TupleCursor cursor = tupleList.tupleCursor();
+                Member mlist[] = new Member[cursor.getArity() + m2mIndexes.size()];
+                
+                // m2mMembers NOT USED YET - could come in handy for bundling a single question to the database
+                // instead of issuing a query per m2m member
+//                Map<Integer, Set<Member>> m2mMembers = new HashMap<Integer,Set<Member>>(); // TreeSet<Member>();
+                
+                // for each tuple, lookup the list of members for each m2m member, and then perform a 
+                // cartesian product on those m2m values resulting in new tuples
+                while (cursor.forward()) {
+                  // we could gather all the members from an m2m dim and then issue a single SQL query to get their 
+                  // related m2m hierarchy members, then traverse the list again populating the m2m hierarchy
+                  // TODO: eventually we could push this down into a single SQL segment lookup?
+                  List<Set<Member>> newMembersList = new ArrayList<Set<Member>>();
+                  for (int i = 0; i < cursor.getArity(); i++) {
+                    if (m2mIndexes.contains(i)) {
+                      int m2mIndex = m2mIndexes.indexOf(i);
+//                      if (m2mMembers.get(i) == null) {
+//                        m2mMembers.put(i, new TreeSet<Member>());
+//                      }
+//                      Set<Member> m2mSet = m2mMembers.get(i);
+                      
+                      Set<Member> newMembers = new TreeSet<Member>();
+                      newMembersList.add(newMembers);
+                      // m2m member, 
+                      // populate newMembers with
+                      RolapCubeMember m = (RolapCubeMember)cursor.member(i);
+                      RolapCubeHierarchy h = m2mHierarchies.get(m2mIndex);
+ 
+                      Evaluator neweval = evaluator.push();
+                      
+                      List<Member> slicer = ((RolapEvaluator)neweval).getSlicerMembers();
+                      // clear out the slicer
+                      for (Member sm : slicer) {
+                        Member dm = sm.getHierarchy().getDefaultMember();
+                        neweval.setContext(dm);
+                      }
+                      slicer.clear();
+                      neweval.setContext(m);
+                      // TODO: This approach only works if native is enabled, need to work in both native and non-native
+                      List<Member> members = h.getRolapSchema().getSchemaReader().getLevelMembers(h.getLevels()[1], neweval);
+                      newMembers.addAll(members);
+
+                      // change the scope of the m2m dim to be the all member
+                      mlist[i] = m.getHierarchy().getAllMember();
+                    } else {
+                      // non m2m member
+                      mlist[i] = cursor.member(i);
+                    }
+                  }
+                  
+                  // build cartesian product of new members list
+                  List<List<Member>> totalmembers = new ArrayList<List<Member>>();
+                  totalmembers.add(new ArrayList<Member>());
+                  for (int i = 0 ; i < newMembersList.size(); i++) {
+                    Set<Member> newMembers = newMembersList.get(i);
+                    if (i == newMembersList.size() - 1) {
+                      // last iteration, add tuples
+                      for (Member m : newMembers) {
+                        for (List<Member> members : totalmembers) {
+                           for (int j = 0; j < members.size(); j++) {
+                             mlist[mlist.length - (j+2)] = members.get(j);
+                           }
+                           // populate member arr
+                           mlist[mlist.length - 1] = m;
+                           // TODO: optimize dedupe
+                           boolean duplicate = false;
+                           for (int j = 0; j < newList.size(); j++) {
+                             List<Member> tc = newList.get(j);
+                             boolean matches = true;
+                             for (int k = 0; k < mlist.length && matches; k++) {
+                               if (!mlist[k].equals(tc.get(k))) {
+                                 matches = false;
+                               }
+                             }
+                             if (matches) {
+                               duplicate = true;
+                               break;
+                             }
+                           }
+
+                           if (!duplicate) {
+                             newList.addTuple(mlist);
+                           }
+                        }
+                      }
+                    } else {
+                      // expand on total members with next level deep
+                      List<List<Member>> ntotalmembers = new ArrayList<List<Member>>();
+                      for (Member m : newMembers) {
+                        for (List<Member> members : totalmembers) {
+                          List<Member> newmembers = new ArrayList<Member>(members);
+                          newmembers.add(m);
+                          ntotalmembers.add(newmembers);
+                        }
+                      }
+                      totalmembers = ntotalmembers;
+                    }
+                  }
+                  
+//                  for (Member m : newMembers) {
+//                    mlist[mlist.length - 1] = m;
+//                    newList.addTuple(mlist);
+//                  }
+                }
+                tupleList = newList;
+              }
+
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
+              
                 final int savepoint = evaluator.savepoint();
                 try {
                     evaluator.setNonEmpty(false);
