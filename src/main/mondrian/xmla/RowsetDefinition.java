@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2011 Pentaho
 // All Rights Reserved.
 */
-
 package mondrian.xmla;
 
 import mondrian.olap.*;
@@ -895,7 +894,7 @@ public enum RowsetDefinition {
 
     /**
      *
-     * http://msdn2.microsoft.com/es-es/library/ms126046.aspx
+     * http://msdn.microsoft.com/en-us/library/ms126046.aspx
      *
      *
      * restrictions
@@ -939,6 +938,7 @@ public enum RowsetDefinition {
             MdschemaMembersRowset.MemberOrdinal,
             MdschemaMembersRowset.MemberName,
             MdschemaMembersRowset.MemberUniqueName,
+            MdschemaMembersRowset.MemberKey,
             MdschemaMembersRowset.MemberType,
             MdschemaMembersRowset.MemberGuid,
             MdschemaMembersRowset.MemberCaption,
@@ -3417,7 +3417,7 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.OPTIONAL,
                 "The type of source cube (cube=1, dimension=2).  Not Supported.");
-        
+
         /*
             TODO: optional columns
         ACTION_TYPE
@@ -3451,7 +3451,7 @@ TODO: see above
         public static final String MD_CUBTYPE_CUBE = "CUBE";
         public static final String MD_CUBTYPE_VIRTUAL_CUBE = "VIRTUAL CUBE";
 
-        private static final Column CubeSource = 
+        private static final Column CubeSource =
             new Column(
                 "CUBE_SOURCE",
                 Type.Integer,
@@ -5431,6 +5431,14 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 " Unique name of the member.");
+        private static final Column MemberKey =
+            new Column(
+                "MEMBER_KEY",
+                Type.String,
+                null,
+                Column.RESTRICTION,
+                Column.REQUIRED,
+                "The value of the member's key column. Returns NULL if the member has a composite key.");
         private static final Column MemberType =
             new Column(
                 "MEMBER_TYPE",
@@ -5838,6 +5846,8 @@ TODO: see above
             row.set(MemberOrdinal.name, member.getOrdinal());
             row.set(MemberName.name, member.getName());
             row.set(MemberUniqueName.name, member.getUniqueName());
+            row.set(MemberKey.name, member.getPropertyValue(
+                Property.StandardMemberProperty.MEMBER_KEY));
             row.set(MemberType.name, member.getMemberType().ordinal());
             //row.set(MemberGuid.name, "");
             row.set(MemberCaption.name, member.getCaption());
@@ -6134,7 +6144,7 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.OPTIONAL,
                 "The type of source cube (cube=1, dimension=2).  Not Supported.");
-        
+
         protected boolean needConnection() {
             return false;
         }
