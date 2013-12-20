@@ -938,6 +938,7 @@ public enum RowsetDefinition {
             MdschemaMembersRowset.MemberOrdinal,
             MdschemaMembersRowset.MemberName,
             MdschemaMembersRowset.MemberUniqueName,
+            MdschemaMembersRowset.Expression,
             MdschemaMembersRowset.MemberKey,
             MdschemaMembersRowset.MemberType,
             MdschemaMembersRowset.MemberGuid,
@@ -5431,12 +5432,20 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 " Unique name of the member.");
+        private static final Column Expression =
+            new Column(
+                "EXPRESSION",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.REQUIRED,
+                "TThe expression for calculations, if the member is of type MDMEMBER_TYPE_FORMULA.");
         private static final Column MemberKey =
             new Column(
                 "MEMBER_KEY",
                 Type.String,
                 null,
-                Column.RESTRICTION,
+                Column.NOT_RESTRICTION,
                 Column.REQUIRED,
                 "The value of the member's key column. Returns NULL if the member has a composite key.");
         private static final Column MemberType =
@@ -5816,7 +5825,9 @@ TODO: see above
                 return;
             }
 
-            getExtra(connection).checkMemberOrdinal(member);
+            XmlaHandler.XmlaExtra extra = getExtra(connection);
+            //TODO: revert
+            member = extra.checkReplaceMemberOrdinal(member);
 
             // Check whether the member is visible, otherwise do not dump.
             Boolean visible =
@@ -5843,11 +5854,21 @@ TODO: see above
             row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
             row.set(LevelUniqueName.name, level.getUniqueName());
             row.set(LevelNumber.name, adjustedLevelDepth);
-            row.set(MemberOrdinal.name, member.getOrdinal());
+            int memberOrdinal = member.getOrdinal();
+            // TODO: testing
+            if ( memberOrdinal < 0 ) {
+              LOGGER.error("negative MEMBER_ORDINAL for " + member.getName());
+              // will at least prevent an exception
+              memberOrdinal = 0;
+            }
+            row.set(MemberOrdinal.name, memberOrdinal);
             row.set(MemberName.name, member.getName());
             row.set(MemberUniqueName.name, member.getUniqueName());
             row.set(MemberKey.name, member.getPropertyValue(
                 Property.StandardMemberProperty.MEMBER_KEY));
+            // expression
+            row.set(Expression.name, extra.getXmlaExpression(member));
+
             row.set(MemberType.name, member.getMemberType().ordinal());
             //row.set(MemberGuid.name, "");
             row.set(MemberCaption.name, member.getCaption());

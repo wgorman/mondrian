@@ -10,6 +10,7 @@
 package mondrian.olap4j;
 
 import mondrian.olap.OlapElement;
+import mondrian.rolap.RolapCalculatedMember;
 import mondrian.rolap.RolapConnection;
 import mondrian.rolap.RolapMeasure;
 import mondrian.server.Locus;
@@ -176,6 +177,15 @@ class MondrianOlap4jMember
 
     public ParseTreeNode getExpression() {
         throw new UnsupportedOperationException();
+    }
+
+    public String getXmlaExpression() {//TODO: temporary
+      if (isCalculated()) {
+        if( member instanceof RolapCalculatedMember ) {
+          return (( RolapCalculatedMember)  member ).getExpression().toString();
+        }
+      }
+      return "";
     }
 
     public List<Member> getAncestorMembers() {
