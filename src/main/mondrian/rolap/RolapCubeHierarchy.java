@@ -13,6 +13,7 @@ package mondrian.rolap;
 
 import mondrian.olap.*;
 import mondrian.olap.fun.VisualTotalsFunDef;
+import mondrian.resource.MondrianResource;
 import mondrian.rolap.TupleReader.MemberBuilder;
 import mondrian.rolap.sql.MemberChildrenConstraint;
 import mondrian.rolap.sql.TupleConstraint;
@@ -56,6 +57,14 @@ public class RolapCubeHierarchy extends RolapHierarchy {
 
     // redundant copy of {@link #levels} with tigher type
     private final RolapCubeLevel[] cubeLevels;
+
+    // a reference to the sibling dimension if this is a many to many hierarchy
+    // state kept between constructor and init phase.
+    private RolapCubeDimension m2mBridgeSiblingDimension;
+
+    // the generated many to many hierarchy used for aggregations and slicer 
+    // processing
+    private RolapCubeHierarchy manyToManyHierarchy;
 
     /**
      * Creates a RolapCubeHierarchy.
@@ -106,16 +115,25 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         if (!usingCubeFact) {
             // join expressions are columns only
             assert (usage.getJoinExp() instanceof MondrianDef.Column);
-            currentRelation =
-                this.cubeDimension.getCube().getStar().getUniqueRelation(
-                    rolapHierarchy.getRelation(),
-                    usage.getForeignKey(),
-                    ((MondrianDef.Column)usage.getJoinExp()).getColumnName(),
-                    usage.getJoinTable().getAlias());
+            String bridgeCube = (cubeDim instanceof MondrianDef.DimensionUsage) ? ((MondrianDef.DimensionUsage)cubeDim).bridgeCube : null;
+            if (bridgeCube != null) {
+              currentRelation = createManyToManyRelation(bridgeCube);
+              extractNewAliases(currentRelation, currentRelation);
+            } else {
+              currentRelation =
+                  this.cubeDimension.getCube().getStar().getUniqueRelation(
+                      rolapHierarchy.getRelation(),
+                      usage.getForeignKey(),
+                      ((MondrianDef.Column)usage.getJoinExp()).getColumnName(),
+                      usage.getJoinTable().getAlias());
+            }
         } else {
-            currentRelation = rolapHierarchy.getRelation();
+          currentRelation = rolapHierarchy.getRelation();
         }
-        extractNewAliases(rolapHierarchy.getRelation(), currentRelation);
+
+        if (m2mBridgeSiblingDimension == null) {
+          extractNewAliases(rolapHierarchy.getRelation(), currentRelation);
+        }
         this.relation = currentRelation;
         this.levels =
             this.cubeLevels =
@@ -164,6 +182,208 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         } else {
             this.reader = new CacheRolapCubeHierarchyMemberReader();
         }
+    }
+
+    private MondrianDef.RelationOrJoin createManyToManyRelation(String bridgeCube) {
+        // we are in a many to many dimension, there are two things we need to
+        // do.
+        //
+        // 1) In the constructor, we need to produce the join path from the
+        // current cube to the many to many dimension.  This is used by
+        // RolapStar to determine how to join to this dimension.
+        //
+        // 2) in the init phase, we will create a hidden peer dimension used
+        // for calculating the correct answers to questions regarding the many
+        // to many dimension when there is a chance that duplicates / etc could
+        // appear this logic is encapsulated in AggregateFunDef and is used for
+        // slicer and Aggregate() function processing.
+
+      
+        // Construction of the RolapStar
+        //
+        // Traverse the schema to find the related components that make
+        // up the join path including the following:
+        //
+        // - bridge cube - this is a cube that contains the many to many
+        //     relationship between the current dimension and the 
+        //     dimension related to the current cube.
+        //
+        // - related dimension - this is the dimension that the bridge cube
+        //     and current cube have in common that makes up the join path
+        //     to the current dimension
+        //
+        // - bridge cube current dimension usage - the current dimension
+        //     represented in the bridge cube, this is used so we can 
+        //     determine the foreign key join to the bridge
+
+
+        // first, locate the bridge cube
+        Cube cubes[] = cubeDimension.getCube().getSchema().getCubes();
+        RolapCube bridgeCubeObj = null;
+        for (int i = 0; i < cubes.length; i++) {
+          if (cubes[i].getName().equals(bridgeCube)) {
+            bridgeCubeObj = (RolapCube)cubes[i];
+            break;
+          }
+        }
+        if (bridgeCubeObj == null) {
+          throw MondrianResource.instance().BridgeCubeNotFound.ex(
+              bridgeCube, this.name, getCube().getName());
+        }
+
+        // excluding the current dimension, find a match between an
+        // already defined dimension in this cube and the bridge cube.
+        // for now, we only support a single join path bridge cube
+        // containing the two related dimensions.
+
+        Dimension bridgeDimensions[] = bridgeCubeObj.getDimensions();
+        Dimension cubeDimensions[] = cubeDimension.getCube().getDimensions();
+        // the joining dimension in the current cube
+        RolapCubeDimension cubeJoinDim = null;
+        // the joining dimension from the bridge cube
+        Dimension bridgeJoinDim = null;
+        // the current dimension from the bridge cube
+        RolapCubeDimension bridgeCurrDim = null;
+
+        for (int i = 0; i < bridgeDimensions.length; i++) {
+            if (bridgeDimensions[i].getName().equals("Measures")) {
+                continue;
+            }
+            if (bridgeDimensions[i].getName().equals(
+                this.getDimension().getName())) 
+            {
+                bridgeCurrDim = (RolapCubeDimension)bridgeDimensions[i];
+                continue;
+            }
+            
+            // see if the current dimension is a regular dimension in the
+            // current cube.
+            for (int j = 0; j < cubeDimensions.length; j++) {
+                if (cubeDimensions[j] == null) {
+                    continue;
+                }
+                if (cubeDimensions[j].getName().equals("Measures")) {
+                    continue;
+                }
+                // ignore dimensions in this cube that are many to many
+                // dimensions, including the current dimension.
+                if ((cubeDimensions[j] instanceof RolapCubeDimension)
+                    && (((RolapCubeDimension)cubeDimensions[j]).xmlDimension
+                        instanceof MondrianDef.DimensionUsage)
+                    && ((MondrianDef.DimensionUsage)((RolapCubeDimension)
+                        cubeDimensions[j]).xmlDimension).bridgeCube != null) 
+                {
+                    continue;
+                }
+
+                if (cubeDimensions[j].getName().equals(
+                    bridgeDimensions[i].getName())) 
+                {
+                    if (bridgeJoinDim != null) {
+                        throw MondrianResource.instance().
+                            MultipleBridgeDimensionsFound.ex(
+                                this.name, getCube().getName());
+                    }
+                    bridgeJoinDim = bridgeDimensions[i];
+                    cubeJoinDim = (RolapCubeDimension)cubeDimensions[j];
+                    break; // the inner loop
+                }
+            }
+        }
+
+        if (bridgeJoinDim == null) {
+            throw MondrianResource.instance().MissingBridgeJoinDimension.ex(
+                this.name, getCube().getName());
+        }
+
+        m2mBridgeSiblingDimension = cubeJoinDim;
+
+        // modify xmlhierarchy to match account join for HierarchyUsage
+        // This is a limitation of Mondrian 3.0, the correct way to fix this 
+        // would be to phase out hierarchy usage and leave the xml object
+        // encapsulated in this class only.
+
+        // clone most of the hierarchy
+        MondrianDef.Hierarchy hier = new MondrianDef.Hierarchy();
+        hier.allLevelName = this.xmlHierarchy.allLevelName;
+        hier.allMemberCaption = this.xmlHierarchy.allMemberCaption;
+        hier.allMemberName = this.xmlHierarchy.allMemberName;
+        hier.annotations = this.xmlHierarchy.annotations;
+        hier.caption = this.xmlHierarchy.caption;
+        hier.defaultMember = this.xmlHierarchy.defaultMember;
+        hier.description = this.xmlHierarchy.description;
+        hier.hasAll = this.xmlHierarchy.hasAll;
+        hier.levels = this.xmlHierarchy.levels;
+        hier.memberReaderClass = this.xmlHierarchy.memberReaderClass;
+        hier.memberReaderParameters = this.xmlHierarchy.memberReaderParameters;
+        hier.name = this.xmlHierarchy.name;
+        hier.relation = this.xmlHierarchy.relation;
+        hier.uniqueKeyLevelName = this.xmlHierarchy.uniqueKeyLevelName;
+        hier.visible = this.xmlHierarchy.visible;
+
+        // only modify the primary key and primary key table, used later
+        // by the HierarchyUsage object when determining
+        // how to join to the fact table.
+        RolapHierarchy cubeJoinDimHier = 
+            (RolapHierarchy)cubeJoinDim.getHierarchies()[0];
+
+        hier.primaryKey = cubeJoinDimHier.xmlHierarchy.primaryKey;
+    
+        // note, if this is null we assume it's a table relation and need to
+        // reach in and get the alias or name of table.
+        hier.primaryKeyTable = cubeJoinDimHier.xmlHierarchy.primaryKeyTable;
+        if (hier.primaryKeyTable == null) {
+          if (!(cubeJoinDimHier.xmlHierarchy.relation instanceof MondrianDef.Table)) {
+            throw MondrianResource.instance().ManyToManyNonTableRelation.ex(this.name, this.getCube().getName());
+          }
+          String alias = 
+              ((MondrianDef.Table)cubeJoinDimHier.xmlHierarchy.relation).alias;
+          if (alias != null) { 
+            hier.primaryKeyTable = alias;
+          } else {
+            hier.primaryKeyTable = 
+                ((MondrianDef.Table)cubeJoinDimHier.xmlHierarchy.relation)
+                    .name;
+          }
+        }
+
+        // We need to build up a snow flake to represent the many to many join.
+    
+        // <current fact table> JOINED TO <bridge dim> VIA (<foreign key>=<primary key>) JOINED TO 
+        // <bridge cube> VIA (<foreign key>) JOINED TO
+        // <current dim> VIA (<primary key>=<bridge cube.foreign key>)
+
+        MondrianDef.Join join = new MondrianDef.Join();
+        // join.left is the bridge dimension
+        MondrianDef.Hierarchy joiningHier = cubeJoinDimHier.xmlHierarchy;
+        join.left = joiningHier.relation;
+        join.leftKey = joiningHier.primaryKey;
+    
+        MondrianDef.Join right = new MondrianDef.Join();
+    
+        // bridge cube fact table
+        right.left = bridgeCubeObj.fact;
+
+        // foreign key from bridge cube fact table
+        right.leftKey = 
+            ((RolapCubeHierarchy)bridgeCurrDim.getHierarchies()[0])
+                .usage.getForeignKey(); 
+    
+        // current dim relation
+        right.right = this.xmlHierarchy.relation;
+        right.rightKey = this.xmlHierarchy.primaryKey;
+        join.right = right;
+    
+        // foreign key of bridge dimension in bridge cube fact table
+        join.rightKey =  
+            ((RolapCubeHierarchy)bridgeJoinDim.getHierarchies()[0])
+                .usage.getForeignKey();
+    
+        // now overwrite xmlHierarchy with new foreign key and foreign key table
+        this.xmlHierarchy = hier;
+    
+        // and update the current relation with the new complex relation
+        return join;
     }
 
     /**
@@ -419,6 +639,74 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         rolapHierarchy.init(xmlDimension);
         // second init cube hierarchy
         super.init(xmlDimension);
+        initManyToMany(xmlDimension);
+    }
+
+    /**
+     * initialize many to many dimension metadata for regular and virtual cube
+     * hierarchies.
+     * 
+     * @param xmlDimension
+     */
+    private void initManyToMany(MondrianDef.CubeDimension xmlDimension) {
+        if (getCube().isVirtual()) {
+            // we need to traverse underlying cubes and see if this hierarchy
+            // in base cubes are many to many.  if any of them are, we need to
+            // create a cube dimension so that the evaluator will have a place
+            // for the created dimension later in the process.  This info is
+            // then used by AggregateFunDef to resolve the correct members for
+            // calculations
+            RolapCubeUsages usages = getCube().getCubeUsages();
+            for (String cubeName : usages.getCubeNames()) {
+                RolapCube baseCube =
+                    getCube().getSchema().lookupCube(cubeName);
+                RolapCubeHierarchy baseHierarchy =
+                    (RolapCubeHierarchy)baseCube.findBaseCubeHierarchy(this);
+                if (baseHierarchy != null 
+                    && baseHierarchy.m2mBridgeSiblingDimension != null) 
+                {
+                    this.m2mBridgeSiblingDimension =
+                        baseHierarchy.m2mBridgeSiblingDimension;
+                }
+            }
+        }
+      
+      if (this.m2mBridgeSiblingDimension != null) {          
+        // Create a new dimension similar to how the $Closure dimension is
+        // created for parent child hierarchies, but for this use case
+        // it represents the bridge dimension, this will be used for 
+        // AggregateFunDef for correct calculations
+
+        RolapDimension dimension = m2mBridgeSiblingDimension.rolapDimension;
+
+        RolapCubeDimension cubeDimension =
+            new RolapCubeDimension(
+                getCube(), dimension, m2mBridgeSiblingDimension.xmlDimension,
+                getDimension().getName() + "$M2M",
+                -1,
+                getCube().hierarchyList,
+                getDimension().isHighCardinality());
+
+        manyToManyHierarchy = (RolapCubeHierarchy)cubeDimension.getHierarchies()[0];
+
+        if (! getCube().isVirtual()) {
+            getCube().createUsage(
+                (RolapCubeHierarchy) cubeDimension.getHierarchies()[0],
+                xmlDimension);
+        }
+        cubeDimension.init(xmlDimension);
+        getCube().registerDimension(cubeDimension);
+      }
+    }
+    
+    /**
+     * return the generated many to many hierarchy used for aggregations and 
+     * slicer processing
+     * 
+     * @return many to many hierarchy
+     */
+    public RolapCubeHierarchy getManyToManyHierarchy() {
+      return manyToManyHierarchy;
     }
 
     /**
