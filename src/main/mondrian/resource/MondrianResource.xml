@@ -459,9 +459,26 @@
     <text>Left side of join must not be a join; mondrian only supports right-deep joins.</text>
 </exception>
 
+
 <message id="40380" name="LevelTableParentNotFound">
     <text>The level {0} makes use of the ''parentColumn'' attribute, but a parent member for key {1} is missing. This can be due to the usage of the NativizeSet MDX function with a list of members form a parent-child hierarchy that doesn''t include all parent members in its definition. Using NativizeSet with a parent-child hierarchy requires the parent members to be included in the set, or the hierarchy cannot be properly built natively.</text>
 </message>
+
+<exception id="40390" name="BridgeCubeNotFound">
+    <text>Many to Many bridge cube by the name of ''{0}'' not found in schema for hierarchy ''{1}'' in cube ''{2}''.</text>
+</exception>
+
+<exception id="40400" name="MultipleBridgeDimensionsFound">
+    <text>Failed to create hierarchy ''{0}'' in cube ''{1}''.  Many to Many dimensions currently only support a single join dimension in the bridge cube.</text>
+</exception>
+
+<exception id="40410" name="MissingBridgeJoinDimension">
+    <text>"Unable to locate bridge join dimension for many to many hierarchy ''{0}'' in cube ''{1}''.</text>
+</exception>
+
+<exception id="40420" name="ManyToManyNonTableRelation">
+    <text>Error processing many to many hierarchy ''{0}'' in cube ''{1}''.  Dimensions without primary key tables only support the Table relation.</text>
+</exception>
 
 <!-- ====================================================================== -->
 <!-- Loader -->

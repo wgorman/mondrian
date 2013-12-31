@@ -11,6 +11,8 @@
 
 package mondrian.rolap;
 
+import java.util.ArrayList;
+import java.util.List;
 import mondrian.olap.MondrianDef;
 
 /**
@@ -23,9 +25,19 @@ import mondrian.olap.MondrianDef;
  */
 public class RolapCubeUsages {
     private MondrianDef.CubeUsages cubeUsages;
-
+    private List<String> cubeNames;
     public RolapCubeUsages(MondrianDef.CubeUsages cubeUsage) {
         this.cubeUsages = cubeUsage;
+        this.cubeNames = new ArrayList<String>();
+        if (cubeUsages != null && cubeUsages.cubeUsages != null) {
+          for (MondrianDef.CubeUsage usage : cubeUsages.cubeUsages) {
+            cubeNames.add( usage.cubeName );
+          }
+        }
+    }
+    
+    public List<String> getCubeNames() {
+      return cubeNames;
     }
 
     public boolean shouldIgnoreUnrelatedDimensions(String baseCubeName) {

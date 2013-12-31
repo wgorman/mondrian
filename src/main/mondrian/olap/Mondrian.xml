@@ -411,6 +411,13 @@ Revision is $Id$
             <Doc>Name of the source dimension. Must be a dimension in
             this schema. Case-sensitive.</Doc>
         </Attribute>
+        <Attribute name="bridgeCube" requred="false">
+            <Doc>
+                If this is a many to many dimension, the name of the bridge
+                cube that relates other dimensions of this cube with the
+                dimension.
+            </Doc>
+        </Attribute>
         <Attribute name="level" required="false">
             <Doc>
                 Name of the level to join to. If not specified, joins to the
@@ -437,7 +444,20 @@ Revision is $Id$
                 }
                 throw Util.newInternal(
                     "Cannot find shared dimension '" + source + "'");
-            }]]>
+            }
+
+            // retrieve many to many cube if available.
+            public Cube getBridgeCube(Schema schema) {
+                Util.assertPrecondition(schema != null, "schema != null");
+                for (int i = 0; i < schema.cubes.length; i++) {
+                    if (schema.cubes[i].name.equals(bridgeCube)) {
+                        return schema.cubes[i];
+                    }
+                }
+                return null;
+            }
+
+            ]]>
         </Code>
     </Element>
 

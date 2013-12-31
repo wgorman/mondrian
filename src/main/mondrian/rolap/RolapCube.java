@@ -1982,6 +1982,17 @@ public class RolapCube extends CubeBase {
         return cubeUsages != null
             && cubeUsages.shouldIgnoreUnrelatedDimensions(baseCubeName);
     }
+    
+    /**
+     * return the usages of this cube, used
+     * for mapping many to many dimensions back
+     * to their parent cubes in virtual cubes.
+     *
+     * @return cube usages
+     */
+    RolapCubeUsages getCubeUsages() {
+      return cubeUsages;
+    }
 
     /**
      * Returns a list of all hierarchies in this cube, in order of dimension.
@@ -2521,6 +2532,19 @@ public class RolapCube extends CubeBase {
                     }
                 }
             }
+        }
+        // this is a special case where the hierarchy is a many to many
+        // hierarchy
+        if (hierarchy.getDimension().getName().endsWith("$M2M")) {
+          String rootDim = hierarchy.getDimension().getName().substring(
+              0, hierarchy.getDimension().getName().length() - 4);
+          for (int i = 0; i < getDimensions().length; i++) {
+            Dimension dimension = getDimensions()[i];
+            if (dimension.getName().equals(rootDim)) {
+              return ((RolapCubeHierarchy)dimension.getHierarchies()[0])
+                  .getManyToManyHierarchy();
+            }
+          }
         }
         return null;
     }
