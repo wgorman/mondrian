@@ -25,6 +25,7 @@ import mondrian.rolap.sql.SelectNotInGroupByTest;
 import mondrian.rolap.sql.SqlQueryTest;
 import mondrian.test.build.CodeComplianceTest;
 import mondrian.test.clearview.*;
+import mondrian.test.m2m.*;
 import mondrian.test.comp.ResultComparatorTest;
 import mondrian.udf.CurrentDateMemberUdfTest;
 import mondrian.udf.NullValueTest;
@@ -349,6 +350,7 @@ public class Main extends TestSuite {
 
             addTest(suite, FastBatchingCellReaderTest.class);
             addTest(suite, SqlQueryTest.class);
+            addTest(suite, ManyToManyTest.class);
 
             if (MondrianProperties.instance().EnableNativeCrossJoin.get()) {
                 addTest(suite, BatchedFillTest.class, "suite");

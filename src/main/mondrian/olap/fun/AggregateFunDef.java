@@ -132,11 +132,13 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
                 } else {
                     // for virtual cubes, we need access to the base cube level
                     // this is dependent on the current measure at play.
-                    RolapCubeLevel baseCubeLevel =
-                        baseCube.findBaseCubeLevel(
-                            (RolapCubeLevel)m.getLevel());
-                    if (baseCubeLevel != null) {
-                        hier = baseCubeLevel.getHierarchy();
+                    if (m.getLevel() instanceof RolapCubeLevel) {
+                        RolapCubeLevel baseCubeLevel =
+                            baseCube.findBaseCubeLevel(
+                                (RolapCubeLevel)m.getLevel());
+                        if (baseCubeLevel != null) {
+                            hier = baseCubeLevel.getHierarchy();
+                        }
                     }
                 }
                 if (hier != null && hier.getManyToManyHierarchy() != null) {
