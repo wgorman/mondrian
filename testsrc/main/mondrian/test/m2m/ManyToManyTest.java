@@ -826,9 +826,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         + "Row #5: 205\n");
     boolean foundAggQuery = false;
     for (String sql : logger.getSqlQueries()) {
-      System.out.println("SQL FOUND: " + sql);
       if (sql.indexOf( "m2m_fact_balance_date_agg") >= 0) {
-        
         foundAggQuery = true;
       }
     }
