@@ -741,6 +741,7 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.DimensionIsShared,
             MdschemaHierarchiesRowset.ParentChild,
             MdschemaHierarchiesRowset.Levels,
+            MdschemaHierarchiesRowset.HierarchyDisplayFolder,
             MdschemaHierarchiesRowset.CubeSource,
         },
         new Column[] {
@@ -874,6 +875,11 @@ public enum RowsetDefinition {
             MdschemaMeasuresRowset.MeasureGuid,
             MdschemaMeasuresRowset.MeasureAggregator,
             MdschemaMeasuresRowset.DataType,
+            MdschemaMeasuresRowset.NumericPrecision,//TODO
+            MdschemaMeasuresRowset.NumericScale,
+            MdschemaMeasuresRowset.DisplayFolder,
+            MdschemaMeasuresRowset.Expression,
+            MdschemaMeasuresRowset.MeasureUnits,
             MdschemaMeasuresRowset.MeasureIsVisible,
             MdschemaMeasuresRowset.LevelsList,
             MdschemaMeasuresRowset.Description,
@@ -4459,7 +4465,15 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "Levels in this hierarchy.");
-
+        private static final Column HierarchyDisplayFolder =
+            new Column(
+                "HIERARCHY_DISPLAY_FOLDER",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Not supported.");
+        //TODO: hierarchyOrigin enumeration
 
         /*
          * NOTE: This is non-standard, where did it come from?
@@ -4609,6 +4623,8 @@ TODO: see above
 
             // always true
             row.set(DimensionIsShared.name, true);
+
+            row.set(HierarchyDisplayFolder.name, "");
 
             row.set(ParentChild.name, extra.isHierarchyParentChild(hierarchy));
             if (deep) {
@@ -5030,6 +5046,9 @@ TODO: see above
     }
 
 
+    /**
+     * http://technet.microsoft.com/en-us/library/ms126250.aspx
+     */
     public static class MdschemaMeasuresRowset extends Rowset {
         public static final int MDMEASURE_AGGR_UNKNOWN = 0;
         public static final int MDMEASURE_AGGR_SUM = 1;
@@ -5137,6 +5156,48 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.REQUIRED,
                 "Data type of the measure.");
+        //TODO: uncertain..
+        private static final Column NumericPrecision =
+            new Column(
+                "NUMERIC_PRECISION",
+                Type.UnsignedShort,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The maximum precision of the measure.");
+        private static final Column NumericScale =
+            new Column(
+                "NUMERIC_SCALE",
+                Type.Short,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The maximum precision of the measure.");
+        private static final Column DisplayFolder =
+            new Column(
+                "MEASURE_DISPLAY_FOLDER",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Always returns empty.");//TODO
+        private static final Column Expression =
+            new Column(
+                "EXPRESSION",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "An expression for calculated measures.");
+        private static final Column MeasureUnits =
+            new Column(
+                "MEASURE_UNITS",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The unit of measurement. Not Supported.");
+
         private static final Column MeasureIsVisible =
             new Column(
                 "MEASURE_IS_VISIBLE",
@@ -5298,6 +5359,14 @@ TODO: see above
                 }
             }
             row.set(DataType.name, dbType.xmlaOrdinal());
+            // TODO testing
+            row.set(NumericPrecision.name, getDataTypePrecision(dbType));
+            // 0 scale shouldn't have impact if not ignored
+            row.set(NumericScale.name, 0);
+            // not supported, empty to avoid client exceptions
+            row.set(DisplayFolder.name, "");
+            row.set(Expression.name, extra.getXmlaExpression(member));
+
             row.set(MeasureIsVisible.name, visible);
 
             if (levelListStr != null) {
@@ -5318,6 +5387,29 @@ TODO: see above
             default:
                 super.setProperty(propertyDef, value);
             }
+        }
+
+        /**
+         * http://msdn.microsoft.com/en-us/library/windows/desktop/ms715867%28v=vs.85%29.aspx
+         * @return maximum number of digits for numeric data types in XmlaConstants.DBType, null otherwise
+         */
+        private Object getDataTypePrecision(XmlaConstants.DBType dbType) {
+          switch (dbType) {
+            case CY:
+              return 19;
+            case I4:
+              return 10;
+            case I8:
+              return 19;
+            case R8:
+              return 15;
+            case UI2:
+              return 5;
+            case UI4:
+              return 10;
+            default:
+              return "NULL";//TODO:??
+          }
         }
     }
 
