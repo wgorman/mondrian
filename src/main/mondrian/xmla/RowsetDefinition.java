@@ -3668,6 +3668,8 @@ TODO: see above
                             formatter.format(
                                 extra.getSchemaLoadDate(schema));
                         row.set(LastSchemaUpdate.name, formattedDate);
+                        //TODO: just avoiding exception on adomd
+                        row.set(LastDataUpdate.name, formattedDate);
                         if (deep) {
                             row.set(
                                 Dimensions.name,
