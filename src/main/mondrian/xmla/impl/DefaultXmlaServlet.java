@@ -9,6 +9,7 @@
 
 package mondrian.xmla.impl;
 
+import mondrian.olap.MondrianProperties;
 import mondrian.xmla.*;
 
 import org.olap4j.impl.Olap4jUtil;
@@ -708,12 +709,14 @@ public abstract class DefaultXmlaServlet extends XmlaServlet {
         String faultCode;
         String faultString;
         String detail;
+        String description;
         if (t instanceof XmlaException) {
             XmlaException xex = (XmlaException) t;
             code = xex.getCode();
             faultString = xex.getFaultString();
             faultCode = XmlaException.formatFaultCode(xex);
-            detail = XmlaException.formatDetail(xex.getDetail());
+            description = xex.getDetail();
+            detail = XmlaException.formatDetail(description);
 
         } else {
             // some unexpected Throwable
@@ -722,7 +725,8 @@ public abstract class DefaultXmlaServlet extends XmlaServlet {
             faultString = UNKNOWN_ERROR_FAULT_FS;
             faultCode = XmlaException.formatFaultCode(
                 SERVER_FAULT_FC, code);
-            detail = XmlaException.formatDetail(t.getMessage());
+            description = t.getMessage();
+            detail = XmlaException.formatDetail(description);
         }
 
         String encoding = response.getCharacterEncoding();
@@ -763,16 +767,30 @@ public abstract class DefaultXmlaServlet extends XmlaServlet {
             // header entries.
             if (phase != Phase.PROCESS_HEADER) {
                 writer.startElement("detail");
-                writer.startElement(
-                    FAULT_NS_PREFIX + ":error",
-                    "xmlns:" + FAULT_NS_PREFIX, MONDRIAN_NAMESPACE);
-                writer.startElement("code");
-                writer.characters(code);
-                writer.endElement(); // code
-                writer.startElement("desc");
-                writer.characters(detail);
-                writer.endElement(); // desc
-                writer.endElement(); // error
+
+                if (MondrianProperties.instance().XmlaUseMSSASError.get()) {
+                    // ErrorCode is 32bit unsigned int in xmla,
+                    // just getting something coherent if otherwise useless
+                    long uintCode = code.hashCode() & 0xffffffffL;
+                    String errorCode = Long.toString(uintCode);
+                    // ms ssas uses no prefix here
+                    writer.element("Error",
+                        "ErrorCode", errorCode,
+                        "Description", description,
+                        "Source", FAULT_ACTOR,
+                        "HelpFile", "");
+                } else {
+                    writer.startElement(
+                        FAULT_NS_PREFIX + ":error",
+                        "xmlns:" + FAULT_NS_PREFIX, MONDRIAN_NAMESPACE);
+                    writer.startElement("code");
+                    writer.characters(code);
+                    writer.endElement(); // code
+                    writer.startElement("desc");
+                    writer.characters(detail);
+                    writer.endElement(); // desc
+                    writer.endElement(); // error
+                }
                 writer.endElement(); // detail
             }
 
