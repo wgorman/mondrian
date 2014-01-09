@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2011 Pentaho
 // All Rights Reserved.
 */
-
 package mondrian.xmla;
 
 import mondrian.olap.*;
@@ -742,6 +741,8 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.DimensionIsShared,
             MdschemaHierarchiesRowset.ParentChild,
             MdschemaHierarchiesRowset.Levels,
+            MdschemaHierarchiesRowset.HierarchyDisplayFolder,
+            MdschemaHierarchiesRowset.HierarchyOrigin,
             MdschemaHierarchiesRowset.CubeSource,
         },
         new Column[] {
@@ -875,6 +876,11 @@ public enum RowsetDefinition {
             MdschemaMeasuresRowset.MeasureGuid,
             MdschemaMeasuresRowset.MeasureAggregator,
             MdschemaMeasuresRowset.DataType,
+            MdschemaMeasuresRowset.NumericPrecision,//TODO
+            MdschemaMeasuresRowset.NumericScale,
+            MdschemaMeasuresRowset.DisplayFolder,
+            MdschemaMeasuresRowset.Expression,
+            MdschemaMeasuresRowset.MeasureUnits,
             MdschemaMeasuresRowset.MeasureIsVisible,
             MdschemaMeasuresRowset.LevelsList,
             MdschemaMeasuresRowset.Description,
@@ -895,7 +901,7 @@ public enum RowsetDefinition {
 
     /**
      *
-     * http://msdn2.microsoft.com/es-es/library/ms126046.aspx
+     * http://msdn.microsoft.com/en-us/library/ms126046.aspx
      *
      *
      * restrictions
@@ -939,6 +945,8 @@ public enum RowsetDefinition {
             MdschemaMembersRowset.MemberOrdinal,
             MdschemaMembersRowset.MemberName,
             MdschemaMembersRowset.MemberUniqueName,
+            MdschemaMembersRowset.Expression,
+            MdschemaMembersRowset.MemberKey,
             MdschemaMembersRowset.MemberType,
             MdschemaMembersRowset.MemberGuid,
             MdschemaMembersRowset.MemberCaption,
@@ -3417,7 +3425,7 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.OPTIONAL,
                 "The type of source cube (cube=1, dimension=2).  Not Supported.");
-        
+
         /*
             TODO: optional columns
         ACTION_TYPE
@@ -3451,7 +3459,7 @@ TODO: see above
         public static final String MD_CUBTYPE_CUBE = "CUBE";
         public static final String MD_CUBTYPE_VIRTUAL_CUBE = "VIRTUAL CUBE";
 
-        private static final Column CubeSource = 
+        private static final Column CubeSource =
             new Column(
                 "CUBE_SOURCE",
                 Type.Integer,
@@ -3660,6 +3668,8 @@ TODO: see above
                             formatter.format(
                                 extra.getSchemaLoadDate(schema));
                         row.set(LastSchemaUpdate.name, formattedDate);
+                        //TODO: just avoiding exception on adomd
+                        row.set(LastDataUpdate.name, formattedDate);
                         if (deep) {
                             row.set(
                                 Dimensions.name,
@@ -4458,8 +4468,23 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "Levels in this hierarchy.");
-
-
+        private static final Column HierarchyDisplayFolder =
+            new Column(
+                "HIERARCHY_DISPLAY_FOLDER",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Not supported.");
+        //TODO: hierarchyOrigin enumeration
+        private static final Column HierarchyOrigin =
+            new Column(
+                "HIERARCHY_ORIGIN",
+                Type.UnsignedShort,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Not supported.");
         /*
          * NOTE: This is non-standard, where did it come from?
          */
@@ -4609,7 +4634,21 @@ TODO: see above
             // always true
             row.set(DimensionIsShared.name, true);
 
-            row.set(ParentChild.name, extra.isHierarchyParentChild(hierarchy));
+            row.set(HierarchyDisplayFolder.name, "");
+
+
+            boolean isParentChild = extra.isHierarchyParentChild(hierarchy);
+            // mask in msdm.h: (?!)
+            //  MD_ORIGIN_USER_DEFINED  0x00000001
+            //  MD_ORIGIN_ATTRIBUTE     0x00000002
+            //  MD_ORIGIN_KEY_ATTRIBUTE 0x00000004
+            //  MD_ORIGIN_INTERNAL      0x00000008
+            // in adomd client HierarchyOrigin enum
+            //  UserHierarchy(1)|AttributeHierarchy(2)|ParentChildHierarchy(3)
+            // TODO: sensible value here?
+            row.set(HierarchyOrigin.name, isParentChild ? 3 : 2);
+
+            row.set(ParentChild.name, isParentChild);
             if (deep) {
                 row.set(
                     Levels.name,
@@ -5029,6 +5068,9 @@ TODO: see above
     }
 
 
+    /**
+     * http://technet.microsoft.com/en-us/library/ms126250.aspx
+     */
     public static class MdschemaMeasuresRowset extends Rowset {
         public static final int MDMEASURE_AGGR_UNKNOWN = 0;
         public static final int MDMEASURE_AGGR_SUM = 1;
@@ -5136,6 +5178,48 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.REQUIRED,
                 "Data type of the measure.");
+        //TODO: uncertain..
+        private static final Column NumericPrecision =
+            new Column(
+                "NUMERIC_PRECISION",
+                Type.UnsignedShort,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The maximum precision of the measure.");
+        private static final Column NumericScale =
+            new Column(
+                "NUMERIC_SCALE",
+                Type.Short,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The maximum precision of the measure.");
+        private static final Column DisplayFolder =
+            new Column(
+                "MEASURE_DISPLAY_FOLDER",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Always returns empty.");//TODO
+        private static final Column Expression =
+            new Column(
+                "EXPRESSION",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "An expression for calculated measures.");
+        private static final Column MeasureUnits =
+            new Column(
+                "MEASURE_UNITS",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "The unit of measurement. Not Supported.");
+
         private static final Column MeasureIsVisible =
             new Column(
                 "MEASURE_IS_VISIBLE",
@@ -5297,6 +5381,13 @@ TODO: see above
                 }
             }
             row.set(DataType.name, dbType.xmlaOrdinal());
+            // TODO testing
+            row.set(NumericPrecision.name, getDataTypePrecision(dbType));
+            row.set(NumericScale.name, getDataTypeScale(dbType));
+            // not supported, empty to avoid client exceptions
+            row.set(DisplayFolder.name, "");
+            row.set(Expression.name, extra.getXmlaExpression(member));
+
             row.set(MeasureIsVisible.name, visible);
 
             if (levelListStr != null) {
@@ -5317,6 +5408,38 @@ TODO: see above
             default:
                 super.setProperty(propertyDef, value);
             }
+        }
+
+        /**
+         * http://msdn.microsoft.com/en-us/library/windows/desktop/ms715867%28v=vs.85%29.aspx
+         * @return maximum number of digits for numeric data types in XmlaConstants.DBType, null otherwise
+         */
+        private Object getDataTypePrecision(XmlaConstants.DBType dbType) {
+          switch (dbType) {
+            case CY:
+              return 19;
+            case I4:
+              return 10;
+            case I8:
+              return 19;
+            case R8:
+              return 15;
+            case UI2:
+              return 5;
+            case UI4:
+              return 10;
+            default:
+              return 65535;
+          }
+        }
+
+        private Object getDataTypeScale(XmlaConstants.DBType dbType) {
+          switch (dbType) {
+            case CY:
+              return 4;
+            default:
+              return -1;
+          }
         }
     }
 
@@ -5431,6 +5554,22 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.REQUIRED,
                 " Unique name of the member.");
+        private static final Column Expression =
+            new Column(
+                "EXPRESSION",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.REQUIRED,
+                "TThe expression for calculations, if the member is of type MDMEMBER_TYPE_FORMULA.");
+        private static final Column MemberKey =
+            new Column(
+                "MEMBER_KEY",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.REQUIRED,
+                "The value of the member's key column. Returns NULL if the member has a composite key.");
         private static final Column MemberType =
             new Column(
                 "MEMBER_TYPE",
@@ -5808,7 +5947,9 @@ TODO: see above
                 return;
             }
 
-            getExtra(connection).checkMemberOrdinal(member);
+            XmlaHandler.XmlaExtra extra = getExtra(connection);
+            //TODO: revert
+            member = extra.checkReplaceMemberOrdinal(member);
 
             // Check whether the member is visible, otherwise do not dump.
             Boolean visible =
@@ -5835,9 +5976,21 @@ TODO: see above
             row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
             row.set(LevelUniqueName.name, level.getUniqueName());
             row.set(LevelNumber.name, adjustedLevelDepth);
-            row.set(MemberOrdinal.name, member.getOrdinal());
+            int memberOrdinal = member.getOrdinal();
+            // TODO: testing
+            if ( memberOrdinal < 0 ) {
+              LOGGER.error("negative MEMBER_ORDINAL for " + member.getName());
+              // will at least prevent an exception
+              memberOrdinal = 0;
+            }
+            row.set(MemberOrdinal.name, memberOrdinal);
             row.set(MemberName.name, member.getName());
             row.set(MemberUniqueName.name, member.getUniqueName());
+            row.set(MemberKey.name, member.getPropertyValue(
+                Property.StandardMemberProperty.MEMBER_KEY));
+            // expression
+            row.set(Expression.name, extra.getXmlaExpression(member));
+
             row.set(MemberType.name, member.getMemberType().ordinal());
             //row.set(MemberGuid.name, "");
             row.set(MemberCaption.name, member.getCaption());
@@ -6134,7 +6287,7 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.OPTIONAL,
                 "The type of source cube (cube=1, dimension=2).  Not Supported.");
-        
+
         protected boolean needConnection() {
             return false;
         }

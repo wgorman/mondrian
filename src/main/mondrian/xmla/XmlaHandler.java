@@ -3015,6 +3015,14 @@ public class XmlaHandler {
         int getMeasureAggregator(Member member);
 
         void checkMemberOrdinal(Member member) throws OlapException;
+        //TODO: revert
+        Member checkReplaceMemberOrdinal(Member member) throws OlapException;
+
+        /**
+         * @param member
+         * @return EXPRESSION xmla property
+         */
+        String getXmlaExpression(Member member);
 
         /**
          * Returns whether we should return a cell property in the XMLA result.
@@ -3196,6 +3204,14 @@ public class XmlaHandler {
 
         public void checkMemberOrdinal(Member member) {
             // nothing to do
+        }
+
+        public Member checkReplaceMemberOrdinal(Member member) {
+            return member;
+        }
+
+        public String getXmlaExpression( Member member ) {
+            return "";
         }
 
         public boolean shouldReturnCellProperty(

@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2013 Pentaho
 // All Rights Reserved.
 */
-
 package mondrian.olap.type;
 
 import mondrian.mdx.UnresolvedFunCall;
@@ -513,7 +512,10 @@ public class TypeUtil {
             }
             return hierarchyList;
         } else {
-            return Collections.singletonList(type.getHierarchy());
+            Hierarchy hierarchy = type.getHierarchy();
+            return hierarchy == null
+                ? Collections.<Hierarchy>emptyList()
+                : Collections.singletonList(hierarchy);
         }
     }
 
