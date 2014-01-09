@@ -742,6 +742,7 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.ParentChild,
             MdschemaHierarchiesRowset.Levels,
             MdschemaHierarchiesRowset.HierarchyDisplayFolder,
+            MdschemaHierarchiesRowset.HierarchyOrigin,
             MdschemaHierarchiesRowset.CubeSource,
         },
         new Column[] {
@@ -4474,7 +4475,14 @@ TODO: see above
                 Column.OPTIONAL,
                 "Not supported.");
         //TODO: hierarchyOrigin enumeration
-
+        private static final Column HierarchyOrigin =
+            new Column(
+                "HIERARCHY_ORIGIN",
+                Type.UnsignedShort,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Not supported.");
         /*
          * NOTE: This is non-standard, where did it come from?
          */
@@ -4626,7 +4634,19 @@ TODO: see above
 
             row.set(HierarchyDisplayFolder.name, "");
 
-            row.set(ParentChild.name, extra.isHierarchyParentChild(hierarchy));
+
+            boolean isParentChild = extra.isHierarchyParentChild(hierarchy);
+            // mask in msdm.h: (?!)
+            //  MD_ORIGIN_USER_DEFINED  0x00000001
+            //  MD_ORIGIN_ATTRIBUTE     0x00000002
+            //  MD_ORIGIN_KEY_ATTRIBUTE 0x00000004
+            //  MD_ORIGIN_INTERNAL      0x00000008
+            // in adomd client HierarchyOrigin enum
+            //  UserHierarchy(1)|AttributeHierarchy(2)|ParentChildHierarchy(3)
+            // TODO: sensible value here?
+            row.set(HierarchyOrigin.name, isParentChild ? 3 : 2);
+
+            row.set(ParentChild.name, isParentChild);
             if (deep) {
                 row.set(
                     Levels.name,
@@ -5361,8 +5381,7 @@ TODO: see above
             row.set(DataType.name, dbType.xmlaOrdinal());
             // TODO testing
             row.set(NumericPrecision.name, getDataTypePrecision(dbType));
-            // 0 scale shouldn't have impact if not ignored
-            row.set(NumericScale.name, 0);
+            row.set(NumericScale.name, getDataTypeScale(dbType));
             // not supported, empty to avoid client exceptions
             row.set(DisplayFolder.name, "");
             row.set(Expression.name, extra.getXmlaExpression(member));
@@ -5408,7 +5427,16 @@ TODO: see above
             case UI4:
               return 10;
             default:
-              return "NULL";//TODO:??
+              return 65535;
+          }
+        }
+
+        private Object getDataTypeScale(XmlaConstants.DBType dbType) {
+          switch (dbType) {
+            case CY:
+              return 4;
+            default:
+              return -1;
           }
         }
     }
