@@ -113,7 +113,7 @@ public abstract class XmlaServlet
             this.xmlaHandler =
                 new XmlaHandler(
                     connectionFactory,
-                    "cxmla");
+                    "xmla");
         }
         return this.xmlaHandler;
     }

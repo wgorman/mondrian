@@ -255,8 +255,7 @@ public class RolapHierarchy extends HierarchyBase {
         for (MondrianDef.Level level : xmlHierarchy.levels) {
             if (!levelNameSet.add(level.name)) {
                 throw MondrianResource.instance().HierarchyLevelNamesNotUnique
-                    .ex(
-                        getUniqueName(), level.name);
+                    .ex(getUniqueName(), level.name);
             }
         }
 

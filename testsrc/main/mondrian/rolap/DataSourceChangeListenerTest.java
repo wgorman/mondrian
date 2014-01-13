@@ -476,7 +476,7 @@ public class DataSourceChangeListenerTest extends FoodMartTestCase {
         public abstract void runSafe();
     }
 
-    private static class SqlLogger implements RolapUtil.ExecuteQueryHook {
+    public static class SqlLogger implements RolapUtil.ExecuteQueryHook {
         private final List<String> sqlQueries;
 
         public SqlLogger() {

@@ -763,9 +763,9 @@ public class XmlaHandler {
             writer.startDocument();
 
             writer.startElement(
-                prefix + ":ExecuteResponse",
-                "xmlns:" + prefix, NS_XMLA);
-            writer.startElement(prefix + ":return");
+                "ExecuteResponse",
+                "xmlns", NS_XMLA);
+            writer.startElement("return");
             boolean rowset =
                 request.isDrillThrough()
                 || Format.Tabular.name().equals(
@@ -1719,7 +1719,7 @@ public class XmlaHandler {
                     dataSet =
                         new MDDataSet_Multidimensional(
                             cellSet,
-                            content != Content.DataIncludeDefaultSlicer,
+                            false, // content != Content.DataIncludeDefaultSlicer,
                             responseMimeType
                             == Enumeration.ResponseMimeType.JSON);
                 } else {
@@ -1771,9 +1771,11 @@ public class XmlaHandler {
         final String formatName =
             request.getProperties().get(
                 PropertyDefinition.Format.name());
-        return Util.lookup(
+        Format f = Util.lookup(
             Format.class,
             formatName, defaultValue);
+        if (f == Format.Native) return Format.Multidimensional;
+        return f;
     }
 
     private static Content getContent(XmlaRequest request) {
@@ -2843,9 +2845,9 @@ public class XmlaHandler {
         writer.startDocument();
 
         writer.startElement(
-            prefix + ":DiscoverResponse",
-            "xmlns:" + prefix, NS_XMLA);
-        writer.startElement(prefix + ":return");
+            "DiscoverResponse",
+            "xmlns", NS_XMLA);
+        writer.startElement("return");
         writer.startElement(
             "root",
             "xmlns", NS_XMLA_ROWSET,
@@ -3013,6 +3015,14 @@ public class XmlaHandler {
         int getMeasureAggregator(Member member);
 
         void checkMemberOrdinal(Member member) throws OlapException;
+        //TODO: revert
+        Member checkReplaceMemberOrdinal(Member member) throws OlapException;
+
+        /**
+         * @param member
+         * @return EXPRESSION xmla property
+         */
+        String getXmlaExpression(Member member);
 
         /**
          * Returns whether we should return a cell property in the XMLA result.
@@ -3194,6 +3204,14 @@ public class XmlaHandler {
 
         public void checkMemberOrdinal(Member member) {
             // nothing to do
+        }
+
+        public Member checkReplaceMemberOrdinal(Member member) {
+            return member;
+        }
+
+        public String getXmlaExpression( Member member ) {
+            return "";
         }
 
         public boolean shouldReturnCellProperty(

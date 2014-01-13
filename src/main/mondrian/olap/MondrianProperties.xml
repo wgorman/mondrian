@@ -1367,6 +1367,17 @@ Default time unit is milliseconds.</p>
         <Default>3000ms</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>XmlaUseMSSASError</Name>
+        <Path>mondrian.xmla.UseMSSASError</Path>
+        <Description>
+<p>If set to true, the error element in SOAP Fault responses detail 
+will conform to what's returned by MS SQL Analysis Services and
+recognized by ADOMD.NET.</p>
+        </Description>
+        <Type>Boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>FilterChildlessSnowflakeMembers</Name>
         <Path>mondrian.rolap.FilterChildlessSnowflakeMembers</Path>
         <Category>SQL generation</Category>
