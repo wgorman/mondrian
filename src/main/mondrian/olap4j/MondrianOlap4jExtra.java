@@ -228,6 +228,52 @@ class MondrianOlap4jExtra implements XmlaHandler.XmlaExtra {
         }
     }
 
+    //TODO: testing
+    public Member checkReplaceMemberOrdinal(Member member) throws OlapException {
+      // temporary workaround for strange error where we'll have two 
+      // BaseRolapMember for the same member, one will be used for xmla queries 
+      // and only the other gets the ordinal updated.
+      // this results in negative ordinal being output and repeated dimension
+      // traversals for ordinal resets
+      if (member.getOrdinal() == -1) {
+          MondrianOlap4jMember olap4jMember =
+              (MondrianOlap4jMember) member;
+          final mondrian.olap.SchemaReader schemaReader =
+              olap4jMember.olap4jSchema.olap4jCatalog.olap4jDatabaseMetaData
+                  .olap4jConnection.getMondrianConnection().getSchemaReader()
+                  .withLocus();
+          MondrianOlap4jMember oMember = reLookupMember(schemaReader, olap4jMember);
+          if ( oMember.getOrdinal() > -1 ) {
+              return oMember;
+          }
+          RolapMemberBase.setOrdinals(schemaReader, olap4jMember.member);
+          if ( olap4jMember.getOrdinal() == -1 ) {
+            oMember = oMember != null ? oMember : reLookupMember(schemaReader, olap4jMember);
+            if ( oMember != null && oMember.getOrdinal() > -1 ) {
+                return oMember;
+            }
+          }
+      }
+      return member;
+    }
+
+    public String getXmlaExpression( Member member ) {
+        return ((MondrianOlap4jMember) member).getXmlaExpression();
+    }
+
+    //TODO: revert
+    private MondrianOlap4jMember reLookupMember( SchemaReader schemaReader, MondrianOlap4jMember olap4jMember ) {
+        RolapMember seedMember = RolapUtil.strip((RolapMember) olap4jMember.member);
+        if ( seedMember.getParentMember() != null ) {
+          List<Id.Segment> uniqueName = Util.parseIdentifier(seedMember.getUniqueName());
+          OlapElement element = schemaReader.getElementChild(seedMember.getParentMember(), uniqueName.get(uniqueName.size() -1));
+          if ( element != null && element instanceof RolapMember ) {
+              return olap4jMember.olap4jSchema.olap4jCatalog.olap4jDatabaseMetaData.olap4jConnection.toOlap4j( (RolapMember) element);
+          }
+        }
+        return olap4jMember;
+    }
+
     public boolean shouldReturnCellProperty(
         CellSet cellSet,
         org.olap4j.metadata.Property cellProperty,
