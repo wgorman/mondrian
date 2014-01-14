@@ -74,6 +74,7 @@
 			<li><a href="#Member_properties">Member properties</a></li>
 			<li><a href="#Calculated_members">Calculated members</a></li>
 			<li><a href="#Named_sets">Named sets</a></li>
+            <li><a href="#ManyToMany">Many to Many Dimensions</a></li>
 		</ol>
 	</li>
   	<li><a href="#Plugins">Plug-ins</a>
@@ -2012,6 +2013,80 @@ make the formula valid. For example, it would be valid to use <code>[CA Cities]<
 queries against the <code>[Sales]</code> and <code>[Warehouse and Sales]</code> cubes, but
 if you used it in a query against the <code>[Warehouse]</code> cube you would get an error,
 because <code>[Warehouse]</code> does not have a <code>[Store]</code> dimension.</p>
+
+<!--
+#####################################
+##  5.6 Many to Many Dimensions #####
+##################################### -->
+<h1>5.6 Many to Many Dimensions<a name="ManyToMany">&nbsp;</a></h1>
+<p>
+Many to Many Dimensions allow Mondrian to support more complex star schema designs, where an individual fact may have multiple members of the same dimension related to the fact.  A simple example is Customers and Accounts, where the fact table contains information about account balances, but accounts may have multiple customers.  The fact cannot be joined directly to the customer dimension, but with a bridge table we can determine which customers hold which accounts, and ask questions about how much each customer has regarding their balances, and use customers as a way to filter accounts we are interested in.
+</p>
+<p>
+To configure a Many to Many Dimension in Mondrian, follow the below steps:
+</p>
+<p>
+Step 1: Define your individual dimensions in the schema, both the bridge dimension and the many to many dimension.  Here is a basic example using Accounts and Customers:
+</p>
+<blockquote style="text-indent: -20px">
+    <code>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Dimension">Dimension</a> name="Account"&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Hierarchy">Hierarchy</a> name="Account" primaryKey="id_account" hasAll="true"&gt;</div>
+                <div style="padding-left:60px;">&lt;<a href="#XML_Table">Table</a> name="m2m_dim_account"/&gt;</div>
+                <div style="padding-left:60px;">&lt;<a href="#XML_Level">Level</a> name="Account" uniqueMembers="true" column="id_account" nameColumn="nm_account" approxRowCount="6"/&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Dimension">Hierarchy</a>/&gt;</div>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Dimension">Dimension</a>/&gt;</div>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Dimension">Dimension</a> name="Customer"&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Hierarchy">Hierarchy</a> name="Customer" primaryKey="id_customer" hasAll="true"&gt;</div>
+                <div style="padding-left:60px;">&lt;<a href="#XML_Table">Table</a> name="m2m_dim_customer"/&gt;</div>
+                <div style="padding-left:60px;">&lt;<a href="#XML_Level">Level</a> name="Customer" uniqueMembers="true" column="id_customer" nameColumn="nm_customer" approxRowCount="4"/&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Dimension">Hierarchy</a>/&gt;</div>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Dimension">Dimension</a>/&gt;</div>		
+    </code>
+</blockquote>
+<p>
+Step 2: Define a Cube that will act as a bridge table between regular and many to many dimensions.  Optionally you can hide this Cube by setting “visible=false” so it won’t show up in XMLA metadata, etc:
+</p>
+
+<blockquote style="text-indent: -20px">
+    <code>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Cube">Cube</a> name="CustomerAccountBridge" visible="false"&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Table">Table</a> name="m2m_bridge_accountcustomer"/&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_DimensionUsage">DimensionUsage</a> name="Customer" source="Customer" foreignKey="id_customer"/&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_DimensionUsage">DimensionUsage</a> name="Account" source="Account" foreignKey="id_account"/&gt;</div>
+            <div style="padding-left:40px;">&lt;<a href="#XML_Measure">Measure</a> name="Count" aggregator="count" column="id_customer"/&gt;</div>
+        <div style="padding-left:20px;">&lt;<a href="#XML_Dimension">Cube</a>/&gt;</div>		
+    </code>
+</blockquote>
+
+<p>
+Step 3: Define a dimension usage within the main cube for the bridge dimension, this dimension must come before the many to many dimension in the dimension usage list within the cube:
+</p>
+<blockquote style="text-indent: -20px">
+    <code>
+        <div style="padding-left:40px;">&lt;<a href="#XML_DimensionUsage">DimensionUsage</a> name="Account" source="Account" foreignKey="id_account"/&gt;</div>
+    </code>
+</blockquote>
+<p>
+Step 4: Define a dimension usage within the main cube for the many to many dimension.  An additional attribute “bridgeCube” must be specified.  This tells Mondrian that the dimension is many to many.  Note the foreignKey needs to specify the foreign key of the bridge dimension.  Mondrian will scan the dimensions in both the main Cube and the Bridge Cube to determine the bridge dimension, in this example the bridge dimension is Account:
+</p>
+<blockquote style="text-indent: -20px">
+    <code>
+        <div style="padding-left:40px;">&lt;<a href="#XML_DimensionUsage">DimensionUsage</a> name="Customer" source="Customer" foreignKey="id_account" bridgeCube="CustomerAccountBridge"/&gt;</div>
+    </code>
+</blockquote>
+<p>
+Additional Notes:  
+</p>
+<p>
+<p>Multiple Bridge Dimensions</p>
+<p>It is possible to define a many to many dimension that links to a cube via multiple bridge dimensions.  Mondrian will scan both the bridge cube and the primary cube to find links between the two based on shared dimensions.
+<p>
+<p>Virtual Cubes</p>
+<p>
+For Virtual Cubes, you may reference Many to Many dimensions in the same way you do regular dimensions.  The only requirement for Many to Many dimensions in Virtual Cubes is the need to specify a <code><a href="#XML_CubeUsage">CubeUsage</a></code> for the relating cubes.  This allows Many to Many Dimensions to link back to their parent cube.</p>
+<p>Aggregate Tables and Rollup in Memory</p>
+<p>Many to Many dimensions cannot be rolled up in a traditional sense, so it is not possible to specify levels of a virtual cube in an aggregate table.  Foreign keys may be specified in an aggregate table and function correctly.  Also, Many to Many dimensions cannot be rolled up in Memory, similar to Distinct Count.</p>
 <!--
 ########################
 ##  plugins        #####
