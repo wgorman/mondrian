@@ -875,6 +875,11 @@ public class RolapStar {
         /** this has a unique value per star */
         private final int bitPosition;
         /**
+         * this is used later by Segments to determine if they can be rolled
+         * up in memory.
+         */
+        private boolean rollupAllowed;
+        /**
          * The estimated cardinality of the column.
          * {@link Integer#MIN_VALUE} means unknown.
          */
@@ -889,7 +894,8 @@ public class RolapStar {
         {
             this(
                 name, table, expression, datatype, null, null,
-                null, null, Integer.MIN_VALUE, table.star.nextColumnCount());
+                null, null, Integer.MIN_VALUE,
+                table.star.nextColumnCount(), true);
         }
 
         private Column(
@@ -902,9 +908,11 @@ public class RolapStar {
             Column parentColumn,
             String usagePrefix,
             int approxCardinality,
-            int bitPosition)
+            int bitPosition,
+            boolean rollupAllowed)
         {
             this.name = name;
+            this.rollupAllowed = rollupAllowed;
             this.table = table;
             this.expression = expression;
             assert expression == null
@@ -941,7 +949,8 @@ public class RolapStar {
                 null,
                 null,
                 Integer.MIN_VALUE,
-                0);
+                0,
+                true);
         }
 
         public boolean equals(Object obj) {
@@ -961,6 +970,10 @@ public class RolapStar {
             int h = name.hashCode();
             h = Util.hash(h, table);
             return h;
+        }
+
+        public boolean isRollupAllowed() {
+          return rollupAllowed;
         }
 
         public String getName() {
@@ -1251,6 +1264,8 @@ public class RolapStar {
         private final MondrianDef.Relation relation;
         private final List<Column> columnList;
         private final Table parent;
+        private List<Table> addlParents;
+        private List<Condition> addlJoinConditions;
         private List<Table> children;
         private final Condition joinCondition;
         private final String alias;
@@ -1273,6 +1288,8 @@ public class RolapStar {
             }
             this.columnList = new ArrayList<Column>();
             this.children = Collections.emptyList();
+            this.addlParents = new ArrayList<Table>();
+            this.addlJoinConditions = new ArrayList<Condition>();
             Util.assertTrue((parent == null) == (joinCondition == null));
         }
 
@@ -1282,6 +1299,26 @@ public class RolapStar {
          */
         public Condition getJoinCondition() {
             return joinCondition;
+        }
+
+        /**
+         * Add an additional parent, currently this is only used in many to
+         * many dimensions.
+         *
+         * @param p additional join parent
+         */
+        public void addAdditionalParent(Table p) {
+            addlParents.add(p);
+        }
+
+        /**
+         * Add an additional join condition, this maps directly to an
+         * additional join parent
+         *
+         * @param c additional join condition
+         */
+        public void addAdditionalJoinCondition(Condition c) {
+            addlJoinConditions.add(c);
         }
 
         /**
@@ -1569,6 +1606,15 @@ public class RolapStar {
                 // Trust me, return null and a junit test fails.
                 column = c;
             } else {
+                boolean m2m = false;
+                if (level != null
+                    && level.getHierarchy() instanceof RolapCubeHierarchy
+                    && ((RolapCubeHierarchy)level.getHierarchy())
+                        .isManyToMany())
+                {
+                    m2m = true;
+                }
+
                 // Make a new column and add it
                 column = new RolapStar.Column(
                     name,
@@ -1580,7 +1626,8 @@ public class RolapStar {
                     parentColumn,
                     usagePrefix,
                     level.getApproxRowCount(),
-                    star.nextColumnCount());
+                    star.nextColumnCount(),
+                    !m2m);
                 addColumn(column);
             }
             return column;
@@ -1752,6 +1799,19 @@ public class RolapStar {
                 }
                 if (joinCondition != null) {
                     query.addWhere(joinCondition.toString(query));
+                }
+                // if there are additional parents, add them to the
+                // query as well. this is used by many to many dims
+                if (addlParents != null) {
+                    for (Table table : addlParents) {
+                        table.addToFrom(query,  failIfExists, joinToParent);
+                    }
+                    // also add any additional join conditions
+                    if (addlJoinConditions != null) {
+                        for (Condition condition : addlJoinConditions) {
+                            query.addWhere(condition.toString(query));
+                        }
+                    }
                 }
             }
         }

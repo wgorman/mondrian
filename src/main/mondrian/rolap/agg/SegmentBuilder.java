@@ -477,7 +477,8 @@ public class SegmentBuilder {
                     axisInfo.column.getValueCount(),
                     axisInfo.lostPredicate
                         ? axisList.get(i).left
-                        : axisInfo.column.values));
+                        : axisInfo.column.values,
+                    axisInfo.column.isRollupAllowed()));
         }
         final SegmentHeader header =
             new SegmentHeader(
@@ -636,7 +637,8 @@ public class SegmentBuilder {
                         predicate.getConstrainedColumn()
                             .getExpression().getGenericExpression(),
                         predicate.getConstrainedColumn().getCardinality(),
-                        null));
+                        null,
+                        predicate.getConstrainedColumn().isRollupAllowed()));
             } else {
                 Arrays.sort(
                     valuesArray,
@@ -646,7 +648,8 @@ public class SegmentBuilder {
                         predicate.getConstrainedColumn()
                             .getExpression().getGenericExpression(),
                         predicate.getConstrainedColumn().getCardinality(),
-                        new ArraySortedSet(valuesArray)));
+                        new ArraySortedSet(valuesArray),
+                        false));
             }
         }
         return ccs;

@@ -3,6 +3,8 @@
 ## ColumnNames: id_account,id_customer
 ## ColumnTypes: INTEGER,INTEGER
 ## NosOfRows: 8
+## ActionAfter: CreateIndex id_account id_account
+## ActionAfter: CreateIndex id_customer id_customer
 1,1
 2,2
 3,2
@@ -15,6 +17,7 @@
 ## ColumnNames: id_account,acct_type,nm_account
 ## ColumnTypes: INTEGER,VARCHAR(20),VARCHAR(20)
 ## NosOfRows: 6
+## ActionAfter: CreateIndex id_account id_account
 1,One Person,Luke
 2,One Person,Mark
 3,Two People,Mark-Paul
@@ -25,6 +28,7 @@
 ## ColumnNames: id_customer,loc,nm_customer
 ## ColumnTypes: INTEGER,VARCHAR(20),VARCHAR(20)
 ## NosOfRows: 4
+## ActionAfter: CreateIndex id_customer id_customer
 1,San Francisco,Luke
 2,San Francisco,Mark
 3,Orlando,Paul
@@ -39,6 +43,8 @@
 ## ColumnNames: id_account,id_date,amount
 ## ColumnTypes: INTEGER,INTEGER,INTEGER
 ## NosOfRows: 11
+## ActionAfter: CreateIndex id_account id_account
+## ActionAfter: CreateIndex id_date id_date
 1,1,100
 2,1,100
 3,1,100

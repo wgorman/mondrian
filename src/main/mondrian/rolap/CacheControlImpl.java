@@ -508,7 +508,8 @@ public class CacheControlImpl implements CacheControl {
                                 new SegmentColumn(
                                     entry.getKey(),
                                     -1,
-                                    null));
+                                    null,
+                                    true));
                         } else {
                             Arrays.sort(
                                 keys,
@@ -518,7 +519,8 @@ public class CacheControlImpl implements CacheControl {
                                 new SegmentColumn(
                                     entry.getKey(),
                                     -1,
-                                    new ArraySortedSet(keys)));
+                                    new ArraySortedSet(keys),
+                                    true));
                         }
                     }
                 }
@@ -531,7 +533,8 @@ public class CacheControlImpl implements CacheControl {
                         new SegmentColumn(
                             region.level.getKeyExp().getGenericExpression(),
                             -1,
-                            null));
+                            null,
+                            true));
                 }
             };
         ((CellRegionImpl) region).accept(visitor);

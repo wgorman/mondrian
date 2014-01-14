@@ -468,15 +468,11 @@
     <text>Many to Many bridge cube by the name of ''{0}'' not found in schema for hierarchy ''{1}'' in cube ''{2}''.</text>
 </exception>
 
-<exception id="40400" name="MultipleBridgeDimensionsFound">
-    <text>Failed to create hierarchy ''{0}'' in cube ''{1}''.  Many to Many dimensions currently only support a single join dimension in the bridge cube.</text>
-</exception>
-
-<exception id="40410" name="MissingBridgeJoinDimension">
+<exception id="40400" name="MissingBridgeJoinDimension">
     <text>"Unable to locate bridge join dimension for many to many hierarchy ''{0}'' in cube ''{1}''.</text>
 </exception>
 
-<exception id="40420" name="ManyToManyNonTableRelation">
+<exception id="40410" name="ManyToManyNonTableRelation">
     <text>Error processing many to many hierarchy ''{0}'' in cube ''{1}''.  Dimensions without primary key tables only support the Table relation.</text>
 </exception>
 

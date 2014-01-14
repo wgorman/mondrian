@@ -13,6 +13,8 @@ import mondrian.calc.*;
 import mondrian.calc.impl.*;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 import mondrian.server.Locus;
 
 import java.util.List;
@@ -111,9 +113,15 @@ class FilterFunDef extends FunDefBase {
                 // Use a native evaluator, if more efficient.
                 // TODO: Figure this out at compile time.
                 SchemaReader schemaReader = evaluator.getSchemaReader();
+                RolapEvaluator manyToManyEval =
+                    ManyToManyUtil.getManyToManyEvaluator(
+                        (RolapEvaluator)evaluator);
                 NativeEvaluator nativeEvaluator =
                     schemaReader.getNativeSetEvaluator(
-                        call.getFunDef(), call.getArgs(), evaluator, this);
+                        call.getFunDef(),
+                        call.getArgs(),
+                        manyToManyEval,
+                        this);
                 if (nativeEvaluator != null) {
                     return (TupleIterable)
                         nativeEvaluator.execute(ResultStyle.ITERABLE);

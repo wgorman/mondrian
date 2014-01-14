@@ -31,6 +31,7 @@ public class SegmentColumn implements Serializable {
     public final int valueCount;
     public final SortedSet<Comparable> values;
     private final int hashCode;
+    private final boolean rollupAllowed;
 
     /**
      * Creates a SegmentColumn.
@@ -49,16 +50,21 @@ public class SegmentColumn implements Serializable {
      *     column to, or null if unconstrained. Values must be
      *     {@link Comparable} and immutable. For example, Integer, Boolean,
      *     String or Double.
+     *
+     * @param rollupAllowed if set to false, rollups won't be performed on
+     *     segments that contain this column.
      */
     public SegmentColumn(
         String columnExpression,
         int valueCount,
-        SortedSet<Comparable> valueList)
+        SortedSet<Comparable> valueList,
+        boolean rollupAllowed)
     {
         this.columnExpression = columnExpression;
         this.valueCount = valueCount;
         this.values = valueList;
         this.hashCode = computeHashCode();
+        this.rollupAllowed = rollupAllowed;
     }
 
     private int computeHashCode() {
@@ -80,14 +86,16 @@ public class SegmentColumn implements Serializable {
             return new SegmentColumn(
                 columnExpression,
                 valueCount,
-                null);
+                null,
+                rollupAllowed);
         }
 
         return new SegmentColumn(
             columnExpression,
             valueCount,
             ((ArraySortedSet) this.values).merge(
-                (ArraySortedSet) col.values));
+                (ArraySortedSet) col.values),
+            rollupAllowed);
     }
 
     /**
@@ -96,6 +104,10 @@ public class SegmentColumn implements Serializable {
      */
     public String getColumnExpression() {
         return columnExpression;
+    }
+
+    public boolean isRollupAllowed() {
+      return rollupAllowed;
     }
 
     /**

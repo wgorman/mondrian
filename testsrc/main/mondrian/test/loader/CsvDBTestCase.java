@@ -36,7 +36,7 @@ import java.sql.SQLException;
 public abstract class CsvDBTestCase extends FoodMartTestCase {
 
     private CsvDBLoader loader;
-    private CsvDBLoader.Table[] tables;
+    protected CsvDBLoader.Table[] tables;
     private TestContext testContext;
 
     public CsvDBTestCase() {
@@ -52,6 +52,13 @@ public abstract class CsvDBTestCase extends FoodMartTestCase {
         return dialect.allowsDdl()
             && dialect.getDatabaseProduct()
             != Dialect.DatabaseProduct.INFOBRIGHT;
+    }
+
+    /**
+     * This is an optional API call for children to add or update tables
+     */
+    protected void initTables() {
+      // default: do nothing
     }
 
     protected void setUp() throws Exception {
@@ -74,6 +81,7 @@ public abstract class CsvDBTestCase extends FoodMartTestCase {
         this.loader.initialize();
         this.loader.setInputFile(inputFile);
         this.tables = this.loader.getTables();
+        initTables();
         this.loader.generateStatements(this.tables);
 
         // create database tables

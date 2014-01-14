@@ -271,6 +271,20 @@ public class SegmentHeader implements Serializable {
     }
 
     /**
+     * Returns true if all the columns in this segment can be rolled up.
+     *
+     * @return whether this segment can be rolled up.
+     */
+    public boolean isRollupAllowed() {
+        for (SegmentColumn column : constrainedColumns) {
+            if (!column.isRollupAllowed()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Returns a list of constrained columns which define this segment
      * header. The caller should consider this list immutable.
      *

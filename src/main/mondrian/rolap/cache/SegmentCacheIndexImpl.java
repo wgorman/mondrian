@@ -728,6 +728,11 @@ public class SegmentCacheIndexImpl implements SegmentCacheIndex {
                 continue;
             }
 
+            // skip headers that cannot be rolled up.
+            if (!header.isRollupAllowed()) {
+              continue;
+            }
+
             List<SegmentColumn> nonWildcards =
                 new ArrayList<SegmentColumn>();
             for (SegmentColumn column : header.getConstrainedColumns()) {

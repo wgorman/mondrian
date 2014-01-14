@@ -472,7 +472,8 @@ public class SegmentBuilderTest extends BatchTestCase {
                 new SegmentColumn(
                     colExp,
                     colVals[i].length,
-                    vals));
+                    vals,
+                    true));
             axes.add(Pair.of(vals, Boolean.FALSE));
         }
 

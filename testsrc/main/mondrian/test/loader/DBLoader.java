@@ -318,6 +318,9 @@ public abstract class DBLoader {
             public Iterator<Row> rows() {
                 return this.rowStream.iterator();
             }
+            public RowStream getRowStream() {
+              return this.rowStream;
+            }
         }
 
         private final String name;

@@ -1824,6 +1824,48 @@ public class RolapCube extends CubeBase {
                     //   "fact"."foreignKey" = "product_class"."product_id"
 
                     table = table.addJoin(this, relation, joinCondition);
+
+                    // this logic adds additional parents for many to many
+                    // hierarchies
+                    if (hierarchy instanceof RolapCubeHierarchy) {
+                        RolapCubeHierarchy hier =
+                            (RolapCubeHierarchy)hierarchy;
+                        if (hier.manyToManyAddlJoins != null
+                            && hier.manyToManyAddlJoins.size() > 0)
+                        {
+                            RolapCubeHierarchy.ManyToManyAddlJoin addlJoin =
+                                ((RolapCubeHierarchy)hierarchy1)
+                                    .manyToManyAddlJoins.get(0);
+                            // find the bridge table
+                            RolapStar.Table t =
+                                table.findAncestor(addlJoin.bridgeTable);
+                            MondrianDef.Column factForeignKeyColumn =
+                                new MondrianDef.Column(
+                                    star.getFactTable().getAlias(),
+                                    addlJoin.cubeForeignKey);
+                            MondrianDef.Column dimPrimaryKeyColumn =
+                                new MondrianDef.Column(
+                                    addlJoin.relation.getAlias(),
+                                    addlJoin.primaryKey);
+                            MondrianDef.Column bridgeForeignKeyColumn =
+                                new MondrianDef.Column(
+                                    addlJoin.bridgeTable,
+                                    addlJoin.bridgeForeignKey);
+                            RolapStar.Condition factJoin =
+                                new RolapStar.Condition(
+                                    factForeignKeyColumn,
+                                    dimPrimaryKeyColumn);
+                            RolapStar.Condition bridgeCond =
+                                new RolapStar.Condition(
+                                    dimPrimaryKeyColumn,
+                                    bridgeForeignKeyColumn);
+                            RolapStar.Table addlParent =
+                                star.getFactTable().addJoin(
+                                    this, addlJoin.relation, factJoin);
+                            t.addAdditionalParent(addlParent);
+                            t.addAdditionalJoinCondition(bridgeCond);
+                        }
+                    }
                 }
 
                 // The parent Column is used so that non-shared dimensions
@@ -1982,7 +2024,7 @@ public class RolapCube extends CubeBase {
         return cubeUsages != null
             && cubeUsages.shouldIgnoreUnrelatedDimensions(baseCubeName);
     }
-    
+
     /**
      * return the usages of this cube, used
      * for mapping many to many dimensions back
@@ -2535,16 +2577,26 @@ public class RolapCube extends CubeBase {
         }
         // this is a special case where the hierarchy is a many to many
         // hierarchy
-        if (hierarchy.getDimension().getName().endsWith("$M2M")) {
-          String rootDim = hierarchy.getDimension().getName().substring(
-              0, hierarchy.getDimension().getName().length() - 4);
-          for (int i = 0; i < getDimensions().length; i++) {
-            Dimension dimension = getDimensions()[i];
-            if (dimension.getName().equals(rootDim)) {
-              return ((RolapCubeHierarchy)dimension.getHierarchies()[0])
-                  .getManyToManyHierarchy();
+        if (hierarchy.getDimension().getName().indexOf("$M2M$") >= 0) {
+            String rootDim = hierarchy.getDimension().getName().substring(
+                0, hierarchy.getDimension().getName().indexOf("$M2M$"));
+            for (int i = 0; i < getDimensions().length; i++) {
+                Dimension dimension = getDimensions()[i];
+                if (dimension.getName().equals(rootDim)) {
+                    List<RolapCubeHierarchy> manyToManyHierarchies =
+                        ((RolapCubeHierarchy)dimension.getHierarchies()[0])
+                        .getManyToManyHierarchies();
+                    for (RolapCubeHierarchy m2mHierarchy
+                      : manyToManyHierarchies)
+                    {
+                        if (hierarchy.getDimension().getName()
+                            .equals(m2mHierarchy.getDimension().getName()))
+                        {
+                            return m2mHierarchy;
+                        }
+                    }
+                }
             }
-          }
         }
         return null;
     }

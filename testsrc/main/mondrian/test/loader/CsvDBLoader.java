@@ -185,6 +185,9 @@ public class CsvDBLoader extends DBLoader {
         ListRowStream(List<Row> list) {
             this.list = list;
         }
+        public List<Row> getList() {
+            return this.list;
+        }
         void add(Row row) {
             this.list.add(row);
         }
