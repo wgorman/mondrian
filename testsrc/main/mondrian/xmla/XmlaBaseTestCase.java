@@ -38,10 +38,12 @@ import javax.servlet.http.HttpServletResponse;
  * @author mkambol
  */
 public abstract class XmlaBaseTestCase extends FoodMartTestCase {
-    protected static final String LAST_SCHEMA_UPDATE_DATE =
+    protected static final String LAST_UPDATE_DATE =
         "xxxx-xx-xxTxx:xx:xx";
     private static final String LAST_SCHEMA_UPDATE_NODE_NAME =
         "LAST_SCHEMA_UPDATE";
+    private static final String LAST_DATA_UPDATE_NODE_NAME =
+        "LAST_DATA_UPDATE";
     protected SortedMap<String, String> catalogNameUrls = null;
 
     private static int sessionIdCounter = 1000;
@@ -144,6 +146,7 @@ System.out.println("requestText=" + requestText);
 
         Document gotDoc = XmlUtil.parse(bytes);
         gotDoc = replaceLastSchemaUpdateDate(gotDoc);
+        gotDoc = replaceLastDataUpdateDate(gotDoc);
         String gotStr = XmlUtil.toString(gotDoc, true);
         gotStr = maskVersion(gotStr);
         gotStr = testContext.upgradeActual(gotStr);
@@ -329,15 +332,28 @@ System.out.println("Got CONTINUE");
         for (int i = 0; i < elements.getLength(); i++) {
             Node node = elements.item(i);
             node.getFirstChild().setNodeValue(
-                LAST_SCHEMA_UPDATE_DATE);
+                LAST_UPDATE_DATE);
         }
         return doc;
     }
+    protected Document replaceLastDataUpdateDate(Document doc) {
+      NodeList elements =
+          doc.getElementsByTagName(LAST_DATA_UPDATE_NODE_NAME);
+      for (int i = 0; i < elements.getLength(); i++) {
+          Node node = elements.item(i);
+          node.getFirstChild().setNodeValue(
+              LAST_UPDATE_DATE);
+      }
+      return doc;
+  }
 
     private String ignoreLastUpdateDate(String document) {
         return document.replaceAll(
             "\"LAST_SCHEMA_UPDATE\": \"....-..-..T..:..:..\"",
-            "\"LAST_SCHEMA_UPDATE\": \"" + LAST_SCHEMA_UPDATE_DATE + "\"");
+            "\"LAST_SCHEMA_UPDATE\": \"" + LAST_UPDATE_DATE + "\"")
+            .replaceAll(
+                "\"LAST_DATA_UPDATE\": \"....-..-..T..:..:..\"",
+                "\"LAST_DATA_UPDATE\": \"" + LAST_UPDATE_DATE + "\"");
     }
 
     protected Map<String, String> getCatalogNameUrls(TestContext testContext) {
