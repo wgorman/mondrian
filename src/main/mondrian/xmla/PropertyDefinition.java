@@ -11,6 +11,7 @@
 
 package mondrian.xmla;
 
+import mondrian.olap.MondrianProperties;
 import mondrian.olap.MondrianServer;
 
 import org.olap4j.impl.Olap4jUtil;
@@ -169,7 +170,13 @@ public enum PropertyDefinition {
         RowsetDefinition.Type.String,
         null,
         XmlaConstants.Access.Read,
-        "10.0.1600.22", // MondrianServer.forId(null).getVersion().getVersionString(),
+        // this prevents some adomd properties (ie Hierarchy.DisplayFolder) from
+        // automatically throwing a NotSupportedException
+         MondrianProperties.instance()
+             .XmlaCustomProviderVersion.get().isEmpty()
+                 ? MondrianServer.forId(null).getVersion().getVersionString()
+                     :  MondrianProperties.instance()
+                         .XmlaCustomProviderVersion.get(),
         XmlaConstants.Method.DISCOVER,
         "The version of the Mondrian XMLA Provider"),
 

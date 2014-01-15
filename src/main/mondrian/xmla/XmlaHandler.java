@@ -1716,10 +1716,14 @@ public class XmlaHandler {
                     getResponseMimeType(request);
                 final MDDataSet dataSet;
                 if (format == Format.Multidimensional) {
+                    boolean alwaysIncludeSlicer =
+                        MondrianProperties.instance()
+                            .XmlaAlwaysIncludeDefaultSlicer.get();
                     dataSet =
                         new MDDataSet_Multidimensional(
                             cellSet,
-                            false, // content != Content.DataIncludeDefaultSlicer,
+                            !alwaysIncludeSlicer
+                            && (content != Content.DataIncludeDefaultSlicer),
                             responseMimeType
                             == Enumeration.ResponseMimeType.JSON);
                 } else {

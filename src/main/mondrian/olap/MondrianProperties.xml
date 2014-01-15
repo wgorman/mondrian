@@ -1378,6 +1378,26 @@ recognized by ADOMD.NET.</p>
         <Default>false</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>XmlaAlwaysIncludeDefaultSlicer</Name>
+        <Path>mondrian.xmla.AlwaysIncludeDefaultSlicer</Path>
+        <Description>
+<p>If set to true the slicer axis will always report the default members for unconstrained dimensions.</p>
+        </Description>
+        <Type>Boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaCustomProviderVersion</Name>
+        <Path>mondrian.xmla.CustomProviderVersion</Path>
+        <Description>
+<p>If not empty, this will be the ProviderVersion reported by mondrian xmla. This
+  has impact on which properties will throw a NotSupportedException in adomd.</p>
+<p>If left empty mondrian will return its actual version.</p>
+        </Description>
+        <Type>String</Type>
+        <Default></Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>FilterChildlessSnowflakeMembers</Name>
         <Path>mondrian.rolap.FilterChildlessSnowflakeMembers</Path>
         <Category>SQL generation</Category>

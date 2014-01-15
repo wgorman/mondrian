@@ -741,8 +741,8 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.DimensionIsShared,
             MdschemaHierarchiesRowset.ParentChild,
             MdschemaHierarchiesRowset.Levels,
-            MdschemaHierarchiesRowset.HierarchyDisplayFolder,
             MdschemaHierarchiesRowset.HierarchyOrigin,
+            MdschemaHierarchiesRowset.HierarchyDisplayFolder,
             MdschemaHierarchiesRowset.CubeSource,
         },
         new Column[] {
@@ -4468,19 +4468,19 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "Levels in this hierarchy.");
-        private static final Column HierarchyDisplayFolder =
-            new Column(
-                "HIERARCHY_DISPLAY_FOLDER",
-                Type.String,
-                null,
-                Column.NOT_RESTRICTION,
-                Column.OPTIONAL,
-                "Not supported.");
         //TODO: hierarchyOrigin enumeration
         private static final Column HierarchyOrigin =
             new Column(
                 "HIERARCHY_ORIGIN",
                 Type.UnsignedShort,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Not supported.");
+        private static final Column HierarchyDisplayFolder =
+            new Column(
+                "HIERARCHY_DISPLAY_FOLDER",
+                Type.String,
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
@@ -4634,9 +4634,6 @@ TODO: see above
             // always true
             row.set(DimensionIsShared.name, true);
 
-            row.set(HierarchyDisplayFolder.name, "");
-
-
             boolean isParentChild = extra.isHierarchyParentChild(hierarchy);
             // mask in msdm.h: (?!)
             //  MD_ORIGIN_USER_DEFINED  0x00000001
@@ -4647,6 +4644,8 @@ TODO: see above
             //  UserHierarchy(1)|AttributeHierarchy(2)|ParentChildHierarchy(3)
             // TODO: sensible value here?
             row.set(HierarchyOrigin.name, isParentChild ? 3 : 2);
+
+            row.set(HierarchyDisplayFolder.name, "");
 
             row.set(ParentChild.name, isParentChild);
             if (deep) {
@@ -5950,6 +5949,7 @@ TODO: see above
             XmlaHandler.XmlaExtra extra = getExtra(connection);
             //TODO: revert
             member = extra.checkReplaceMemberOrdinal(member);
+            // extra.checkMemberOrdinal(member);
 
             // Check whether the member is visible, otherwise do not dump.
             Boolean visible =
