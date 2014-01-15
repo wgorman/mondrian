@@ -686,6 +686,7 @@ where [Measures].[Unit Sales]
                                 <xsd:element name="DATA_TYPE" sql:field="DATA_TYPE" type="xsd:unsignedShort"/>
                                 <xsd:element minOccurs="0" name="PROPERTY_CONTENT_TYPE" sql:field="PROPERTY_CONTENT_TYPE" type="xsd:short"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -1684,6 +1685,7 @@ where [Measures].[Unit Sales]
                                 <xsd:element name="DATA_TYPE" sql:field="DATA_TYPE" type="xsd:unsignedShort"/>
                                 <xsd:element minOccurs="0" name="PROPERTY_CONTENT_TYPE" sql:field="PROPERTY_CONTENT_TYPE" type="xsd:short"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
