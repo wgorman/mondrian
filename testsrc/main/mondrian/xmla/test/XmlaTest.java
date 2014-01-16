@@ -136,6 +136,10 @@ public class XmlaTest extends TestCase {
         for (int i = elements.getLength(); i > 0; i--) {
             blankNode(elements.item(i - 1));
         }
+        elements = element.getElementsByTagName("LAST_DATA_UPDATE");
+        for (int i = elements.getLength(); i > 0; i--) {
+            blankNode(elements.item(i - 1));
+        }
         return element;
     }
 
