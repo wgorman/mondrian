@@ -853,6 +853,9 @@ public class Property extends EnumeratedValues.BasicValue {
         // Populate synonyms.
         synonyms.put("CAPTION", MEMBER_CAPTION);
         synonyms.put("FORMAT", FORMAT_STRING);
+        synonyms.put("NAME", MEMBER_NAME); //TODO: or internal $name?
+        // documentation only speaks of an "internal id";
+        synonyms.put("ID", KEY); 
 
         // Populate map of upper-case property names.
         for (String propertyName : enumeration.getNames()) {
