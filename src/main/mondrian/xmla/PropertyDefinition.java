@@ -172,7 +172,7 @@ public enum PropertyDefinition {
         // this prevents some adomd properties (ie Hierarchy.DisplayFolder) from
         // automatically throwing a NotSupportedException
          MondrianProperties.instance()
-             .XmlaCustomProviderVersion.get().isEmpty()
+             .XmlaCustomProviderVersion.get().trim().equals("")
                  ? MondrianServer.forId(null).getVersion().getVersionString()
                      :  MondrianProperties.instance()
                          .XmlaCustomProviderVersion.get(),
