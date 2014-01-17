@@ -5,10 +5,9 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2011 Pentaho
+// Copyright (C) 2005-2014 Pentaho
 // All Rights Reserved.
 */
-
 package mondrian.xmla;
 
 import mondrian.olap.MondrianProperties;
@@ -33,7 +32,7 @@ public enum PropertyDefinition {
         "",
         XmlaConstants.Method.EXECUTE,
         "Determines the format used within an MDDataSet result set to describe the axes of the multidimensional dataset. This property can have the values listed in the following table: TupleFormat (default), ClusterFormat, CustomFormat."),
- 
+
     BeginRange(
         RowsetDefinition.Type.Integer,
         null,
@@ -62,7 +61,7 @@ public enum PropertyDefinition {
         XmlaConstants.Method.DISCOVER_AND_EXECUTE,
         "Contains the identifier (ID) of the process thread for the current session. "
         + "The default value for this property is zero (0). "
-        + "This property can be used with the Discover and Execute methods."), 
+        + "This property can be used with the Discover and Execute methods."),
 
     Content(
         RowsetDefinition.Type.EnumString,
@@ -203,8 +202,8 @@ public enum PropertyDefinition {
         XmlaConstants.Method.DISCOVER_AND_EXECUTE,
         "Contains the name of the client application. "
         + "There is no default value for this property. "
-        +"This property can be used with the Discover and Execute methods."),
-        
+        + "This property can be used with the Discover and Execute methods."),
+
     StateSupport(
         RowsetDefinition.Type.EnumString,
         Olap4jUtil.enumSetAllOf(XmlaConstants.StateSupport.class),

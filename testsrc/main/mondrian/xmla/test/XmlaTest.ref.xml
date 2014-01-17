@@ -20,8 +20,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -51,8 +51,8 @@
         <ROLES>California manager,No HR Cube</ROLES>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -76,8 +76,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -106,8 +106,8 @@
         <SCHEMA_OWNER/>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -129,8 +129,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -160,15 +160,15 @@
       <row>
         <DataSourceName>FoodMart</DataSourceName>
         <DataSourceDescription>Mondrian FoodMart Test data source</DataSourceDescription>
-        <URL>http://localhost:8080/mondrian/xmla</URL>
+        <URL>http://localhost:8080/mondrian/</URL>
         <DataSourceInfo>FoodMart</DataSourceInfo>
         <ProviderName>Mondrian</ProviderName>
         <ProviderType>MDP</ProviderType>
         <AuthenticationMode>Unauthenticated</AuthenticationMode>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -194,8 +194,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:ExecuteResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<ExecuteResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -225,8 +225,8 @@
         <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_ xsi:type="xsd:double">39431.6712</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_>
       </row>
     </root>
-  </xmla:return>
-</xmla:ExecuteResponse>
+  </return>
+</ExecuteResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -252,8 +252,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:ExecuteResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<ExecuteResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:mddataset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:mddataset" xmlns="urn:schemas-microsoft-com:xml-analysis:mddataset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:complexType name="MemberType">
@@ -524,8 +524,8 @@
         </Cell>
       </CellData>
     </root>
-  </xmla:return>
-</xmla:ExecuteResponse>
+  </return>
+</ExecuteResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -552,8 +552,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -609,8 +609,8 @@
         <CUBE_SOURCE>2</CUBE_SOURCE>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -636,8 +636,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -783,8 +783,8 @@
         <CUBE_SOURCE>2</CUBE_SOURCE>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -812,8 +812,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -870,8 +870,8 @@
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -898,8 +898,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -1160,8 +1160,8 @@
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -1189,8 +1189,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -1286,8 +1286,8 @@
         <HIERARCHY_DISPLAY_FOLDER/>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -1314,8 +1314,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -1710,8 +1710,8 @@
         <HIERARCHY_DISPLAY_FOLDER/>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -1738,8 +1738,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -1902,8 +1902,8 @@
         <CUBE_SOURCE>2</CUBE_SOURCE>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -1930,8 +1930,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -2113,8 +2113,8 @@
         <DEFAULT_FORMAT_STRING>Standard</DEFAULT_FORMAT_STRING>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -2142,8 +2142,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -2226,8 +2226,8 @@
         <DEPTH>0</DEPTH>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -2254,8 +2254,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -2458,8 +2458,8 @@
         <DEPTH>0</DEPTH>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -2486,8 +2486,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -2550,8 +2550,8 @@
         <DEPTH>0</DEPTH>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>
@@ -2578,8 +2578,8 @@
         </Resource>
         <Resource name="response">
             <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<xmla:DiscoverResponse xmlns:xmla="urn:schemas-microsoft-com:xml-analysis">
-  <xmla:return>
+<DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+  <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
       <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
@@ -2782,8 +2782,8 @@
         <DEPTH>0</DEPTH>
       </row>
     </root>
-  </xmla:return>
-</xmla:DiscoverResponse>
+  </return>
+</DiscoverResponse>
 ]]>
         </Resource>
     </TestCase>

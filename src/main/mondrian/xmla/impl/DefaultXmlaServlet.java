@@ -774,7 +774,8 @@ public abstract class DefaultXmlaServlet extends XmlaServlet {
                     long uintCode = code.hashCode() & 0xffffffffL;
                     String errorCode = Long.toString(uintCode);
                     // ms ssas uses no prefix here
-                    writer.element("Error",
+                    writer.element(
+                        "Error",
                         "ErrorCode", errorCode,
                         "Description", description,
                         "Source", FAULT_ACTOR,

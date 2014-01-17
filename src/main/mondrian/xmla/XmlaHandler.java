@@ -5,10 +5,9 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2013 Pentaho
+// Copyright (C) 2005-2014 Pentaho
 // All Rights Reserved.
 */
-
 package mondrian.xmla;
 
 import mondrian.olap.MondrianProperties;
@@ -1778,7 +1777,9 @@ public class XmlaHandler {
         Format f = Util.lookup(
             Format.class,
             formatName, defaultValue);
-        if (f == Format.Native) return Format.Multidimensional;
+        if (f == Format.Native) {
+            return Format.Multidimensional;
+        }
         return f;
     }
 
@@ -3214,7 +3215,7 @@ public class XmlaHandler {
             return member;
         }
 
-        public String getXmlaExpression( Member member ) {
+        public String getXmlaExpression(Member member) {
             return "";
         }
 
