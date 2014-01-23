@@ -193,6 +193,10 @@ public class SqlTupleReader implements TupleReader {
                     } else {
                         captionValue = null;
                     }
+                    if (childLevel.getDatatype() != null) {
+                      // force declared level value
+                      value = childLevel.getDatatype().getValue(value);
+                    }
                     Object key;
                     if (parentChild) {
                         key = cache.makeKey(member, value);

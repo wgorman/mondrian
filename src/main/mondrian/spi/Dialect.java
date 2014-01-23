@@ -892,6 +892,13 @@ public interface Dialect {
                 dialect.quoteNumericLiteral(buf, value);
             }
 
+            public Object getValue(Object value) {
+                if ( value instanceof Double ) {
+                  return ((Double) value).intValue();
+                }
+                return value;
+            }
+
             public boolean isNumeric() {
                 return true;
             }
@@ -941,6 +948,13 @@ public interface Dialect {
             StringBuilder buf,
             Dialect dialect,
             String value);
+
+        /**
+         * 
+         */
+        public Object getValue( Object value ) {
+          return value;
+        }
 
         /**
          * Returns whether this is a numeric datatype.
