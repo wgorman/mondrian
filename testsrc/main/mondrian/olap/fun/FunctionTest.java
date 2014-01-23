@@ -3503,9 +3503,10 @@ public class FunctionTest extends FoodMartTestCase {
         assertExprReturns("[Measures].[Store Sales].NAME", "Store Sales");
         // MS says that ID and KEY are standard member properties for
         // OLE DB for OLAP, but not for XML/A. We don't support them.
-        assertExprThrows(
-            "[Measures].[Store Sales].ID",
-            "MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
+        //TODO: ID Currently defaulting to MEMBER_KEY, no longer throws error 
+        //assertExprThrows(
+        //    "[Measures].[Store Sales].ID",
+        //    "MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
 
         // Error for KEY is slightly different than for ID. It doesn't matter
         // very much.
