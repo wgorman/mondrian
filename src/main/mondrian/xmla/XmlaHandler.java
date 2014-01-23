@@ -2051,7 +2051,10 @@ public class XmlaHandler {
             for (Hierarchy hierarchy : hierarchies) {
                 writer.startElement(
                     "HierarchyInfo",
-                    "name", hierarchy.getName());
+                    "name",
+                        MondrianProperties.instance().SsasCompatibleNaming.get()
+                            ? hierarchy.getUniqueName()
+                            : hierarchy.getName());
                 for (final Property prop : props) {
                     final String encodedProp =
                         encoder.encode(prop.getName());
