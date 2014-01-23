@@ -10501,6 +10501,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
                                 <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
                                 <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
                                 <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
                                 <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -10527,6 +10528,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>0</MEMBER_ORDINAL>
                         <MEMBER_NAME>All Gender</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Gender].[All Gender]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>0</MEMBER_KEY>
                         <MEMBER_TYPE>2</MEMBER_TYPE>
@@ -10547,6 +10549,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>1</MEMBER_ORDINAL>
                         <MEMBER_NAME>F</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Gender].[F]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>F</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10568,6 +10571,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>2</MEMBER_ORDINAL>
                         <MEMBER_NAME>M</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Gender].[M]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>M</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10649,6 +10653,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
                                 <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
                                 <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
                                 <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
                                 <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -10675,6 +10680,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>7930</MEMBER_ORDINAL>
                         <MEMBER_NAME>Portland</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[USA].[OR].[Portland]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>Portland</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10696,6 +10702,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>2967</MEMBER_ORDINAL>
                         <MEMBER_NAME>CA</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[USA].[CA]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>CA</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10778,6 +10785,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
                                 <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
                                 <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
                                 <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
                                 <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -10804,6 +10812,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>0</MEMBER_ORDINAL>
                         <MEMBER_NAME>All Customers</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[All Customers]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>0</MEMBER_KEY>
                         <MEMBER_TYPE>2</MEMBER_TYPE>
@@ -10824,6 +10833,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>2966</MEMBER_ORDINAL>
                         <MEMBER_NAME>USA</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[USA]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>USA</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10845,6 +10855,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>2967</MEMBER_ORDINAL>
                         <MEMBER_NAME>CA</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[USA].[CA]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>CA</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -10866,6 +10877,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <MEMBER_ORDINAL>8298</MEMBER_ORDINAL>
                         <MEMBER_NAME>WA</MEMBER_NAME>
                         <MEMBER_UNIQUE_NAME>[Customers].[USA].[WA]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
                         <EXPRESSION/>
                         <MEMBER_KEY>WA</MEMBER_KEY>
                         <MEMBER_TYPE>1</MEMBER_TYPE>
