@@ -11,6 +11,7 @@
 
 package mondrian.xmla;
 
+import mondrian.test.PropertySaver;
 import mondrian.olap.*;
 import mondrian.olap4j.MondrianOlap4jDriver;
 import mondrian.spi.Dialect;
@@ -971,6 +972,48 @@ public class XmlaBasicTest extends XmlaBaseTestCase {
         String requestType = "EXECUTE";
         Properties props = getDefaultRequestProperties(requestType);
         doTest(requestType, props, TestContext.instance());
+    }
+
+    /**
+     * Issue where a shared dimension hierarchy would cause two HierarchyInfo
+     * elements with the same name to appear in AxisInfo
+     * @throws Exception
+     */
+    public void testDuplicateHierarchyInSlicer() throws Exception {
+        final PropertySaver propSaver =
+            new PropertySaver();
+        propSaver.set(
+            MondrianProperties.instance().XmlaAlwaysIncludeDefaultSlicer, true);
+        propSaver.set(
+            MondrianProperties.instance().SsasCompatibleNaming, true);
+
+        String storeStoreDim = 
+            "  <Dimension type=\"StandardDimension\" visible=\"true\" name=\"SharedStore\">\n"
+            + "    <Hierarchy name=\"SharedStore\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"store_id\">\n"
+            + "      <Table name=\"store\"/>\n"
+            + "      <Level name=\"Store Country\" column=\"store_country\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>";
+        String duplicateHierarchyCube =
+            "<Cube name=\"StoreDup\">\n"
+            + "  <Table name=\"inventory_fact_1997\"/>\n"
+            + "  <DimensionUsage source=\"SharedStore\" name=\"A Store\"  visible=\"true\" foreignKey=\"region_id\"/>\n"
+            + "  <DimensionUsage source=\"SharedStore\" name=\"AnotherStore\"  visible=\"true\" foreignKey=\"employee_id\"/>\n"
+            + "<DimensionUsage name=\"Warehouse\" source=\"Warehouse\" foreignKey=\"warehouse_id\"/>"
+            + "<Measure name=\"Store Invoice\" column=\"store_invoice\" aggregator=\"sum\"/>"
+            + "</Cube>";
+        TestContext testContext = TestContext.instance().create(
+            storeStoreDim,
+            duplicateHierarchyCube,
+            null,
+            null,
+            null,
+            null);
+        String requestType = "EXECUTE";
+        Properties props = getDefaultRequestProperties(requestType);
+
+        doTest(requestType, props, testContext);
+        propSaver.reset();
     }
 
     public void doTestRT(String requestType, TestContext testContext)

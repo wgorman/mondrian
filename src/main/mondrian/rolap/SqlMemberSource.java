@@ -974,6 +974,10 @@ RME is this right
                 if (value == null) {
                     value = RolapUtil.sqlNullValue;
                 }
+                if (childLevel.getDatatype() != null) {
+                  // force declared level value
+                  value = childLevel.getDatatype().getValue(value);
+                }
                 Object captionValue;
                 int columnOffset = 1;
                 if (childLevel.hasCaptionColumn()) {

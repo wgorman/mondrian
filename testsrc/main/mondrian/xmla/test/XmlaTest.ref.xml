@@ -2170,6 +2170,7 @@
             <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
             <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
             <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
             <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
             <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
             <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -2196,6 +2197,7 @@
         <MEMBER_ORDINAL>0</MEMBER_ORDINAL>
         <MEMBER_NAME>1997</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Time].[1997]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>1997</MEMBER_KEY>
         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -2216,6 +2218,7 @@
         <MEMBER_ORDINAL>17</MEMBER_ORDINAL>
         <MEMBER_NAME>1998</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Time].[1998]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>1998</MEMBER_KEY>
         <MEMBER_TYPE>1</MEMBER_TYPE>
@@ -2282,6 +2285,7 @@
             <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
             <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
             <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
             <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
             <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
             <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -2308,6 +2312,7 @@
         <MEMBER_ORDINAL>0</MEMBER_ORDINAL>
         <MEMBER_NAME>Unit Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Unit Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Unit Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2328,6 +2333,7 @@
         <MEMBER_ORDINAL>1</MEMBER_ORDINAL>
         <MEMBER_NAME>Store Cost</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Store Cost]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Store Cost</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2348,6 +2354,7 @@
         <MEMBER_ORDINAL>2</MEMBER_ORDINAL>
         <MEMBER_NAME>Store Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Store Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Store Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2368,6 +2375,7 @@
         <MEMBER_ORDINAL>3</MEMBER_ORDINAL>
         <MEMBER_NAME>Sales Count</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Sales Count]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Sales Count</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2388,6 +2396,7 @@
         <MEMBER_ORDINAL>4</MEMBER_ORDINAL>
         <MEMBER_NAME>Customer Count</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Customer Count]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Customer Count</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2408,6 +2417,7 @@
         <MEMBER_ORDINAL>5</MEMBER_ORDINAL>
         <MEMBER_NAME>Promotion Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Promotion Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Promotion Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2428,6 +2438,7 @@
         <MEMBER_ORDINAL>6</MEMBER_ORDINAL>
         <MEMBER_NAME>Profit</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Profit]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION>([Measures].[Store Sales] - [Measures].[Store Cost])</EXPRESSION>
         <MEMBER_KEY>Profit</MEMBER_KEY>
         <MEMBER_TYPE>4</MEMBER_TYPE>
@@ -2448,6 +2459,7 @@
         <MEMBER_ORDINAL>8</MEMBER_ORDINAL>
         <MEMBER_NAME>Profit Growth</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Profit Growth]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION>(([Measures].[Profit] - [Measures].[Profit last Period]) / [Measures].[Profit last Period])</EXPRESSION>
         <MEMBER_KEY>Profit Growth</MEMBER_KEY>
         <MEMBER_TYPE>4</MEMBER_TYPE>
@@ -2514,6 +2526,7 @@
             <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
             <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
             <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
             <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
             <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
             <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -2541,6 +2554,7 @@
         <MEMBER_NAME>Profit Growth</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Profit Growth]</MEMBER_UNIQUE_NAME>
         <EXPRESSION>(([Measures].[Profit] - [Measures].[Profit last Period]) / [Measures].[Profit last Period])</EXPRESSION>
+        <DESCRIPTION/>
         <MEMBER_KEY>Profit Growth</MEMBER_KEY>
         <MEMBER_TYPE>4</MEMBER_TYPE>
         <MEMBER_CAPTION>Gewinn-Wachstum</MEMBER_CAPTION>
@@ -2606,6 +2620,7 @@
             <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
             <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
             <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
             <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
             <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
             <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
@@ -2632,6 +2647,7 @@
         <MEMBER_ORDINAL>0</MEMBER_ORDINAL>
         <MEMBER_NAME>Unit Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Unit Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Unit Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2652,6 +2668,7 @@
         <MEMBER_ORDINAL>1</MEMBER_ORDINAL>
         <MEMBER_NAME>Store Cost</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Store Cost]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Store Cost</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2672,6 +2689,7 @@
         <MEMBER_ORDINAL>2</MEMBER_ORDINAL>
         <MEMBER_NAME>Store Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Store Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Store Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2692,6 +2710,7 @@
         <MEMBER_ORDINAL>3</MEMBER_ORDINAL>
         <MEMBER_NAME>Sales Count</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Sales Count]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Sales Count</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2712,6 +2731,7 @@
         <MEMBER_ORDINAL>4</MEMBER_ORDINAL>
         <MEMBER_NAME>Customer Count</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Customer Count]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Customer Count</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2732,6 +2752,7 @@
         <MEMBER_ORDINAL>5</MEMBER_ORDINAL>
         <MEMBER_NAME>Promotion Sales</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Promotion Sales]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION/>
         <MEMBER_KEY>Promotion Sales</MEMBER_KEY>
         <MEMBER_TYPE>3</MEMBER_TYPE>
@@ -2752,6 +2773,7 @@
         <MEMBER_ORDINAL>6</MEMBER_ORDINAL>
         <MEMBER_NAME>Profit</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Profit]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION>([Measures].[Store Sales] - [Measures].[Store Cost])</EXPRESSION>
         <MEMBER_KEY>Profit</MEMBER_KEY>
         <MEMBER_TYPE>4</MEMBER_TYPE>
@@ -2772,6 +2794,7 @@
         <MEMBER_ORDINAL>8</MEMBER_ORDINAL>
         <MEMBER_NAME>Profit Growth</MEMBER_NAME>
         <MEMBER_UNIQUE_NAME>[Measures].[Profit Growth]</MEMBER_UNIQUE_NAME>
+        <DESCRIPTION/>
         <EXPRESSION>(([Measures].[Profit] - [Measures].[Profit last Period]) / [Measures].[Profit last Period])</EXPRESSION>
         <MEMBER_KEY>Profit Growth</MEMBER_KEY>
         <MEMBER_TYPE>4</MEMBER_TYPE>

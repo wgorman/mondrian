@@ -87,6 +87,10 @@ public class Target extends TargetBase {
                 } else {
                     captionValue = null;
                 }
+                if (childLevel.getDatatype() != null) {
+                  // force declared level value
+                  value = childLevel.getDatatype().getValue(value);
+                }
                 RolapMember parentMember = member;
                 Object key = cache.makeKey(parentMember, value);
                 member = cache.getMember(key, checkCacheStatus);
