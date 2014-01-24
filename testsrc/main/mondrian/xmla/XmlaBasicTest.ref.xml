@@ -24580,9 +24580,7 @@ select [Measures].[Unit Sales] on columns from [Sales]
 ]]>
         </Resource>
     </TestCase>
-    
-    
-    <!-- TODO -->
+
     <TestCase name="testDuplicateHierarchyInSlicer">
         <Resource name="response">
             <![CDATA[<?xml version="1.0"?>
@@ -24809,7 +24807,7 @@ select [Measures].[Unit Sales] on columns from [Sales]
                         <Axis name="Axis0">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="Measures">
+                                    <Member Hierarchy="[Measures]">
                                         <UName>[Measures].[Store Invoice]</UName>
                                         <Caption>Store Invoice</Caption>
                                         <LName>[Measures].[MeasuresLevel]</LName>
@@ -24822,7 +24820,7 @@ select [Measures].[Unit Sales] on columns from [Sales]
                         <Axis name="Axis1">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="Warehouse">
+                                    <Member Hierarchy="[Warehouse]">
                                         <UName>[Warehouse].[All Warehouses]</UName>
                                         <Caption>All Warehouses</Caption>
                                         <LName>[Warehouse].[(All)]</LName>
@@ -24835,14 +24833,14 @@ select [Measures].[Unit Sales] on columns from [Sales]
                         <Axis name="SlicerAxis">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="SharedStore">
+                                    <Member Hierarchy="[A Store].[SharedStore]">
                                         <UName>[SharedStore].[All]</UName>
                                         <Caption>All</Caption>
                                         <LName>[SharedStore].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="SharedStore">
+                                    <Member Hierarchy="[AnotherStore].[SharedStore]">
                                         <UName>[SharedStore].[All]</UName>
                                         <Caption>All</Caption>
                                         <LName>[SharedStore].[(All)]</LName>
@@ -24899,7 +24897,6 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
 ]]>
         </Resource>
     </TestCase>
-    
-    
-    
+
+
 </Root>

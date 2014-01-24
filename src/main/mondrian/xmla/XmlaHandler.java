@@ -2052,9 +2052,7 @@ public class XmlaHandler {
                 writer.startElement(
                     "HierarchyInfo",
                     "name",
-                        MondrianProperties.instance().SsasCompatibleNaming.get()
-                            ? hierarchy.getUniqueName()
-                            : hierarchy.getName());
+                    getHierarchyName(hierarchy));
                 for (final Property prop : props) {
                     final String encodedProp =
                         encoder.encode(prop.getName());
@@ -2248,7 +2246,7 @@ public class XmlaHandler {
         {
             writer.startElement(
                 "Member",
-                "Hierarchy", member.getHierarchy().getName());
+                "Hierarchy", getHierarchyName(member.getHierarchy()));
             for (Property prop : props) {
                 Object value;
                 Property longProp = longProps.get(prop.getName());
@@ -2283,7 +2281,7 @@ public class XmlaHandler {
         {
             writer.startElement(
                 "Member",
-                "Hierarchy", member.getHierarchy().getName());
+                "Hierarchy", getHierarchyName(member.getHierarchy()));
             for (Property prop : props) {
                 Object value;
                 Property longProp = longProps.get(prop.getName());
@@ -3311,6 +3309,12 @@ public class XmlaHandler {
             first = false;
         }
         return sb.toString();
+    }
+
+    private static String getHierarchyName(Hierarchy hierarchy) {
+        return MondrianProperties.instance().SsasCompatibleNaming.get()
+            ? hierarchy.getUniqueName()
+            : hierarchy.getName();
     }
 
     /**
