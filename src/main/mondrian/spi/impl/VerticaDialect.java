@@ -9,9 +9,16 @@
 
 package mondrian.spi.impl;
 
+import mondrian.rolap.SqlStatement;
+
 import java.sql.Connection;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of {@link mondrian.spi.Dialect} for the Vertica database.
@@ -60,6 +67,51 @@ public class VerticaDialect extends JdbcDialectImpl {
     {
         return generateInlineGeneric(
             columnNames, columnTypes, valueList, null, false);
+    }
+
+    private static final Map<Integer, SqlStatement.Type> VERTICA_TYPE_MAP;
+    static {
+        Map<Integer, SqlStatement.Type> typeMapInitial =
+            new HashMap<Integer, SqlStatement.Type>();
+        typeMapInitial.put(Types.SMALLINT, SqlStatement.Type.LONG);
+        typeMapInitial.put(Types.TINYINT, SqlStatement.Type.LONG);
+        typeMapInitial.put(Types.INTEGER, SqlStatement.Type.LONG);
+        typeMapInitial.put(Types.BOOLEAN, SqlStatement.Type.INT);
+        typeMapInitial.put(Types.DOUBLE, SqlStatement.Type.DOUBLE);
+        typeMapInitial.put(Types.FLOAT, SqlStatement.Type.DOUBLE);
+        typeMapInitial.put(Types.BIGINT, SqlStatement.Type.LONG);
+        VERTICA_TYPE_MAP = Collections.unmodifiableMap(typeMapInitial);
+    }
+
+    public SqlStatement.Type getType(
+        ResultSetMetaData metaData, int columnIndex)
+        throws SQLException
+    {
+        final int columnType = metaData.getColumnType(columnIndex + 1);
+
+        SqlStatement.Type internalType = null;
+        // all int types in vertica are longs.
+        if (columnType != Types.NUMERIC && columnType != Types.DECIMAL) {
+            internalType = VERTICA_TYPE_MAP.get(columnType);
+            internalType =  internalType == null ? SqlStatement.Type.OBJECT
+                : internalType;
+        } else {
+            final int precision = metaData.getPrecision(columnIndex + 1);
+            final int scale = metaData.getScale(columnIndex + 1);
+            if (scale == 0 && precision <= 9) {
+                // An int (up to 2^31 = 2.1B) can hold any NUMBER(10, 0) value
+                // (up to 10^9 = 1B).
+                internalType = SqlStatement.Type.INT;
+            } else if (scale == 0 && precision <= 19) {
+                // An int (up to 2^31 = 2.1B) can hold any NUMBER(10, 0) value
+                // (up to 10^9 = 1B).
+                internalType = SqlStatement.Type.LONG;
+            } else {
+                internalType = SqlStatement.Type.DOUBLE;
+            }
+        }
+        logTypeInfo(metaData, columnIndex, internalType);
+        return internalType;
     }
 }
 
