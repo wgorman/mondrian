@@ -9,13 +9,22 @@
 
 package mondrian.xmla.impl;
 
+import mondrian.olap.Exp;
+import mondrian.olap.Literal;
+import mondrian.olap.Parameter;
+import mondrian.olap.ParameterImpl;
 import mondrian.olap.Util;
+import mondrian.olap.type.BooleanType;
+import mondrian.olap.type.NumericType;
+import mondrian.olap.type.StringType;
+import mondrian.olap.type.Type;
 import mondrian.xmla.*;
 
 import org.apache.log4j.Logger;
 
 import org.w3c.dom.*;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 import static org.olap4j.metadata.XmlaConstants.Method;
@@ -41,8 +50,9 @@ public class DefaultXmlaRequest
     /* EXECUTE content */
     private String statement;
     private boolean drillthrough;
+    private List<Parameter> parameters;
 
-    /* DISCOVER contnet */
+    /* DISCOVER content */
     private String requestType;
     private Map<String, Object> restrictions;
 
@@ -120,7 +130,6 @@ public class DefaultXmlaRequest
         }
         return drillthrough;
     }
-
 
     protected final void init(Element xmlaRoot) throws XmlaException {
         if (NS_XMLA.equals(xmlaRoot.getNamespaceURI())) {
@@ -255,6 +264,16 @@ public class DefaultXmlaRequest
                 Util.newError(buf.toString()));
         }
         initProperties(childElems[0]); // <Properties><PropertyList>
+
+        childElems =
+            XmlaUtil.filterChildElements(
+                executeRoot,
+                NS_XMLA,
+                "Parameters");
+        // <Parameters>
+        if (childElems.length == 1) {
+            parameters = parseParameters(childElems[0]);
+        }
     }
 
     private void initRestrictions(Element restrictionsRoot)
@@ -404,6 +423,109 @@ public class DefaultXmlaRequest
         }
         statement = XmlaUtil.textInElement(childElems[0]).replaceAll("\\r", "");
         drillthrough = statement.toUpperCase().indexOf("DRILLTHROUGH") != -1;
+    }
+
+    private List<Parameter> parseParameters(Element parametersElement)
+        throws XmlaException
+    {
+        try {
+            Element[] paramElements =
+                XmlaUtil.filterChildElements(
+                    parametersElement,
+                    NS_XMLA,
+                    "Parameter");
+            List<Parameter> parameters =
+                new ArrayList<Parameter>(paramElements.length);
+            for (Element param : paramElements) {
+                String name = getChildTextValue(param, NS_XMLA, "Name");
+                Element valueElement =
+                    XmlaUtil.filterChildElements(param, NS_XMLA, "Value")[0];
+                String value = XmlaUtil.textInElement(valueElement);
+                Attr type = valueElement.getAttributeNodeNS(NS_XSI, "type");
+                parameters.add(
+                    new XmlaParameter(name, value, type.getValue())
+                        .toParameter());
+            }
+            return parameters;
+        } catch (Exception e) {
+            throw new XmlaException(
+                  CLIENT_FAULT_FC,
+                  HSB_BAD_PARAMETERS_CODE,
+                  HSB_BAD_PARAMETERS_FAULT_FS,
+                  Util.newError(
+                      e,
+                      MSG_INVALID_XMLA
+                      + ":" + "Error reading Parameter element"));
+        }
+  }
+
+    /**
+     * XMLA adomd parameter
+     */
+    private static class XmlaParameter {
+        private static Type STRING = new StringType();
+        private static Type BOOL = new BooleanType();
+        private static Type NUMERIC = new NumericType();
+      
+        private static Map<String, Type> mondrianTypeRegistry = new HashMap<String, Type>();
+        static {
+            mondrianTypeRegistry.put(XmlaHandler.XSD_STRING, STRING);
+            mondrianTypeRegistry.put(XmlaHandler.XSD_BOOLEAN, BOOL);
+
+            mondrianTypeRegistry.put(XmlaHandler.XSD_DECIMAL, NUMERIC);
+            mondrianTypeRegistry.put(XmlaHandler.XSD_INTEGER, NUMERIC);
+            mondrianTypeRegistry.put(XmlaHandler.XSD_DOUBLE, NUMERIC);
+            mondrianTypeRegistry.put(XmlaHandler.XSD_FLOAT, NUMERIC);
+            mondrianTypeRegistry.put(XmlaHandler.XSD_INT, NUMERIC);
+        }
+
+        private String name, value, type;
+
+        public XmlaParameter( String name, String value, String type ) {
+            this.name = name;
+            this.value = value;
+            this.type = type;
+        }
+
+        Type getOlapType() {
+            Type mondrianType = mondrianTypeRegistry.get(type);
+            return (mondrianType != null) ? mondrianType : STRING; 
+        }
+
+        Exp getExpression() {
+            Type olapType = getOlapType();
+            if (olapType.equals(STRING)) {
+                return Literal.createString(value);
+            }
+            else if (olapType.equals(NUMERIC)) {
+                return Literal.create(new BigDecimal(value));
+            }
+            else {
+                // TODO check other types, have fallback or exception
+                return null;
+            }
+        }
+
+        public Parameter toParameter() {
+            Exp exp = getExpression();
+            return new ParameterImpl(name, exp, null, exp.getType());
+        }
+    }
+
+    private static String getChildTextValue(
+        Element element,
+        String ns,
+        String childName)
+    {
+        Element[] children = XmlaUtil.filterChildElements(element, ns, childName);
+        if (children.length > 0) {
+            return XmlaUtil.textInElement(children[0]);
+        }
+        return null;
+    }
+
+    public List<Parameter> getParameters() {
+        return parameters;
     }
 }
 

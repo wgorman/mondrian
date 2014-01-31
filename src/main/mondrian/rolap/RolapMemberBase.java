@@ -374,6 +374,19 @@ public class RolapMemberBase
                 return getOrdinal();
 
             case Property.CHILDREN_CARDINALITY_ORDINAL:
+                if (!MondrianProperties.instance()
+                    .FetchChildrenCardinality.get())
+                {
+                    // use approximate level cardinality instead
+                    Level childLevel = getLevel().isParentChild()
+                        ? level
+                        : level.getChildLevel();
+                    if (childLevel == null) {
+                        return 0;
+                    }
+                    return childLevel.getDimension().getSchema().getSchemaReader()
+                        .getLevelCardinality(childLevel, true, true);
+                }
                 return Locus.execute(
                     ((RolapSchema) level.getDimension().getSchema())
                         .getInternalConnection(),
@@ -384,14 +397,13 @@ public class RolapMemberBase
                                 return getLevel().getChildLevel()
                                     .getApproxRowCount();
                             } else {
-                                ArrayList<RolapMember> list =
-                                    new ArrayList<RolapMember>();
-                                getHierarchy().getMemberReader()
-                                    .getMemberChildren(
-                                        RolapMemberBase.this, list);
-                                return list.size();
+                                return
+                                    getHierarchy().getMemberReader()
+                                    .getMemberChildrenCount(
+                                        RolapMemberBase.this);
                             }
                         }
+
                     }
                 );
 

@@ -9,6 +9,7 @@
 
 package mondrian.olap4j;
 
+import mondrian.olap.Parameter;
 import mondrian.rolap.RolapConnection;
 
 import org.olap4j.*;
@@ -68,6 +69,15 @@ class FactoryJdbc4Impl implements Factory {
         throws OlapException
     {
         return new MondrianOlap4jPreparedStatementJdbc4(olap4jConnection, mdx);
+    }
+
+    public MondrianOlap4jPreparedStatement newPreparedStatement(
+        String mdx,
+        List<Parameter> parameters,
+        MondrianOlap4jConnection olap4jConnection) throws OlapException
+    {
+        return new MondrianOlap4jPreparedStatementJdbc4(
+            olap4jConnection, mdx, parameters);
     }
 
     public MondrianOlap4jDatabaseMetaData newDatabaseMetaData(
@@ -135,6 +145,15 @@ class FactoryJdbc4Impl implements Factory {
         {
             super(olap4jConnection, mdx);
         }
+
+        public MondrianOlap4jPreparedStatementJdbc4(
+            MondrianOlap4jConnection olap4jConnection,
+            String mdx,
+            List<Parameter> parameters)
+            throws OlapException
+        {
+            super(olap4jConnection, mdx, parameters);
+        }
     }
 
     private static class MondrianOlap4jDatabaseMetaDataJdbc4
@@ -147,6 +166,7 @@ class FactoryJdbc4Impl implements Factory {
             super(olap4jConnection, mondrianConnection);
         }
     }
+
 }
 
 // End FactoryJdbc4Impl.java

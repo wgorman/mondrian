@@ -12,7 +12,6 @@ package mondrian.rolap;
 
 import mondrian.calc.TupleList;
 import mondrian.olap.*;
-import mondrian.olap.fun.FunUtil;
 import mondrian.resource.MondrianResource;
 import mondrian.rolap.agg.AggregationManager;
 import mondrian.rolap.agg.CellRequest;
@@ -309,7 +308,6 @@ class SqlMemberSource
             return outerQuery.toString();
         }
     }
-
 
     public List<RolapMember> getMembers() {
         return getMembers(dataSource);
@@ -1008,6 +1006,118 @@ RME is this right
         } finally {
             stmt.close();
         }
+    }
+
+    public int getMemberChildrenCount(
+        RolapMember parentMember)
+    {
+        // TODO: refactor with getMemberChildren2
+        MemberChildrenConstraint constraint =
+            sqlConstraintFactory.getMemberChildrenConstraint(null);
+        Pair<String, List<SqlStatement.Type>> pair =
+            getMemberChildrenSql(parentMember, constraint);
+        if (pair == null) {
+            // no children
+            return 0;
+        }
+        boolean countRows = false;
+        String sql = pair.left;
+        SqlQuery outerQuery =
+            SqlQuery.newQuery(
+                dataSource,
+                "counting children");
+        if (outerQuery.getDialect().allowsFromQuery()) {
+            outerQuery.addSelect("count(*)", null);
+            // Note: the "init" is for Postgres, which requires
+            // FROM-queries to have an alias
+            boolean failIfExists = true;
+            outerQuery.addFromQuery(sql, "init", failIfExists);
+            sql = outerQuery.toString();
+        }
+        else {
+            countRows = true;
+        }
+        return getQueryCount(
+            sql,
+            countRows,
+            "SqlMemberSource.getMemberChildrenCount",
+            "counting children"); //TODO
+    }
+
+    private int getQueryCount(
+        String sql,
+        boolean countRows,
+        String component,
+        String message)
+    {
+        // TODO: refactor with getMemberCount
+        final SqlStatement stmt =
+            RolapUtil.executeQuery(
+                dataSource,
+                sql,
+                new Locus(
+                    Locus.peek().execution,
+                    component,
+                    message));
+        try {
+            ResultSet resultSet = stmt.getResultSet();
+            int count;
+            if (!countRows) {
+                Util.assertTrue(resultSet.next());
+                ++stmt.rowCount;
+                count = resultSet.getInt(1);
+            } else {
+                // count distinct "manually"
+                ResultSetMetaData rmd = resultSet.getMetaData();
+                int nColumns = rmd.getColumnCount();
+                String[] colStrings = new String[nColumns];
+                count = 0;
+                while (resultSet.next()) {
+                    ++stmt.rowCount;
+                    boolean isEqual = true;
+                    for (int i = 0; i < nColumns; i++) {
+                        String colStr = resultSet.getString(i + 1);
+                        if (!Util.equals(colStr, colStrings[i])) {
+                            isEqual = false;
+                        }
+                        colStrings[i] = colStr;
+                    }
+                    if (!isEqual) {
+                        count++;
+                    }
+                }
+            }
+            return count;
+        } catch (SQLException e) {
+            throw stmt.handle(e);
+        } finally {
+            stmt.close();
+        }
+    }
+
+    private Pair<String, List<SqlStatement.Type>> getMemberChildrenSql(
+        RolapMember parentMember,
+        MemberChildrenConstraint constraint)
+    {
+        Pair<String, List<SqlStatement.Type>> pair;
+        final RolapLevel parentLevel = parentMember.getLevel();
+        RolapLevel childLevel;
+        if (parentLevel.isParentChild()) {
+            pair = makeChildMemberSqlPC(parentMember);
+            childLevel = parentLevel;
+        } else {
+            childLevel = (RolapLevel) parentLevel.getChildLevel();
+            if (childLevel == null) {
+                // member is at last level, so can have no children
+                return null;
+            }
+            if (childLevel.isParentChild()) {
+                pair = makeChildMemberSql_PCRoot(parentMember);
+            } else {
+                pair = makeChildMemberSql(parentMember, dataSource, constraint);
+            }
+        }
+        return pair;
     }
 
     public RolapMember makeMember(

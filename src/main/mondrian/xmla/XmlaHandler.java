@@ -11,6 +11,7 @@
 package mondrian.xmla;
 
 import mondrian.olap.MondrianProperties;
+import mondrian.olap.Parameter;
 import mondrian.olap.Util;
 import mondrian.util.CompositeList;
 import mondrian.xmla.impl.DefaultSaxWriter;
@@ -1696,7 +1697,15 @@ public class XmlaHandler {
                 getConnection(request, Collections.<String, String>emptyMap());
             getExtra(connection).setPreferList(connection);
             try {
-                statement = connection.prepareOlapStatement(mdx);
+                if ( request.getParameters() != null ) {
+                    statement = getExtra(connection).prepareOlapStatement(
+                        connection,
+                        mdx,
+                        request.getParameters());
+                }
+                else {
+                    statement = connection.prepareOlapStatement(mdx);
+                }
             } catch (XmlaException ex) {
                 throw ex;
             } catch (Exception ex) {
@@ -3123,6 +3132,11 @@ public class XmlaHandler {
          */
         Object getOrderKey(Member m) throws OlapException;
 
+        PreparedOlapStatement prepareOlapStatement(
+            OlapConnection connection,
+            String mdx,
+            List<Parameter> parameters) throws OlapException; 
+
         class FunctionDefinition {
             public final String functionName;
             public final String description;
@@ -3157,6 +3171,7 @@ public class XmlaHandler {
      * Connections based on mondrian's olap4j driver can do better.
      */
     private static class XmlaExtraImpl implements XmlaExtra {
+
         public ResultSet executeDrillthrough(
             OlapStatement olapStatement,
             String mdx,
@@ -3295,6 +3310,13 @@ public class XmlaHandler {
 
         public Object getOrderKey(Member m) throws OlapException {
             return m.getOrdinal();
+        }
+
+        public PreparedOlapStatement prepareOlapStatement(
+            OlapConnection connection,
+            String mdx,
+            List<Parameter> parameters) throws OlapException {
+            return connection.prepareOlapStatement(mdx);
         }
     }
 

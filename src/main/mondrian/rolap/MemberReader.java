@@ -179,6 +179,13 @@ interface MemberReader extends MemberSource {
     RolapMember getMemberByKey(
         RolapLevel level,
         List<Comparable> keyValues);
+
+    /**
+     * Get children cardinality.
+     * @param member parent member
+     * @return children count
+     */
+    int getMemberChildrenCount(RolapMember member);
 }
 
 // End MemberReader.java

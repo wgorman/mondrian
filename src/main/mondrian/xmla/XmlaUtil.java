@@ -12,6 +12,7 @@
 package mondrian.xmla;
 
 import mondrian.olap.MondrianException;
+import mondrian.olap.Parameter;
 import mondrian.olap.Util;
 import mondrian.xmla.impl.DefaultXmlaResponse;
 
@@ -370,6 +371,11 @@ way too noisy
             public String getSessionId() {
                 return null;
             }
+
+            public List<Parameter> getParameters() {
+                return null;
+            }
+
         };
         final Rowset rowset =
             rowsetDefinition.getRowset(

@@ -9,6 +9,7 @@
 
 package mondrian.olap4j;
 
+import mondrian.olap.Parameter;
 import mondrian.rolap.RolapConnection;
 
 import org.olap4j.OlapException;
@@ -93,6 +94,21 @@ interface Factory {
      */
     MondrianOlap4jPreparedStatement newPreparedStatement(
         String mdx,
+        MondrianOlap4jConnection olap4jConnection)
+        throws OlapException;
+
+    /**
+     * Creates a prepared statement with parameters, if supported.
+     *
+     * @param mdx MDX query text
+     * @param olap4jConnection Connection
+     * @param parameters starting query parameters
+     * @return Prepared statement
+     * @throws org.olap4j.OlapException on database error
+     */
+    MondrianOlap4jPreparedStatement newPreparedStatement(
+        String mdx,
+        List<Parameter> parameters,
         MondrianOlap4jConnection olap4jConnection)
         throws OlapException;
 

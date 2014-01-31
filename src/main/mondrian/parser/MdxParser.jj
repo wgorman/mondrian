@@ -321,6 +321,7 @@ TOKEN :
     | < RBRACE : "}" >
     | < RPAREN : ")" >
     | < SOLIDUS : "/" >
+    | < AT : "@" >
 }
 
 // Literals
@@ -747,6 +748,7 @@ Exp segmentOrFuncall(Exp left) :
     }
 }
 
+
 Literal numericLiteral() :
 {
 }
@@ -839,6 +841,25 @@ Exp atom() :
     )
     {
         return createCall(null, segment, lis);
+    }
+|   e = atParameterRef() {
+        return e;
+    }
+}
+
+Exp atParameterRef() :
+{
+    Id.NameSegment segment;
+    Exp[] args = new Exp[0];
+}
+{
+    <AT> segment = nameSegment() {
+        args = new Exp[1];
+        args[0] = Literal.createString(segment.getName());
+    }
+    {
+        // treat @Param as ParamRef("Param")
+        return new UnresolvedFunCall("ParamRef", args);
     }
 }
 
