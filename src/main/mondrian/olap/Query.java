@@ -166,7 +166,9 @@ public class Query extends QueryPart {
             axes,
             slicerAxis,
             cellProps,
-            new Parameter[0],
+            statement.getParameters() == null
+                ? Collections.<Parameter>emptyList()
+                : statement.getParameters(),
             strictValidation);
     }
 
@@ -180,7 +182,7 @@ public class Query extends QueryPart {
         QueryAxis[] axes,
         QueryAxis slicerAxis,
         QueryPart[] cellProps,
-        Parameter[] parameters,
+        List<Parameter> parameters,
         boolean strictValidation)
     {
         this.statement = statement;
@@ -190,7 +192,8 @@ public class Query extends QueryPart {
         normalizeAxes();
         this.slicerAxis = slicerAxis;
         this.cellProps = cellProps;
-        this.parameters.addAll(Arrays.asList(parameters));
+        // parameters will be cleared in resolve
+        this.parameters.addAll(parameters);
         this.measuresMembers = new HashSet<Member>();
         // assume, for now, that cross joins on virtual cubes can be
         // processed natively; as we parse the query, we'll know otherwise
@@ -198,7 +201,7 @@ public class Query extends QueryPart {
         this.strictValidation = strictValidation;
         this.alertedNonNativeFunDefs = new HashSet<FunDef>();
         statement.setQuery(this);
-        resolve();
+        resolve(parameters);
 
         if (RolapUtil.PROFILE_LOGGER.isDebugEnabled()
             && statement.getProfileHandler() == null)
@@ -348,7 +351,7 @@ public class Query extends QueryPart {
             QueryAxis.cloneArray(axes),
             (slicerAxis == null) ? null : (QueryAxis) slicerAxis.clone(),
             cellProps,
-            parameters.toArray(new Parameter[parameters.size()]),
+            parameters,
             strictValidation);
     }
 
@@ -443,8 +446,14 @@ public class Query extends QueryPart {
      * tree in any way.
      */
     public void resolve() {
+        resolve((List<Parameter>) null);
+    }
+    /**
+     * Same as {@link #resolve()} with externally defined parameters.
+     */
+    protected void resolve(List<Parameter> parameters) {
         final Validator validator = createValidator();
-        resolve(validator); // resolve self and children
+        resolve(validator, parameters); // resolve self and children
         // Create a dummy result so we can use its evaluator
         final Evaluator evaluator = RolapUtil.createEvaluator(statement);
         ExpCompiler compiler =
@@ -527,6 +536,10 @@ public class Query extends QueryPart {
      * @param validator Validator
      */
     public void resolve(Validator validator) {
+        resolve(validator, null);
+    }
+
+    protected void resolve(Validator validator, List<Parameter> params) {
         // Before commencing validation, create all calculated members,
         // calculated sets, and parameters.
         if (formulas != null) {
@@ -542,6 +555,14 @@ public class Query extends QueryPart {
         parameters.clear();
         parametersByName.clear();
         accept(new ParameterFinder());
+        // register supplied parameters
+        if (params != null) {
+            for (Parameter param : params) {
+                validator.getQuery().parameters.add(param);
+                validator.getQuery().parametersByName.put(
+                    param.getName(), param);
+            }
+        }
 
         // Register all aliased expressions ('expr AS alias') as named sets.
         accept(new AliasedExpressionFinder());

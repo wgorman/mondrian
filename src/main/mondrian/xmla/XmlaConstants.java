@@ -238,6 +238,10 @@ public interface XmlaConstants {
     public static final String HSB_BAD_STATEMENT_FAULT_FS =
             "XMLA SOAP bad Execute Statement element";
 
+    public static final String HSB_BAD_PARAMETERS_CODE = "00HSBB11";
+    public static final String HSB_BAD_PARAMETERS_FAULT_FS =
+            "XMLA SOAP bad Execute Parameters element";
+
     public static final String HSB_BAD_NON_NULLABLE_COLUMN_CODE = "00HSBB16";
     public static final String HSB_BAD_NON_NULLABLE_COLUMN_FAULT_FS =
             "XMLA SOAP non-nullable column";

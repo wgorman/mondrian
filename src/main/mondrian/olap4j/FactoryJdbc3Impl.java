@@ -9,6 +9,7 @@
 
 package mondrian.olap4j;
 
+import mondrian.olap.Parameter;
 import mondrian.rolap.RolapConnection;
 
 import org.olap4j.OlapException;
@@ -80,6 +81,15 @@ class FactoryJdbc3Impl implements Factory {
             olap4jConnection, mondrianConnection);
     }
 
+    public MondrianOlap4jPreparedStatement newPreparedStatement(
+        String mdx,
+        List<Parameter> parameters,
+        MondrianOlap4jConnection olap4jConnection) throws OlapException
+    {
+        // discards parameters
+        return newPreparedStatement(mdx, olap4jConnection);
+    }
+
     // Inner classes
 
     private static class MondrianOlap4jStatementJdbc3
@@ -146,6 +156,7 @@ class FactoryJdbc3Impl implements Factory {
             super(olap4jConnection, mondrianConnection);
         }
     }
+
 }
 
 // End FactoryJdbc3Impl.java

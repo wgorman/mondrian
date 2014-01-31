@@ -14,6 +14,7 @@ import mondrian.rolap.RolapSchema;
 import mondrian.spi.ProfileHandler;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -53,6 +54,8 @@ public abstract class StatementImpl implements Statement {
     private boolean cancelBeforeStart;
 
     private final long id;
+
+    protected List<Parameter> parameters;
 
     /**
      * Creates a StatementImpl.
@@ -148,6 +151,11 @@ public abstract class StatementImpl implements Statement {
     public long getId() {
         return id;
     }
+
+    public List<Parameter> getParameters() {
+        return parameters;
+    }
+
 }
 
 // End StatementImpl.java

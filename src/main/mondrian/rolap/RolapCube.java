@@ -2860,7 +2860,7 @@ public class RolapCube extends CubeBase {
                     new QueryAxis[0],
                     null,
                     new QueryPart[0],
-                    new Parameter[0],
+                    Collections.<Parameter>emptyList(),
                     false);
             query.createValidator().validate(formula);
             calculatedMemberList.add(formula);
