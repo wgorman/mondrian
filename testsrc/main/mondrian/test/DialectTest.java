@@ -343,7 +343,9 @@ public class DialectTest extends TestCase {
                 // SQL server 2008
                 "Incorrect syntax near \\'\\)\\'\\.",
                 // Impala
-                "(?s).*Encountered: EOF.*Expected: IDENTIFIER.*"
+                "(?s).*Encountered: EOF.*Expected: IDENTIFIER.*",
+                // Vertica 6
+                "(?s).*ERROR: Subquery in FROM must have an alias.*"
             };
             assertQueryFails(sql, errs);
         } else {
@@ -470,7 +472,10 @@ public class DialectTest extends TestCase {
                 // Vectorwise
                 "Parse error in StringBuffer at line 0, column 525\\: \\<missing\\>\\.",
                 // SQL server 2008
-                "ORDER BY items must appear in the select list if the statement contains a UNION, INTERSECT or EXCEPT operator."
+                "ORDER BY items must appear in the select list if the statement contains a UNION, INTERSECT or EXCEPT operator.",
+                // Vertica 6
+                "(?s).*ERROR: ORDER BY on a UNION/INTERSECT/EXCEPT result must be on "
+                + "one of the result columns.*",
             };
             assertQueryFails(sql, errs);
         }
@@ -540,6 +545,8 @@ public class DialectTest extends TestCase {
                 "(?s).*found \"SETS\" \\(at char 135\\) expecting `EXCEPT' or `FOR' or `INTERSECT' or `ORDER' or `UNION'.*",
                 // Vertica
                 "line 3, There is no such function as \\'grouping\\'\\.",
+                // Vertica 6
+                "(?s).*ERROR: Syntax error at or near \"SETS\".*",
                 // monetdb
                 "syntax error, unexpected IDENT, expecting SCOLON in: \"select \"customer_id\",",
                 // impala
@@ -1034,7 +1041,10 @@ public class DialectTest extends TestCase {
                 // SQL Server 2008
                 "Column 'time_by_day.the_month' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause.",
                 // impala
-                "(?s).*select list expression not produced by aggregation output.*missing from GROUP BY clause.*"
+                "(?s).*select list expression not produced by aggregation output.*missing from GROUP BY clause.*",
+                // Vertica 6
+                "(?s).*ERROR: Column \"time_by_day.the_month\" must appear in "
+                + "the GROUP BY clause or be used in an aggregate function.*"
             };
             assertQueryFails(sql, errs);
         }
