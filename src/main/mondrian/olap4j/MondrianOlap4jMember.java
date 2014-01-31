@@ -179,13 +179,13 @@ class MondrianOlap4jMember
         throw new UnsupportedOperationException();
     }
 
-    public String getXmlaExpression() {//TODO: temporary
-      if (isCalculated()) {
-        if( member instanceof RolapCalculatedMember ) {
-          return (( RolapCalculatedMember)  member ).getExpression().toString();
+    public String getXmlaExpression() {
+        if (isCalculated()) {
+          if( member instanceof RolapCalculatedMember ) {
+            return (( RolapCalculatedMember)  member ).getExpression().toString();
+          }
         }
-      }
-      return "";
+        return "";
     }
 
     public List<Member> getAncestorMembers() {
