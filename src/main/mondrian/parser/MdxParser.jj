@@ -850,7 +850,6 @@ Exp atom() :
 Exp atParameterRef() :
 {
     Id.NameSegment segment;
-    Exp e;
     Exp[] args = new Exp[0];
 }
 {
