@@ -567,7 +567,6 @@ public class SmartMemberReader implements MemberReader {
         return parentMember;
     }
 
-    @Override
     public int getMemberChildrenCount(RolapMember member) {
         MemberChildrenConstraint constraint =
             sqlConstraintFactory.getMemberChildrenConstraint(null);

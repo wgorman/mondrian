@@ -159,7 +159,6 @@ class DelegatingMemberReader implements MemberReader {
         return memberReader.getMemberParent(member);
     }
 
-    @Override
     public int getMemberChildrenCount(RolapMember member) {
         return memberReader.getMemberChildrenCount(member);
     }
