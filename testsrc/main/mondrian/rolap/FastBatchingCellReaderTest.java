@@ -1275,6 +1275,8 @@ public class FastBatchingCellReaderTest extends BatchTestCase {
             // supported"
         case GREENPLUM:
             // Greenplum says 'Does not support yet that query'
+        case VERTICA:
+            // Vertica says "Aggregate function calls cannot contain subqueries"
             return;
         }
 

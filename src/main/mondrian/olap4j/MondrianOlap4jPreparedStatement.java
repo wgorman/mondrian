@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.net.URL;
 import java.sql.*;
 import java.util.Calendar;
+import java.util.List;
 
 /**
  * Implementation of {@link PreparedOlapStatement}
@@ -61,6 +62,29 @@ abstract class MondrianOlap4jPreparedStatement
     {
         super(olap4jConnection);
         this.mdx = mdx;
+        final Pair<Query, MondrianOlap4jCellSetMetaData> pair = parseQuery(mdx);
+        this.query = pair.left;
+        this.cellSetMetaData = pair.right;
+    }
+
+    /**
+     * Creates a MondrianOlap4jPreparedStatement.
+     *
+     * @param olap4jConnection Connection
+     * @param mdx MDX query string
+     * @param parameters external query parameters
+     *
+     * @throws OlapException if database error occurs
+     */
+    protected MondrianOlap4jPreparedStatement(
+        MondrianOlap4jConnection olap4jConnection,
+        String mdx,
+        List<Parameter> parameters)
+        throws OlapException
+    {
+        super(olap4jConnection);
+        this.mdx = mdx;
+        this.parameters = parameters;
         final Pair<Query, MondrianOlap4jCellSetMetaData> pair = parseQuery(mdx);
         this.query = pair.left;
         this.cellSetMetaData = pair.right;

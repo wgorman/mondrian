@@ -755,9 +755,11 @@ public class SegmentLoader {
                         {
                             axisContainsNull[axisIndex] = true;
                         }
+                        processedRows.setNull(columnIndex, true);
+                    } else {
+                        axisValueSets[axisIndex].add(doubleValue);
+                        processedRows.setDouble(columnIndex, doubleValue);
                     }
-                    axisValueSets[axisIndex].add(doubleValue);
-                    processedRows.setDouble(columnIndex, doubleValue);
                     break;
                 default:
                     throw Util.unexpected(type);

@@ -142,7 +142,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         return testContext;
     }
 
-    protected TestContext createMultiLevelTestContext() {
+    protected TestContext createMultiLevelTestContext(boolean withAggTbl) {
         final TestContext testContext = TestContext.instance().withSchema(
             "<?xml version=\"1.0\"?>\n"
             + "<Schema name=\"FoodMart\">\n"
@@ -179,7 +179,8 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "\n"
             + "  <Cube name=\"M2M\">\n"
             + "    <Table name=\"m2m_fact_balance\">\n"
-            + "      <AggName name=\"m2m_fact_balance_mlvl_agg\">\n"
+            + (withAggTbl ? 
+              "      <AggName name=\"m2m_fact_balance_mlvl_agg\">\n"
             + "        <AggFactCount column=\"fact_count\"/>\n"
             + "        <AggForeignKey factColumn=\"id_date\" aggColumn=\"id_date\" />\n"
             + "        <AggMeasure name=\"[Measures].[Amount]\" column=\"amount_sum\"/>\n"
@@ -187,6 +188,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "        <AggLevel name=\"[Account].[AcctType]\" column=\"acct_type\"/>\n"
             + "        <AggLevel name=\"[Customer].[Location]\" column=\"cust_loc\"/>\n"
             + "      </AggName>\n"
+              : "" )
             + "    </Table>\n"
             + "    <DimensionUsage name=\"Account\" source=\"Account\" foreignKey=\"id_account\"/>\n"
             + "    <DimensionUsage name=\"Customer\" source=\"Customer\" foreignKey=\"id_account\" bridgeCube=\"CustomerAccountBridge\"/>\n"
@@ -635,14 +637,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiLevelQueries() {
-        boolean useAgg = prop.UseAggregates.get();
-        boolean readAgg = prop.ReadAggregates.get();
-        if (useAgg || readAgg) {
-          // skip this test, these won't pass with aggs enabled due to lack of
-          // support for m2m agglevel
-          return;
-        }
-        TestContext context = createMultiLevelTestContext();
+        TestContext context = createMultiLevelTestContext(false);
         final String mdx =
             "Select\n"
             + "{[Measures].[Amount]} on columns,\n"
@@ -818,7 +813,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         prop.UseAggregates.set(true);
         prop.ReadAggregates.set(true);
 
-        TestContext context = createMultiLevelTestContext();
+        TestContext context = createMultiLevelTestContext(true);
         context.assertQueryReturns(
             "SELECT {[Customer].[All Customers], [Customer].[All Customers].Children} ON COLUMNS,\n"
             + "      {[Account].[All Accounts], [Account].[All Accounts].Children} ON ROWS\n"
@@ -880,7 +875,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         // (which joins through the account dimension)
         // but does not have access directly to the account dimension itself.
         TestContext context =
-            createMultiLevelTestContext().withRole("role_test_1");
+            createMultiLevelTestContext(false).withRole("role_test_1");
 
         // verify we cannot access the account dimension
         context.assertQueryThrows(
@@ -942,7 +937,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #2: 4\n");
 
         // test hierarchy restrictions with full rollup
-        context = createMultiLevelTestContext().withRole("role_test_2");
+        context = createMultiLevelTestContext(false).withRole("role_test_2");
         context.assertQueryReturns(
             "Select\n"
             + "NON EMPTY {[Measures].[Amount], [Measures].[Count]} on columns,\n"
@@ -962,7 +957,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #1: 6\n");
 
         // test hierarchy restrictions with partial rollup
-        context = createMultiLevelTestContext().withRole("role_test_3");
+        context = createMultiLevelTestContext(false).withRole("role_test_3");
         context.assertQueryReturns(
             "Select\n"
             + "NON EMPTY {[Measures].[Amount], [Measures].[Count]} on columns,\n"
@@ -982,7 +977,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #1: 1\n");
 
         // test hierarchy restrictions with partial rollup
-        context = createMultiLevelTestContext().withRole("role_test_4");
+        context = createMultiLevelTestContext(false).withRole("role_test_4");
         context.assertQueryReturns(
             "Select\n"
             + "NON EMPTY {[Measures].[Amount], [Measures].[Count]} on columns,\n"

@@ -478,6 +478,17 @@ public abstract class MondrianOlap4jConnection implements OlapConnection {
             || iface.isInstance(mondrianConnection);
     }
 
+    public PreparedOlapStatement prepareOlapStatement(
+        String mdx,
+        List<Parameter> parameters)
+        throws OlapException
+    {
+        final MondrianOlap4jPreparedStatement preparedStatement =
+            factory.newPreparedStatement(mdx, parameters, this);
+        mondrianServer.addStatement(preparedStatement);
+        return preparedStatement;
+    }
+
     // implement OlapConnection
 
     public PreparedOlapStatement prepareOlapStatement(

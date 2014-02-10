@@ -9,6 +9,7 @@
 
 package mondrian.olap4j;
 
+import mondrian.olap.Parameter;
 import mondrian.rolap.RolapConnection;
 
 import org.olap4j.OlapException;
@@ -67,7 +68,20 @@ class FactoryJdbc41Impl implements Factory {
         MondrianOlap4jConnection olap4jConnection)
         throws OlapException
     {
-        return new MondrianOlap4jPreparedStatementJdbc41(olap4jConnection, mdx);
+        return new MondrianOlap4jPreparedStatementJdbc41(
+            olap4jConnection,
+            mdx);
+    }
+
+    public MondrianOlap4jPreparedStatement newPreparedStatement(
+        String mdx,
+        List<Parameter> parameters,
+        MondrianOlap4jConnection olap4jConnection) throws OlapException
+    {
+        return new MondrianOlap4jPreparedStatementJdbc41(
+            olap4jConnection,
+            mdx,
+            parameters);
     }
 
     public MondrianOlap4jDatabaseMetaData newDatabaseMetaData(
@@ -77,6 +91,7 @@ class FactoryJdbc41Impl implements Factory {
         return new MondrianOlap4jDatabaseMetaDataJdbc41(
             olap4jConnection, mondrianConnection);
     }
+
 
     // Inner classes
 
@@ -188,6 +203,15 @@ class FactoryJdbc41Impl implements Factory {
             super(olap4jConnection, mdx);
         }
 
+        public MondrianOlap4jPreparedStatementJdbc41(
+            MondrianOlap4jConnection olap4jConnection,
+            String mdx,
+            List<Parameter> parameters)
+            throws OlapException
+        {
+            super(olap4jConnection, mdx, parameters);
+        }
+
         public void closeOnCompletion() throws SQLException {
             closeOnCompletion = true;
         }
@@ -220,6 +244,7 @@ class FactoryJdbc41Impl implements Factory {
             throw new UnsupportedOperationException();
         }
     }
+
 }
 
 // End FactoryJdbc41Impl.java

@@ -9,8 +9,11 @@
 
 package mondrian.xmla;
 
+import mondrian.olap.Parameter;
+
 import org.olap4j.metadata.XmlaConstants;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -84,6 +87,12 @@ public interface XmlaRequest {
      * @return Id of the session
      */
     String getSessionId();
+
+    /**
+     * @return XMLA Parameters
+     */
+    List<Parameter> getParameters();
+
 }
 
 // End XmlaRequest.java

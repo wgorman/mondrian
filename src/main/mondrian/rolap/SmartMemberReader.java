@@ -566,6 +566,17 @@ public class SmartMemberReader implements MemberReader {
         }
         return parentMember;
     }
+
+    public int getMemberChildrenCount(RolapMember member) {
+        MemberChildrenConstraint constraint =
+            sqlConstraintFactory.getMemberChildrenConstraint(null);
+        List<RolapMember> list =
+            cacheHelper.getChildrenFromCache(member, constraint);
+        if (list != null) {
+            return list.size();
+        }
+        return source.getMemberChildrenCount(member);
+    }
 }
 
 // End SmartMemberReader.java

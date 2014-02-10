@@ -7032,6 +7032,10 @@ TODO: see above
         public String getSessionId() {
             return request.getSessionId();
         }
+
+        public List<Parameter> getParameters() {
+            return request.getParameters();
+        }
     }
 
     /**

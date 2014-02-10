@@ -320,6 +320,13 @@ class CacheMemberReader implements MemberReader, MemberCache {
     public RolapMember getMemberParent(RolapMember member) {
         return member.getParentMember();
     }
+
+    public int getMemberChildrenCount(RolapMember member) {
+        ArrayList<RolapMember> list =
+            new ArrayList<RolapMember>();
+        getMemberChildren(member, list);
+        return list.size();
+    }
 }
 
 // End CacheMemberReader.java

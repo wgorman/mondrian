@@ -524,6 +524,10 @@ public class NoCacheMemberReader implements MemberReader, MemberCache {
             result.add(child);
         }
     }
+
+    public int getMemberChildrenCount(RolapMember member) {
+        return source.getMemberChildrenCount(member);
+    }
 }
 
 // End NoCacheMemberReader.java

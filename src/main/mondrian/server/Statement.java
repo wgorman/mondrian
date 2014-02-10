@@ -9,6 +9,7 @@
 
 package mondrian.server;
 
+import mondrian.olap.Parameter;
 import mondrian.olap.Query;
 import mondrian.olap.SchemaReader;
 import mondrian.rolap.RolapConnection;
@@ -16,6 +17,7 @@ import mondrian.rolap.RolapSchema;
 import mondrian.spi.ProfileHandler;
 
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Internal context corresponding to a statement.
@@ -58,6 +60,13 @@ public interface Statement {
     Object getProperty(String name);
 
     Query getQuery();
+
+    /**
+     * Query parameters not defined in mdx.
+     * 
+     * @return request parameters
+     */
+    List<Parameter> getParameters();
 
     void setQuery(Query query);
 

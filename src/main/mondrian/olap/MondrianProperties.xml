@@ -1397,6 +1397,17 @@ recognized by ADOMD.NET.</p>
         <Type>String</Type>
         <Default></Default>
     </PropertyDefinition>
+        <PropertyDefinition>
+        <Name>FetchChildrenCardinality</Name>
+        <Path>mondrian.olap.FetchChildrenCardinality</Path>
+        <Description>
+<p>If set to false, the CHILDREN_CARDINALITY property will be set to level cardinality.</p>
+<p>This way the value will always be overestimated but improve performance in XMLA queries, which
+  require this property to be set for all members.</p>
+        </Description>
+        <Type>Boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
     <PropertyDefinition>
         <Name>FilterChildlessSnowflakeMembers</Name>
         <Path>mondrian.rolap.FilterChildlessSnowflakeMembers</Path>

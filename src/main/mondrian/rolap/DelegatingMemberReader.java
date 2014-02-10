@@ -158,6 +158,10 @@ class DelegatingMemberReader implements MemberReader {
     public RolapMember getMemberParent(RolapMember member) {
         return memberReader.getMemberParent(member);
     }
+
+    public int getMemberChildrenCount(RolapMember member) {
+        return memberReader.getMemberChildrenCount(member);
+    }
 }
 
 // End DelegatingMemberReader.java

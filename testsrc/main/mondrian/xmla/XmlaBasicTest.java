@@ -11,7 +11,6 @@
 
 package mondrian.xmla;
 
-import mondrian.test.PropertySaver;
 import mondrian.olap.*;
 import mondrian.olap4j.MondrianOlap4jDriver;
 import mondrian.spi.Dialect;
@@ -980,8 +979,6 @@ public class XmlaBasicTest extends XmlaBaseTestCase {
      * @throws Exception
      */
     public void testDuplicateHierarchyInSlicer() throws Exception {
-        final PropertySaver propSaver =
-            new PropertySaver();
         propSaver.set(
             MondrianProperties.instance().XmlaAlwaysIncludeDefaultSlicer, true);
         propSaver.set(
@@ -1013,6 +1010,15 @@ public class XmlaBasicTest extends XmlaBaseTestCase {
         Properties props = getDefaultRequestProperties(requestType);
 
         doTest(requestType, props, testContext);
+        propSaver.reset();
+    }
+
+    public void testCommandParameter() throws Exception {
+        propSaver.set(
+            MondrianProperties.instance().SsasCompatibleNaming, true);
+        String requestType = "EXECUTE";
+        Properties props = getDefaultRequestProperties(requestType);
+        doTest(requestType, props, TestContext.instance());
         propSaver.reset();
     }
 

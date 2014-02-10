@@ -9,6 +9,7 @@
 
 package mondrian.olap4j;
 
+import mondrian.olap.Parameter;
 import mondrian.rolap.RolapConnection;
 
 import org.olap4j.*;
@@ -680,6 +681,15 @@ class FactoryJdbc4Plus {
             throws OlapException
         {
             super(olap4jConnection, mdx);
+        }
+
+        public AbstractPreparedStatement(
+            MondrianOlap4jConnection olap4jConnection,
+            String mdx,
+            List<Parameter> parameters)
+            throws OlapException
+        {
+            super(olap4jConnection, mdx, parameters);
         }
 
         public CellSetMetaData getMetaData() {
