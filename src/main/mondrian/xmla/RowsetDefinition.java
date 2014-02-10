@@ -643,12 +643,12 @@ public enum RowsetDefinition {
             MdschemaCubesRowset.SchemaUpdatedBy,
             MdschemaCubesRowset.LastDataUpdate,
             MdschemaCubesRowset.DataUpdatedBy,
-            MdschemaCubesRowset.Description,
             MdschemaCubesRowset.IsDrillthroughEnabled,
-            MdschemaCubesRowset.IsLinkable,
             MdschemaCubesRowset.IsWriteEnabled,
+            MdschemaCubesRowset.IsLinkable,
             MdschemaCubesRowset.IsSqlEnabled,
             MdschemaCubesRowset.CubeCaption,
+            MdschemaCubesRowset.Description,
             MdschemaCubesRowset.Dimensions,
             MdschemaCubesRowset.Sets,
             MdschemaCubesRowset.Measures,
@@ -3966,7 +3966,7 @@ TODO: see above
 
 
                         Format formatter =
-                            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S");
+                            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
                         String formattedDate =
                             formatter.format(
                                 extra.getSchemaLoadDate(schema));
