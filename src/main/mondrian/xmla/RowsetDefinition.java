@@ -563,7 +563,9 @@ public enum RowsetDefinition {
         new Column[]{
             MdschemaMeasureGroupDimensionsRowSet.CatalogName,
             MdschemaMeasureGroupDimensionsRowSet.SchemaName,
-            MdschemaMeasureGroupDimensionsRowSet.CubeName
+            MdschemaMeasureGroupDimensionsRowSet.CubeName,
+            MdschemaMeasureGroupDimensionsRowSet.MeasureGroupName,
+            MdschemaMeasureGroupDimensionsRowSet.DimensionUniqueName
         })
     {
         public Rowset getRowset(XmlaRequest request, XmlaHandler handler) {
@@ -600,7 +602,8 @@ public enum RowsetDefinition {
         new Column[]{
             MdschemaMeasureGroupsRowSet.CatalogName,
             MdschemaMeasureGroupsRowSet.SchemaName,
-            MdschemaMeasureGroupsRowSet.CubeName
+            MdschemaMeasureGroupsRowSet.CubeName,
+            MdschemaMeasureGroupsRowSet.MeasureGroupName
         })
     {
         public Rowset getRowset(XmlaRequest request, XmlaHandler handler) {
