@@ -473,7 +473,7 @@
 </exception>
 
 <exception id="40410" name="ManyToManyNonTableRelation">
-    <text>Error processing many to many hierarchy ''{0}'' in cube ''{1}''.  Dimensions without primary key tables only support the Table relation.</text>
+    <text>Error processing many to many hierarchy ''{0}'' in cube ''{1}''.  Dimensions without primary key tables only support the Table and View relations.</text>
 </exception>
 
 <!-- ====================================================================== -->
