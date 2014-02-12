@@ -343,22 +343,15 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         hier.primaryKeyTable = cubeJoinDimHier.xmlHierarchy.primaryKeyTable;
         if (hier.primaryKeyTable == null) {
             if (!(cubeJoinDimHier.xmlHierarchy.relation
-                instanceof MondrianDef.Table))
+                instanceof MondrianDef.Relation))
             {
                 throw
                     MondrianResource.instance().ManyToManyNonTableRelation.ex(
                         this.name, this.getCube().getName());
             }
-            String alias =
-                ((MondrianDef.Table)cubeJoinDimHier.xmlHierarchy.relation)
-                .alias;
-            if (alias != null) {
-                hier.primaryKeyTable = alias;
-            } else {
-                hier.primaryKeyTable =
-                    ((MondrianDef.Table)cubeJoinDimHier.xmlHierarchy.relation)
-                        .name;
-            }
+            hier.primaryKeyTable =
+                ((MondrianDef.Relation)cubeJoinDimHier.xmlHierarchy.relation)
+                .getAlias();
         }
 
         // We need to build up a snow flake to represent the many to many join.
@@ -422,7 +415,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         // and update the current relation with the new complex relation
         return join;
     }
-
+    
     /**
      * This structure is used to convey information
      * to the RolapCube during RolapStar creation.

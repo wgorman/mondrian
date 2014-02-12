@@ -44,9 +44,8 @@ import java.util.Map;
  *       relationships
  *
  * Potential future work for Many to Many Dimensions:
- *  - Add tests with snow flake (multi-table) dimensions
+ *  - Add tests with snow flake (multi-table, "join") dimensions
  *  - Add tests and implement nested Many to Many dimensions
- *  - Add tests with view relation vs. table and join relations
  *  - Support M2M AggLevel agg tables.  Today, you can only use agg tables who
  *    link via foreign key to a many to many dimension.
  *
@@ -354,6 +353,89 @@ public class ManyToManyTest  extends CsvDBTestCase {
         return testContext;
     }
 
+    protected TestContext createMultiJoinManyToManyViewSchema() {
+        final TestContext testContext = TestContext.instance().withSchema(
+            "<?xml version=\"1.0\"?>\n"
+            + "<Schema name=\"FoodMart\">\n"
+            + "\n"
+            + "  <Dimension name=\"Gender\">\n"
+            + "    <Hierarchy name=\"Gender\" primaryKey=\"id_gender\" hasAll=\"true\">\n"
+            + "      <View alias=\"m2m_spending_gender_view\">\n"
+            + "         <SQL dialect=\"generic\">SELECT * FROM m2m_spending_gender_dim</SQL>\n"
+            + "      </View>\n"
+            + "      <!-- <Table name=\"m2m_spending_gender_dim\"/> -->\n"
+            + "      <Level name=\"Gender\" uniqueMembers=\"true\" column=\"id_gender\"  type=\"Integer\" nameColumn=\"nm_gender\" approxRowCount=\"2\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Year\">\n"
+            + "    <Hierarchy name=\"Year\" primaryKey=\"id_year\" hasAll=\"true\">\n"
+            + "      <View alias=\"m2m_spending_year_view\">\n"
+            + "         <SQL dialect=\"generic\">SELECT * FROM m2m_spending_year_dim</SQL>\n"
+            + "      </View>\n"
+            + "      <!-- <Table name=\"m2m_spending_year_dim\"/> -->\n"
+            + "      <Level name=\"Year\" uniqueMembers=\"true\" column=\"id_year\"  type=\"Integer\" approxRowCount=\"3\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Location\">\n"
+            + "    <Hierarchy name=\"Location\" primaryKey=\"id_location\" hasAll=\"true\">\n"
+            + "      <View alias=\"m2m_spending_location_view\">\n"
+            + "         <SQL dialect=\"generic\">SELECT * FROM m2m_spending_location_dim</SQL>\n"
+            + "      </View>\n"
+            + "      <!-- <Table name=\"m2m_spending_location_dim\"/> -->\n"
+            + "      <Level name=\"Location\" uniqueMembers=\"true\" column=\"id_location\"  type=\"Integer\" nameColumn=\"nm_location\" approxRowCount=\"2\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Category\">\n"
+            + "    <Hierarchy name=\"Category\" primaryKey=\"id_category\" hasAll=\"true\">\n"
+            + "      <View alias=\"m2m_spending_category_view\">\n"
+            + "         <SQL dialect=\"generic\">SELECT * FROM m2m_spending_category_dim</SQL>\n"
+            + "      </View>\n"          
+            + "      <!-- <Table name=\"m2m_spending_category_dim\"/> -->\n"
+            + "      <Level name=\"Category\" uniqueMembers=\"true\" column=\"id_category\"  type=\"Integer\" nameColumn=\"nm_category\" approxRowCount=\"5\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Cube name=\"GenderYearCategoryBridge\" visible=\"false\">\n"
+            + "    <View alias=\"m2m_spending_genderyear_category_bridge_view\">\n"
+            + "       <SQL dialect=\"generic\">SELECT * FROM m2m_spending_genderyear_category_bridge</SQL>\n"
+            + "    </View>\n"
+            + "    <!-- <Table name=\"m2m_spending_genderyear_category_bridge\"/> -->\n"
+            + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_gender\"/>\n"
+            + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_year\"/>\n"
+            + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_category\"/>\n"
+            + "    <Measure name=\"Count\" aggregator=\"count\" column=\"id_category\"/>\n"
+            + "  </Cube>"
+            + "  <Cube name=\"GenderYearSpending\">\n"
+            + "    <View alias=\"m2m_spending_genderyear_fact_view\">\n"
+            + "       <SQL dialect=\"generic\">SELECT * FROM m2m_spending_genderyear_fact</SQL>\n"
+            + "    </View>\n"
+            + "    <!-- <Table name=\"m2m_spending_genderyear_fact\"/> -->\n"
+            + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_gender\"/>\n"
+            + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_year\"/>\n"
+            + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_gender\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
+            + "    <DimensionUsage name=\"Location\" source=\"Location\" foreignKey=\"id_location\"/>\n"
+            + "    <Measure name=\"Spending\" aggregator=\"sum\" column=\"spending\"/>\n"
+            + "    <Measure name=\"Count\" aggregator=\"count\" column=\"spending\"/>\n"
+            + "  </Cube>\n"
+            + "  <Cube name=\"CategorySpending\">\n"
+            + "    <View alias=\"m2m_spending_category_fact_view\">\n"
+            + "       <SQL dialect=\"generic\">SELECT * FROM m2m_spending_category_fact</SQL>\n"
+            + "    </View>\n"
+            + "    <!-- <Table name=\"m2m_spending_category_fact\"/> -->\n"
+            + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_category\"/>\n"
+            + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_category\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
+            + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_category\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
+            + "    <DimensionUsage name=\"Location\" source=\"Location\" foreignKey=\"id_location\"/>\n"
+            + "    <Measure name=\"Spending\" aggregator=\"sum\" column=\"spending\"/>\n"
+            + "    <Measure name=\"Count\" aggregator=\"count\" column=\"spending\"/>\n"
+            + "  </Cube>\n"
+            + "</Schema>\n");
+        return testContext;
+    }
+
     protected TestContext createBridgeCubeNotFoundContext() {
         final TestContext testContext = TestContext.instance().withSchema(
             "<?xml version=\"1.0\"?>\n"
@@ -437,7 +519,14 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiJoinM2MScenarios() {
-        TestContext context = createMultiJoinManyToManySchema();
+        testMultiJoinM2MScenarios(createMultiJoinManyToManySchema());
+    }
+
+    public void testMultiJoinM2MScenariosWithView() {
+      testMultiJoinM2MScenarios(createMultiJoinManyToManyViewSchema());
+  }
+
+    public void testMultiJoinM2MScenarios(TestContext context) {
         // the category spending cube demonstrates multiple many to many
         // dimensions utilizing a single bridge table through a single join
         // dimension. note the differences between the two cube results below.
@@ -516,9 +605,15 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #0: 1,025\n");
     }
 
-    public void testMultiJoinM2MSlicer() {
-        TestContext context = createMultiJoinManyToManySchema();
+    public void testMultiJoinM2MSlicerWithView() {
+      testMultiJoinM2MSlicer(createMultiJoinManyToManyViewSchema());
+    }
 
+    public void testMultiJoinM2MSlicer() {
+      testMultiJoinM2MSlicer(createMultiJoinManyToManySchema());
+    }
+
+    public void testMultiJoinM2MSlicer(TestContext context) {
         context.assertQueryReturns(
             "select NonEmptyCrossJoin([Gender].[Gender].Members, [Year].[Year].Members) on columns\n"
             + "from [GenderYearSpending] where {[Category].[Category 2014],[Category].[Category Year 2014 Female]}",
