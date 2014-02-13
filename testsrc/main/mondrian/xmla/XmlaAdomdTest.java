@@ -42,7 +42,6 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             "10.0.1600.22");
     }
 
-    @Override
     protected void tearDown() throws Exception {
         super.tearDown();
         getTestContext().flushSchemaCache();
@@ -99,5 +98,22 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         doTest(requestType, props, testContext);
     }
 
+    /**
+     * Have CoalesceEmpty treat empty strings as null
+     * @throws Exception
+     */
+    public void testCoalesceEmptyEmptyString() throws Exception {
+        Result result = executeQuery(
+            "with\n"
+            + "    member Measures.[EmptyStr] as 'coalesceempty(\"\",\"NotEmpty\")'\n"
+            + "select \n"
+            + "    {Measures.[EmptyStr]} on columns,\n"
+            + "    {[Store].[All Stores].[USA].[WA]} on rows\n"
+            + "from \n"
+            + "    [Sales]");
+        Object value = result.getCell(new int[]{0,0}).getValue();
+        assertEquals(
+            "CoalesceEmpty failed to replace empty string", "NotEmpty", value);
+    }
     // TODO must test error types
 }
