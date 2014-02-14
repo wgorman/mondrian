@@ -98,8 +98,10 @@ class SqlMemberSource
         List<MondrianDef.Expression> columnList =
             new ArrayList<MondrianDef.Expression>();
         for (RolapLevel x = level;; x = (RolapLevel) x.getParentLevel()) {
-            columnList.add(x.getKeyExp());
-            datatypeList.add(x.getDatatype());
+            if (x.getKeyExp() != null) {
+                columnList.add(x.getKeyExp());
+                datatypeList.add(x.getDatatype());
+            }
             if (x.isUnique()) {
                 break;
             }
