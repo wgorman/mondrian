@@ -492,6 +492,11 @@ public class RolapSchemaReader
             {
                 constraint = sqlConstraintFactory.getChildByNameConstraint(
                     (RolapMember) parent, (Id.NameSegment) childName);
+            } else if (childName instanceof Id.KeySegment
+                && matchType.isExact())
+            {
+                constraint = sqlConstraintFactory.getChildByKeyConstraint(
+                    (RolapMember) parent, (Id.KeySegment) childName);
             } else {
                 constraint =
                     sqlConstraintFactory.getMemberChildrenConstraint(null);

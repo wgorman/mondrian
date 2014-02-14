@@ -117,6 +117,18 @@ public class SqlConstraintFactory {
         return new ChildByNameConstraint(childName);
     }
 
+    public MemberChildrenConstraint getChildByKeyConstraint(
+        RolapMember parent,
+        Id.KeySegment childKey)
+    {
+        // Ragged hierarchies span multiple levels, so SQL WHERE does not work
+        // there
+        if (!enabled || parent.getHierarchy().isRagged()) {
+            return DefaultMemberChildrenConstraint.instance();
+        }
+        return new ChildByKeyConstraint(childKey);
+    }
+
     /**
      * Returns a constraint that allows to read all children of multiple parents
      * at once using a LevelMember query style. This does not work

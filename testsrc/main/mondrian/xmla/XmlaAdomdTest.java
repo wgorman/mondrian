@@ -31,27 +31,26 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         // running test suites
         getTestContext().flushSchemaCache();
         propSaver.set(MondrianProperties.instance().SsasCompatibleNaming, true);
+        // avoids parse errors on adomd when no slicer defined
         propSaver.set(
             MondrianProperties.instance().XmlaAlwaysIncludeDefaultSlicer, true);
         propSaver.set(
             MondrianProperties.instance().IgnoreMeasureForNonJoiningDimension,
             true);
+        // using ms format avoids parse errors on adomd when returning error
         propSaver.set(MondrianProperties.instance().XmlaUseMSSASError, true);
+        // some properties always throw on adomd if version isn't recognized
         propSaver.set(
             MondrianProperties.instance().XmlaCustomProviderVersion,
             "10.0.1600.22");
+        // default hierarchy key lookup work the same as name lookups, like ssas
+        propSaver.set(MondrianProperties.instance().SsasKeyLookup, true);
     }
 
     protected void tearDown() throws Exception {
         super.tearDown();
+        // avoid side effects from ssas naming
         getTestContext().flushSchemaCache();
-    }
-
-    protected void doExecuteTest() throws Exception {
-        doTest(
-            "EXECUTE",
-            getDefaultRequestProperties("EXECUTE"),
-            getTestContext() );
     }
 
     /**
@@ -115,5 +114,112 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         assertEquals(
             "CoalesceEmpty failed to replace empty string", "NotEmpty", value);
     }
-    // TODO must test error types
+
+    /**
+     * Children lookup by key and default
+     * @throws Exception
+     */
+    public void testSsasKeyLookup() throws Exception {
+        final String result =
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+            + "Row #0: \n";
+
+        // test child by key, name != key
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[USA].[CA].[Berkeley].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+
+        // use keys at every level
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].&[USA].&[CA].&[Berkeley].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+
+        // test mixed name/key lookup
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+
+        // normal level lookup
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[Name].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+    }
+
+    /**
+     * Test SSAS-style key access with native mode disabled.
+     * @throws Exception
+     */
+    public void testSsasKeyNoNative() throws Exception {
+        final boolean nativeNonEmpty =
+            MondrianProperties.instance().EnableNativeNonEmpty.get();
+        try {
+            propSaver.set(
+                MondrianProperties.instance().EnableNativeNonEmpty, false);
+            assertQueryReturns(
+                "SELECT\n"
+                    + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                    + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
+                    + "FROM [Sales]",
+                "Axis #0:\n"
+                    + "{}\n"
+                    + "Axis #1:\n" 
+                    + "{[Measures].[Unit Sales]}\n"
+                    + "Axis #2:\n"
+                    + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+                    + "Row #0: \n");
+        } finally {
+            propSaver.set(
+                MondrianProperties.instance()
+                    .EnableNativeNonEmpty, nativeNonEmpty);
+        }
+    }
+
+    /**
+     * Level compound key access and child key lookup
+     * @throws Exception
+     */
+    public void testCompoundKeyAccessChildKeyLookup() throws Exception {
+        final String result =
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+            + "Row #0: \n";
+
+        // child by name after compound key
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[City].&[Berkeley]&[CA].[Judith Frazier]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+
+        // child by key after compound key
+        assertQueryReturns(
+            "SELECT\n"
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[City].&[Berkeley]&[CA].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
+            result);
+    }
+
 }
