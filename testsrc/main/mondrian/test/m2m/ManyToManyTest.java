@@ -42,6 +42,7 @@ import java.util.Map;
  *       within the slicer
  * TODO: Test Virtual Cube scenario with same dimension but two different m2m
  *       relationships
+ * TODO: Test with more than two bridge dimensions
  *
  * Potential future work for Many to Many Dimensions:
  *  - Add tests with snow flake (multi-table, "join") dimensions

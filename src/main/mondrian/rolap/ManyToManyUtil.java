@@ -194,8 +194,14 @@ public class ManyToManyUtil {
             // the related bridge members.
             // Create an internal call to the native evaluator for a crossjoin
             // of the related bridge members for this specific m2m member.
-            Exp exp[] = new Exp[bridgeHierarchyList.size()];
-            for (int j = 0; j < bridgeHierarchyList.size(); j++) {
+            // nest the crossjoins if more than 2 hierarchies are involved.
+
+            FunDef nonEmptyCrossJoin =
+                new NonEmptyCrossJoinFunDef(
+                    new FunDefBase("NonEmptyCrossJoin", null, "fxxx") {}
+                );
+            Exp exp[] = new Exp[2];
+            for (int j = 0; j < 2; j++) {
                 RolapCubeHierarchy h2 = bridgeHierarchyList.get(j);
                 exp[j] =
                     new ResolvedFunCall(
@@ -205,10 +211,23 @@ public class ManyToManyUtil {
                                 h2.getLevels()[h2.getLevels().length - 1])},
                         new SetType(MemberType.Unknown));
             }
-            FunDef nonEmptyCrossJoin =
-                new NonEmptyCrossJoinFunDef(
-                    new FunDefBase("NonEmptyCrossJoin", null, "fxxx") {}
-                    );
+            // add crossjoins for the remaining levels.
+            for (int j = 2; j < bridgeHierarchyList.size(); j++ ) {
+                RolapCubeHierarchy h2 = bridgeHierarchyList.get(j);
+                Exp exp2[] = new Exp[2];
+                exp2[0] = new ResolvedFunCall(
+                    nonEmptyCrossJoin,
+                    exp,
+                    new SetType(MemberType.Unknown));
+                exp2[1] = new ResolvedFunCall(
+                    LevelMembersFunDef.INSTANCE,
+                    new Exp[] {
+                        new LevelExpr(
+                            h2.getLevels()[h2.getLevels().length - 1])},
+                    new SetType(MemberType.Unknown));
+                exp = exp2;
+            }
+
             neweval.setNonEmpty(true);
             NativeEvaluator nativeEvaluator =
                 h.getRolapSchema()

@@ -1833,37 +1833,37 @@ public class RolapCube extends CubeBase {
                         if (hier.manyToManyAddlJoins != null
                             && hier.manyToManyAddlJoins.size() > 0)
                         {
-                            RolapCubeHierarchy.ManyToManyAddlJoin addlJoin =
-                                ((RolapCubeHierarchy)hierarchy1)
-                                    .manyToManyAddlJoins.get(0);
-                            // find the bridge table
-                            RolapStar.Table t =
-                                table.findAncestor(addlJoin.bridgeTable);
-                            MondrianDef.Column factForeignKeyColumn =
-                                new MondrianDef.Column(
-                                    star.getFactTable().getAlias(),
-                                    addlJoin.cubeForeignKey);
-                            MondrianDef.Column dimPrimaryKeyColumn =
-                                new MondrianDef.Column(
-                                    addlJoin.relation.getAlias(),
-                                    addlJoin.primaryKey);
-                            MondrianDef.Column bridgeForeignKeyColumn =
-                                new MondrianDef.Column(
-                                    addlJoin.bridgeTable,
-                                    addlJoin.bridgeForeignKey);
-                            RolapStar.Condition factJoin =
-                                new RolapStar.Condition(
-                                    factForeignKeyColumn,
-                                    dimPrimaryKeyColumn);
-                            RolapStar.Condition bridgeCond =
-                                new RolapStar.Condition(
-                                    dimPrimaryKeyColumn,
-                                    bridgeForeignKeyColumn);
-                            RolapStar.Table addlParent =
-                                star.getFactTable().addJoin(
-                                    this, addlJoin.relation, factJoin);
-                            t.addAdditionalParent(addlParent);
-                            t.addAdditionalJoinCondition(bridgeCond);
+                            for (RolapCubeHierarchy.ManyToManyAddlJoin addlJoin : 
+                              ((RolapCubeHierarchy)hierarchy1).manyToManyAddlJoins) {
+                                // find the bridge table
+                                RolapStar.Table t =
+                                    table.findAncestor(addlJoin.bridgeTable);
+                                MondrianDef.Column factForeignKeyColumn =
+                                    new MondrianDef.Column(
+                                        star.getFactTable().getAlias(),
+                                        addlJoin.cubeForeignKey);
+                                MondrianDef.Column dimPrimaryKeyColumn =
+                                    new MondrianDef.Column(
+                                        addlJoin.relation.getAlias(),
+                                        addlJoin.primaryKey);
+                                MondrianDef.Column bridgeForeignKeyColumn =
+                                    new MondrianDef.Column(
+                                        addlJoin.bridgeTable,
+                                        addlJoin.bridgeForeignKey);
+                                RolapStar.Condition factJoin =
+                                    new RolapStar.Condition(
+                                        factForeignKeyColumn,
+                                        dimPrimaryKeyColumn);
+                                RolapStar.Condition bridgeCond =
+                                    new RolapStar.Condition(
+                                        dimPrimaryKeyColumn,
+                                        bridgeForeignKeyColumn);
+                                RolapStar.Table addlParent =
+                                    star.getFactTable().addJoin(
+                                        this, addlJoin.relation, factJoin);
+                                t.addAdditionalParent(addlParent);
+                                t.addAdditionalJoinCondition(bridgeCond);
+                            }
                         }
                     }
                 }
