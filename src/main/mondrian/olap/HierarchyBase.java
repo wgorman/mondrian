@@ -170,11 +170,19 @@ public abstract class HierarchyBase
                     schemaReader, this, nameSegment, matchType);
             }
         } else {
-            // Key segment searches bottom level by default. For example,
-            // [Products].&[1] is shorthand for [Products].[Product Name].&[1].
             final Id.KeySegment keySegment = (Id.KeySegment) s;
-            oe = levels[levels.length - 1]
-                .lookupChild(schemaReader, keySegment, matchType);
+            if (MondrianProperties.instance().SsasKeyLookup.get()) {
+                // SsasKeyLookup mode allows using keys from lower levels,
+                // i.e. [Products].&[Food].&[Produce]
+                oe = levels[hasAll ? 1 : 0]
+                    .lookupChild(schemaReader, keySegment, matchType);
+            } else {
+                // Key segment searches bottom level by default. For example,
+                // [Products].&[1] is shorthand for
+                // [Products].[Product Name].&[1].
+                oe = levels[levels.length - 1]
+                    .lookupChild(schemaReader, keySegment, matchType);
+            }
         }
 
         if (getLogger().isDebugEnabled()) {

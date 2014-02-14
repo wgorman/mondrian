@@ -268,6 +268,7 @@ public class Main extends TestSuite {
             addTest(suite, XmlaTabularTest.class);
             addTest(suite, XmlaTests.class);
             addTest(suite, DynamicDatasourceXmlaServletTest.class);
+            addTest(suite, XmlaAdomdTest.class);
             addTest(suite, XmlaTest.class, "suite");
             if (isRunOnce()) {
                 addTest(suite, TestCalculatedMembers.class);
