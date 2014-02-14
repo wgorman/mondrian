@@ -655,8 +655,7 @@ public enum RowsetDefinition {
             MdschemaCubesRowset.Dimensions,
             MdschemaCubesRowset.Sets,
             MdschemaCubesRowset.Measures,
-            MdschemaCubesRowset.CubeSource//,
-            //MdschemaCubesRowset.PreferredQueryPatterns
+            MdschemaCubesRowset.CubeSource
         },
         new Column[] {
             MdschemaCubesRowset.CatalogName,
@@ -1030,6 +1029,7 @@ public enum RowsetDefinition {
             MdschemaMembersRowset.MemberOrdinal,
             MdschemaMembersRowset.MemberName,
             MdschemaMembersRowset.MemberUniqueName,
+            MdschemaMembersRowset.Description,
             MdschemaMembersRowset.Expression,
             MdschemaMembersRowset.MemberKey,
             MdschemaMembersRowset.MemberType,
@@ -5699,7 +5699,7 @@ TODO: see above
                 row.set(LevelsList.name, levelListStr);
             }
 
-            row.set(Description.name, desc);
+            row.set(Description.name, desc != null ? desc : "");
             row.set(FormatString.name, formatString);
             addRow(row, rows);
         }
@@ -5932,6 +5932,14 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.REQUIRED,
                 "Number of parents that this member has.");
+        private static final Column Description =
+            new Column(
+                "DESCRIPTION",
+                Type.String,
+                null,
+                Column.NOT_RESTRICTION,
+                Column.OPTIONAL,
+                "Will always be empty." );
         private static final Column TreeOp_ =
             new Column(
                 "TREE_OP",
@@ -6318,6 +6326,11 @@ TODO: see above
             }
 
             row.set(ParentCount.name, member.getParentMember() == null ? 0 : 1);
+
+            Object description =
+                member.getPropertyValue(
+                    Property.StandardMemberProperty.DESCRIPTION);
+            row.set(Description.name, description != null ? description : "");
 
             row.set(Depth.name, member.getDepth());
             addRow(row, rows);
