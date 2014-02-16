@@ -40,6 +40,8 @@ class RolapEvaluatorRoot {
     final Query query;
     private final Date queryStartTime;
     final Dialect currentDialect;
+    // this is used to track cell calc subcubes are active
+    final Set<Object> activeCellCalcs = new HashSet<Object>();
 
     /**
      * Default members of each hierarchy, from the schema reader's

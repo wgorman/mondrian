@@ -17,6 +17,7 @@ import mondrian.calc.Calc;
 import mondrian.calc.ParameterSlot;
 import mondrian.olap.*;
 import mondrian.olap.fun.FunUtil;
+import mondrian.rolap.CalculatedCellUtil.CellCalc;
 import mondrian.server.Statement;
 import mondrian.spi.Dialect;
 import mondrian.util.Format;
@@ -655,6 +656,10 @@ public class RolapEvaluator implements Evaluator {
         // Get the member in the current context which is (a) calculated, and
         // (b) has the highest solve order. If there are no calculated members,
         // go ahead and compute the cell.
+
+        // if there are calculated cells, apply the context if we are in a subcube
+        List<CellCalc> currentCellCalcs = CalculatedCellUtil.applyCellCalculations(this);
+
         RolapCalculation maxSolveMember;
         switch (calculationCount) {
         case 0:
@@ -688,6 +693,12 @@ public class RolapEvaluator implements Evaluator {
             o = calc.evaluate(this);
         } finally {
             restore(savepoint);
+        }
+        // unregister calculated cells from root evaluator after processing.
+        if (currentCellCalcs != null) {
+          for (CellCalc cellCalc : currentCellCalcs) {
+            root.activeCellCalcs.remove(cellCalc);
+          }
         }
         if (o == Util.nullValue) {
             return null;

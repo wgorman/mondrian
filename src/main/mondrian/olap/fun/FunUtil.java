@@ -183,7 +183,7 @@ public class FunUtil extends Util {
      * Returns the ordinal of a literal argument. If the argument does not
      * belong to the supplied enumeration, returns -1.
      */
-    static <E extends Enum<E>> E getLiteralArg(
+    public static <E extends Enum<E>> E getLiteralArg(
         ResolvedFunCall call,
         int i,
         E defaultValue,

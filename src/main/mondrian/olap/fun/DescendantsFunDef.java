@@ -27,7 +27,7 @@ import java.util.*;
  * @author jhyde
  * @since Mar 23, 2006
  */
-class DescendantsFunDef extends FunDefBase {
+public class DescendantsFunDef extends FunDefBase {
 
     static final ReflectiveMultiResolver Resolver =
         new ReflectiveMultiResolver(
@@ -378,7 +378,7 @@ class DescendantsFunDef extends FunDefBase {
      * Enumeration of the flags allowed to the <code>DESCENDANTS</code>
      * function.
      */
-    enum Flag {
+    public enum Flag {
         SELF(true, false, false, false),
         AFTER(false, true, false, false),
         BEFORE(false, false, true, false),
@@ -388,10 +388,10 @@ class DescendantsFunDef extends FunDefBase {
         SELF_BEFORE_AFTER(true, true, true, false),
         LEAVES(false, false, false, true);
 
-        private final boolean self;
-        private final boolean after;
-        private final boolean before;
-        private final boolean leaves;
+        public final boolean self;
+        public final boolean after;
+        public final boolean before;
+        public final boolean leaves;
 
         Flag(boolean self, boolean after, boolean before, boolean leaves) {
             this.self = self;

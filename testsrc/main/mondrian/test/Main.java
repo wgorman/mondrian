@@ -352,6 +352,7 @@ public class Main extends TestSuite {
             addTest(suite, FastBatchingCellReaderTest.class);
             addTest(suite, SqlQueryTest.class);
             addTest(suite, ManyToManyTest.class);
+            addTest(suite, CalculatedCellTest.class);
 
             if (MondrianProperties.instance().EnableNativeCrossJoin.get()) {
                 addTest(suite, BatchedFillTest.class, "suite");

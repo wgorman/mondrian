@@ -17,6 +17,7 @@ import mondrian.mdx.*;
 import mondrian.olap.*;
 import mondrian.olap.fun.FunDefBase;
 import mondrian.resource.MondrianResource;
+import mondrian.rolap.CalculatedCellUtil.CellCalc;
 import mondrian.rolap.aggmatcher.ExplicitRules;
 import mondrian.rolap.cache.SoftSmartCache;
 import mondrian.server.Locus;
@@ -101,6 +102,9 @@ public class RolapCube extends CubeBase {
         new HashMap<RolapLevel, RolapCubeLevel>();
 
     final BitKey closureColumnBitKey;
+
+    // contains the cell calculations for this cube.
+    public List<CellCalc> cellCalcs = new ArrayList<CellCalc>();
 
     /**
      * Private constructor used by both normal cubes and virtual cubes.
@@ -306,6 +310,7 @@ public class RolapCube extends CubeBase {
 
         checkOrdinals(xmlCube.name, measureList);
         loadAggGroup(xmlCube);
+        CalculatedCellUtil.processCalculatedCells(this, xmlCube.calculatedCells, cellCalcs);
     }
 
     /**
@@ -674,6 +679,7 @@ public class RolapCube extends CubeBase {
                 new MeasureMemberSource(
                     this.measuresHierarchy,
                     Util.<RolapMember>cast(finalMeasureMembers))));
+        CalculatedCellUtil.processCalculatedCells(this, xmlVirtualCube.calculatedCells, cellCalcs);
         // Note: virtual cubes do not get aggregate
     }
 

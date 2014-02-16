@@ -36,7 +36,7 @@ import java.util.*;
  *
  * @author jhyde
  */
-abstract class ValidatorImpl implements Validator {
+public abstract class ValidatorImpl implements Validator {
     protected final ArrayStack<QueryPart> stack = new ArrayStack<QueryPart>();
     private final FunTable funTable;
     private final Map<QueryPart, QueryPart> resolvedNodes =

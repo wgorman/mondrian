@@ -79,6 +79,11 @@ Revision is $Id$
                 Named sets in this schema.
             </Doc>
         </Array>
+        <Array name="calculatedCells" type="CalculatedCell">
+            <Doc>
+                Calculated cells in this cube.
+            </Doc>
+        </Array>
         <Array name="roles" type="Role">
             <Doc>
                 Roles in this schema.
@@ -241,6 +246,11 @@ Revision is $Id$
                 Named sets in this cube.
             </Doc>
         </Array>
+        <Array name="calculatedCells" type="CalculatedCell">
+            <Doc>
+                Calculated cells in this cube.
+            </Doc>
+        </Array>
         <Code><![CDATA[
             public boolean isEnabled() {
                 return enabled.booleanValue();
@@ -313,6 +323,11 @@ Revision is $Id$
         <Array name="namedSets" type="NamedSet">
             <Doc>
                 Named sets in this cube.
+            </Doc>
+        </Array>
+        <Array name="calculatedCells" type="CalculatedCell">
+            <Doc>
+                Calculated cells in this cube.
             </Doc>
         </Array>
         <Code><![CDATA[
@@ -1159,6 +1174,55 @@ Revision is $Id$
         </Code>
     </Element>
 
+    <Element type="CalculatedCell">
+        <Object name="subcube" type="SubCube" required="true">
+            <Doc>Contains the subcube in which this cell calculation applies.</Doc>
+        </Object>
+        <Object name="formula" type="Formula" required="true">
+            <Doc>Contains a formula that is applied to the context of the cell.</Doc>
+        </Object>
+        <Array name="cellProperties" type="CalculatedCellProperty" min="0"/>
+    </Element>
+
+    <Element type="CalculatedCellProperty">
+        <Doc>
+            Property of a calculated member defined against a cube.
+            It must have either an expression or a value.
+        </Doc>
+        <Attribute name="name" required="true">
+            <Doc>
+                Name of this member property.
+            </Doc>
+        </Attribute>
+         <Attribute name="caption" required="false">
+            <Doc>
+                A string being displayed instead of the name of this calculated
+                member property.
+                Can be localized from Properties file using #{propertyname}.
+            </Doc>
+        </Attribute>
+        <Attribute name="description" required="false">
+            <Doc>
+                Description of this calculated member property.
+                Can be localized from Properties file using #{propertyname}.
+            </Doc>
+        </Attribute>
+        <Attribute name="expression">
+            <Doc>
+                MDX expression which defines the value of this property.
+                If the expression is a constant string, you could enclose it in
+                quotes, or just specify the 'value' attribute instead.
+            </Doc>
+        </Attribute>
+        <Attribute name="value">
+            <Doc>
+                Value of this property.
+                If the value is not constant, specify the 'expression' attribute
+                instead.
+            </Doc>
+        </Attribute>
+    </Element>
+
     <Element type="CalculatedMemberProperty">
         <Doc>
             Property of a calculated member defined against a cube.
@@ -1262,6 +1326,10 @@ Revision is $Id$
                 }
             }
         </Code>
+    </Element>
+
+    <Element type="SubCube">
+        <CData/>
     </Element>
 
     <Element type="Formula">
