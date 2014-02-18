@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2013 Pentaho and others
+// Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.olap.fun;
@@ -3503,10 +3503,10 @@ public class FunctionTest extends FoodMartTestCase {
         assertExprReturns("[Measures].[Store Sales].NAME", "Store Sales");
         // MS says that ID and KEY are standard member properties for
         // OLE DB for OLAP, but not for XML/A. We don't support them.
-        //TODO: ID Currently defaulting to MEMBER_KEY, no longer throws error 
-        //assertExprThrows(
-        //    "[Measures].[Store Sales].ID",
-        //    "MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
+        //TODO: ID Currently defaulting to MEMBER_KEY, no longer throws error
+        // assertExprThrows(
+        //"[Measures].[Store Sales].ID",
+        //"MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
 
         // Error for KEY is slightly different than for ID. It doesn't matter
         // very much.
@@ -12353,6 +12353,41 @@ Intel platforms):
                 + "Row #46: 263,793.22\n");
         }
     }
+
+    public void testLinkMember() throws Exception {
+        // apart from weekly having an all member,
+        // time and weekly hierarchies are equivalent up to year
+        if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
+            assertAxisReturns(
+                "LinkMember([Time].[1997], [Time].[Weekly])",
+                "[Time].[Weekly].[1997]");
+        } else {
+            assertAxisReturns(
+                "LinkMember([Time].[1997], [Time.Weekly])",
+                "[Time].[Weekly].[1997]");
+        }
+    }
+
+    public void testLinkMemberDims() throws Exception {
+        String doubleTimeCube =
+            "<Cube name=\"SalesTime\">\n"
+            + "  <Table name=\"sales_fact_1997\"/>\n"
+            + "  <DimensionUsage source=\"Time\" name=\"Time\" visible=\"true\" foreignKey=\"time_id\"/>\n"
+            + "  <DimensionUsage source=\"Time\" name=\"SecondTime\" visible=\"true\" foreignKey=\"time_id\"/>\n"
+            + "  <Measure name=\"Unit Sales\" column=\"unit_sales\" aggregator=\"sum\"/>"
+            + "</Cube>";
+        TestContext testContext = getTestContext().create(
+            null,
+            doubleTimeCube,
+            null,
+            null,
+            null,
+            null);
+        testContext.withCube("SalesTime").assertAxisReturns(
+            "LinkMember([Time].[1997].[Q1].[2], [SecondTime])",
+            "[SecondTime].[1997].[Q1].[2]");
+    }
+
 }
 
 // End FunctionTest.java

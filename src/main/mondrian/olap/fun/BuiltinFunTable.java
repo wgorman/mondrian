@@ -563,6 +563,8 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(StrToMemberFunDef.INSTANCE);
         builder.define(ValidMeasureFunDef.instance);
 
+        builder.define(LinkMemberFunDef.instance);
+
         //
         // NUMERIC FUNCTIONS
         builder.define(AggregateFunDef.resolver);
