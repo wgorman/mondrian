@@ -130,6 +130,10 @@
                     type=xsd:string
                     sql:field=MEASURE_NAME_SQL_COLUMN_NAME
                     minOccurs=0>
+                <xsd:element
+                        name=MEASURE_VISIBILITY
+                        type=xsd:boolean
+                        sql:field=MEASURE_VISIBILITY>
             </xsd:sequence>
         </xsd:complexType>
     </xsd:schema>

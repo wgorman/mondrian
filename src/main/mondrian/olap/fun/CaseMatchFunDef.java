@@ -133,9 +133,20 @@ class CaseMatchFunDef extends FunDefBase {
                 return null;
             }
             int valueType = args[0].getCategory();
-            int returnType = args[2].getCategory();
-            int j = 0;
+            int returnType = -1;
+            for (int i = 2; i < args.length; i+=2)
+            {
+                //If argument return type is null try next one
+                if (args[i].getCategory() != 16)
+                {
+                    returnType = args[i].getCategory();
+                    break;
+                }
+            }
+            if (returnType == -1)
+                return null;
             int clauseCount = (args.length - 1) / 2;
+            int j = 0;
             int mismatchingArgs = 0;
             if (!validator.canConvert(j, args[j++], valueType, conversions)) {
                 mismatchingArgs++;

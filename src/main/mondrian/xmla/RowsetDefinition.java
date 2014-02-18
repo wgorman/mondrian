@@ -712,6 +712,7 @@ public enum RowsetDefinition {
             MdschemaDimensionsRowset.DimensionIsVisible,
             MdschemaDimensionsRowset.Hierarchies,
             MdschemaDimensionsRowset.CubeSource,
+            MdschemaDimensionsRowset.DimensionVisibility
         },
         new Column[] {
             MdschemaDimensionsRowset.CatalogName,
@@ -828,6 +829,7 @@ public enum RowsetDefinition {
             MdschemaHierarchiesRowset.HierarchyOrigin,
             MdschemaHierarchiesRowset.HierarchyDisplayFolder,
             MdschemaHierarchiesRowset.CubeSource,
+            MdschemaHierarchiesRowset.HierarchyVisibility,
         },
         new Column[] {
             MdschemaHierarchiesRowset.CatalogName,
@@ -901,6 +903,7 @@ public enum RowsetDefinition {
             MdschemaLevelsRowset.LevelIsVisible,
             MdschemaLevelsRowset.Description,
             MdschemaLevelsRowset.CubeSource,
+            MdschemaLevelsRowset.LevelVisibility,
         },
         new Column[] {
             MdschemaLevelsRowset.CatalogName,
@@ -970,6 +973,7 @@ public enum RowsetDefinition {
             MdschemaMeasuresRowset.Description,
             MdschemaMeasuresRowset.FormatString,
             MdschemaMeasuresRowset.CubeSource,
+            MdschemaMeasuresRowset.MeasureVisibility
         },
         new Column[] {
             MdschemaMeasuresRowset.CatalogName,
@@ -4224,6 +4228,18 @@ TODO: see above
                 Column.OPTIONAL,
                 "Hierarchies in this dimension.");
 
+        private static final Column DimensionVisibility =
+                new Column(
+                        "DIMENSION_VISIBILITY",
+                        Type.Boolean,
+                        null,
+                        Column.RESTRICTION,
+                        Column.OPTIONAL,
+                        "(Optional) A bitmap with one of the following valid values:\n" +
+                                "1 Visible\n" +
+                                "2 Not visible\n" +
+                                "Default restriction is a value of 1.");
+
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,
@@ -4803,6 +4819,18 @@ TODO: see above
                 Column.OPTIONAL,
                 "Is hierarchy a parent.");
 
+        private static final Column HierarchyVisibility =
+                new Column(
+                        "HIERARCHY_VISIBILITY",
+                        Type.Boolean,
+                        null,
+                        Column.RESTRICTION,
+                        Column.OPTIONAL,
+                        "(Optional) A bitmap with one of the following valid values:\n" +
+                                "1 Visible\n" +
+                                "2 Not visible\n" +
+                                "Default restriction is a value of 1.");
+
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,
@@ -5171,6 +5199,18 @@ TODO: see above
                 "A human-readable description of the level. NULL if no "
                 + "description exists.");
 
+        private static final Column LevelVisibility =
+                new Column(
+                        "LEVEL_VISIBILITY",
+                        Type.Boolean,
+                        null,
+                        Column.RESTRICTION,
+                        Column.OPTIONAL,
+                        "(Optional) A bitmap with one of the following valid values:\n" +
+                                "1 Visible\n" +
+                                "2 Not visible\n" +
+                                "Default restriction is a value of 1.");
+
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,
@@ -5534,6 +5574,7 @@ TODO: see above
                 Column.REQUIRED,
                 "A Boolean that always returns True. If the measure is not "
                 + "visible, it will not be included in the schema rowset.");
+
         private static final Column LevelsList =
             new Column(
                 "LEVELS_LIST",
@@ -5559,6 +5600,15 @@ TODO: see above
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
                 "The default format string for the measure.");
+        private static final Column MeasureVisibility =
+                new Column(
+                        "MEASURE_VISIBILITY",
+                        Type.Boolean,
+                        null,
+                        Column.RESTRICTION,
+                        Column.OPTIONAL,
+                        "A Boolean that always returns True. If the measure is not visible, " +
+                                "it will not be included in the schema rowset.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -5667,7 +5717,11 @@ TODO: see above
             row.set(MeasureName.name, member.getName());
             row.set(MeasureUniqueName.name, member.getUniqueName());
             row.set(MeasureCaption.name, member.getCaption());
-            //row.set(MeasureGuid.name, "");
+
+            //Hard coded for compabillity with MS Schema
+            //row.set(MeasureVisibility.name, true);
+
+            // row.set(MeasureGuid.name, "");
 
             final XmlaHandler.XmlaExtra extra = getExtra(connection);
             row.set(MeasureAggregator.name, extra.getMeasureAggregator(member));
@@ -5965,6 +6019,7 @@ TODO: see above
                 Column.RESTRICTION,
                 Column.OPTIONAL,
                 "The type of source cube (cube=1, dimension=2).  Not Supported.");
+
         public void populateImpl(
             XmlaResponse response,
             OlapConnection connection,

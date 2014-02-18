@@ -150,6 +150,10 @@
                     type=xsd:string
                     sql:field=LEVEL_UNIQUE_NAME_SQL_COLUMN_NAME
                     minOccurs=0>
+                <xsd:element
+                    name=LEVEL_VISIBILITY
+                    type=xsd:boolean
+                    sql:field=LEVEL_VISIBILITY>
             </xsd:sequence>
         </xsd:complexType>
     </xsd:schema>
