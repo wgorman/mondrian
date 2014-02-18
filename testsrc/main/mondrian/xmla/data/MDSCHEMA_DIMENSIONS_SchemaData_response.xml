@@ -125,6 +125,10 @@
                     name=DIMENSION_IS_VISIBLE
                     type=xsd:boolean
                     sql:field=DIMENSION_IS_VISIBLE>
+                <xsd:element
+                    name=DIMENSION_VISIBILITY
+                    type=xsd:boolean
+                    sql:field=DIMENSION_VISIBILITY>
             </xsd:sequence>
         </xsd:complexType>
     </xsd:schema>

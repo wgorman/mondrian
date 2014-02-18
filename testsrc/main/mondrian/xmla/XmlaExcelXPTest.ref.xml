@@ -377,6 +377,10 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>DIMENSION_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -429,6 +433,10 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>HIERARCHY_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -465,6 +473,50 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>LEVEL_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUPS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUP_DIMENSIONS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -492,6 +544,10 @@
                         <Restrictions>
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASURE_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
                         </Restrictions>
                         <Description/>
                     </row>
@@ -1124,7 +1180,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -1214,6 +1270,7 @@
                                 <xsd:element minOccurs="0" name="HIERARCHY_ORIGIN" sql:field="HIERARCHY_ORIGIN" type="xsd:unsignedShort"/>
                                 <xsd:element minOccurs="0" name="HIERARCHY_DISPLAY_FOLDER" sql:field="HIERARCHY_DISPLAY_FOLDER" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="HIERARCHY_VISIBILITY" sql:field="HIERARCHY_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -1298,6 +1355,7 @@
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="DEFAULT_FORMAT_STRING" sql:field="DEFAULT_FORMAT_STRING" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="MEASURE_VISIBILITY" sql:field="MEASURE_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -1382,6 +1440,7 @@
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="DEFAULT_FORMAT_STRING" sql:field="DEFAULT_FORMAT_STRING" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="MEASURE_VISIBILITY" sql:field="MEASURE_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -1608,6 +1667,7 @@
                                 <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -1692,6 +1752,7 @@
                                 <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -2014,7 +2075,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -2095,6 +2156,7 @@
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -2178,6 +2240,7 @@
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -2330,7 +2393,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -2412,6 +2475,7 @@
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -3369,6 +3433,10 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                         <Restrictions>
+                            <Name>DIMENSION_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -3421,6 +3489,10 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>HIERARCHY_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -3457,6 +3529,50 @@
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>LEVEL_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUPS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUP_DIMENSIONS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -3484,6 +3600,10 @@
                         <Restrictions>
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASURE_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
                         </Restrictions>
                         <Description/>
                     </row>
