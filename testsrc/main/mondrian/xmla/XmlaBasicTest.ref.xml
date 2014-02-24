@@ -128,7 +128,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>HR</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - HR Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -143,7 +143,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -158,7 +158,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales 2</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales 2 Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -173,7 +173,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales Ragged</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Sales Ragged Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -188,7 +188,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Store</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Store Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -203,7 +203,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Warehouse Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -218,7 +218,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse and Sales</CUBE_CAPTION>
                         <DESCRIPTION>FoodMart Schema - Warehouse and Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -314,7 +314,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Verkaufen</CUBE_CAPTION>
                         <DESCRIPTION>Cube Verkaufen</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -412,7 +412,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Ventes</CUBE_CAPTION>
                         <DESCRIPTION>Cube des ventes</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -1309,7 +1309,7 @@
                                 <DEFAULT_FORMAT_STRING>Currency</DEFAULT_FORMAT_STRING>
                             </row>
                         </MEASURES>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -2173,7 +2173,7 @@
               "DEFAULT_FORMAT_STRING": "Currency"
             }
           ],
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         }
       ]
     }
@@ -3620,6 +3620,7 @@
                                 <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -4856,6 +4857,7 @@
                                 <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -9559,6 +9561,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element minOccurs="0" name="HIERARCHY_ORIGIN" sql:field="HIERARCHY_ORIGIN" type="xsd:unsignedShort"/>
                                 <xsd:element minOccurs="0" name="HIERARCHY_DISPLAY_FOLDER" sql:field="HIERARCHY_DISPLAY_FOLDER" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="HIERARCHY_VISIBILITY" sql:field="HIERARCHY_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -9985,6 +9988,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -10151,6 +10155,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -10268,6 +10273,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="DEFAULT_FORMAT_STRING" sql:field="DEFAULT_FORMAT_STRING" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="MEASURE_VISIBILITY" sql:field="MEASURE_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -13392,6 +13398,14 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <IsRequired>false</IsRequired>
                         <Value>false</Value>
                     </row>
+                    <row>
+                        <PropertyName>ShowHiddenCubes</PropertyName>
+                        <PropertyDescription/>
+                        <PropertyType>Boolean</PropertyType>
+                        <PropertyAccessType>Read</PropertyAccessType>
+                        <IsRequired>false</IsRequired>
+                        <Value>false</Value>
+                    </row>
                 </root>
             </return>
         </DiscoverResponse>
@@ -13704,6 +13718,10 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>DIMENSION_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -13756,6 +13774,10 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>HIERARCHY_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -13792,6 +13814,50 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
                         </Restrictions>
+                        <Restrictions>
+                            <Name>LEVEL_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUPS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Description/>
+                    </row>
+                    <row>
+                        <SchemaName>MDSCHEMA_MEASUREGROUP_DIMENSIONS</SchemaName>
+                        <Restrictions>
+                            <Name>CATALOG_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>SCHEMA_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>CUBE_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASUREGROUP_NAME</Name>
+                            <Type>xsd:string</Type>
+                        </Restrictions>
                         <Description/>
                     </row>
                     <row>
@@ -13819,6 +13885,10 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <Restrictions>
                             <Name>CUBE_SOURCE</Name>
                             <Type>xsd:int</Type>
+                        </Restrictions>
+                        <Restrictions>
+                            <Name>MEASURE_VISIBILITY</Name>
+                            <Type>xsd:boolean</Type>
                         </Restrictions>
                         <Description/>
                     </row>
@@ -14162,6 +14232,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
                                 <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -14286,6 +14357,7 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                                 <xsd:element minOccurs="0" name="HIERARCHY_ORIGIN" sql:field="HIERARCHY_ORIGIN" type="xsd:unsignedShort"/>
                                 <xsd:element minOccurs="0" name="HIERARCHY_DISPLAY_FOLDER" sql:field="HIERARCHY_DISPLAY_FOLDER" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="HIERARCHY_VISIBILITY" sql:field="HIERARCHY_VISIBILITY" type="xsd:boolean"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -23900,7 +23972,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "HR",
           "DESCRIPTION": "FoodMart Schema - HR Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23915,7 +23987,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Sales",
           "DESCRIPTION": "FoodMart Schema - Sales Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23930,7 +24002,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Sales 2",
           "DESCRIPTION": "FoodMart Schema - Sales 2 Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23945,7 +24017,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Sales Ragged",
           "DESCRIPTION": "FoodMart Schema - Sales Ragged Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23960,7 +24032,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Store",
           "DESCRIPTION": "FoodMart Schema - Store Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23975,7 +24047,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Warehouse",
           "DESCRIPTION": "FoodMart Schema - Warehouse Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         },
         {
           "CATALOG_NAME": "FoodMart",
@@ -23990,7 +24062,7 @@ WHERE [Marital Status].Parent * [Time].[1997].[Q1]
           "IS_SQL_ENABLED": false,
           "CUBE_CAPTION": "Warehouse and Sales",
           "DESCRIPTION": "FoodMart Schema - Warehouse and Sales Cube",
-          "CUBE_SOURCE": 2
+          "CUBE_SOURCE": 1
         }
       ]
     }

@@ -384,8 +384,11 @@ public class RolapMemberBase
                     if (childLevel == null) {
                         return 0;
                     }
-                    return childLevel.getDimension().getSchema().getSchemaReader()
-                        .getLevelCardinality(childLevel, true, true);
+                    // other options were big performance hits on adomd's
+                    // executeCellSet
+                    return 1;
+                    // return childLevel.getDimension().getSchema().getSchemaReader()
+                    //    .getLevelCardinality(childLevel, true, true);
                 }
                 return Locus.execute(
                     ((RolapSchema) level.getDimension().getSchema())

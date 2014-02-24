@@ -334,7 +334,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>HR</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - HR Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -349,7 +349,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -364,7 +364,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales 2</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales 2 Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -379,7 +379,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales Ragged</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales Ragged Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -394,7 +394,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Store</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Store Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -409,7 +409,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Warehouse Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -424,7 +424,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse and Sales</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Warehouse and Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>
@@ -519,7 +519,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>HR</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - HR Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -534,7 +534,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -549,7 +549,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales 2</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales 2 Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -564,7 +564,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Sales Ragged</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Sales Ragged Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -579,7 +579,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Store</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Store Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -594,7 +594,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Warehouse Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                     <row>
                         <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
@@ -609,7 +609,7 @@
                         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
                         <CUBE_CAPTION>Warehouse and Sales</CUBE_CAPTION>
                         <DESCRIPTION>${catalog.name} Schema - Warehouse and Sales Cube</DESCRIPTION>
-                        <CUBE_SOURCE>2</CUBE_SOURCE>
+                        <CUBE_SOURCE>1</CUBE_SOURCE>
                     </row>
                 </root>
             </return>

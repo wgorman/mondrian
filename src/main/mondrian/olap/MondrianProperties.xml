@@ -1414,9 +1414,8 @@ recognized by ADOMD.NET.</p>
         <Name>FetchChildrenCardinality</Name>
         <Path>mondrian.olap.FetchChildrenCardinality</Path>
         <Description>
-<p>If set to false, the CHILDREN_CARDINALITY property will be set to level cardinality.</p>
-<p>This way the value will always be overestimated but improve performance in XMLA queries, which
-  require this property to be set for all members.</p>
+<p>If set to false, the CHILDREN_CARDINALITY property will only yield 0 when
+there is no possible child level, 1 otherwise.</p>
         </Description>
         <Type>Boolean</Type>
         <Default>true</Default>

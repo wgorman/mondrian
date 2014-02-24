@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2003-2005 Julian Hyde
-// Copyright (C) 2005-2013 Pentaho and others
+// Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 */
 package mondrian.olap.fun;
@@ -138,6 +138,59 @@ public class FunctionTest extends FoodMartTestCase {
             + "[measures].[foo] on columns, "
             + "[time].[1997].children on rows "
             + "from [sales]");
+    }
+
+    public void testCaseNull() {
+        // works
+        assertExprReturns(
+                "CASE 2 WHEN 1 THEN \"first\" WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
+                "");
+        // fails
+        assertExprReturns(
+                "CASE 2 WHEN 1 THEN NULL WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
+                "");
+        // works
+        assertExprReturns(
+                "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
+                "");
+        // fails
+        assertExprReturns(
+                "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
+                "");
+        // This works because NULL is not the first attribute in the return
+        assertQueryReturns(
+                "WITH\n"
+                        + " MEMBER [Product].[CaseTest] AS\n"
+                        + " 'CASE\n"
+                        + " WHEN [Gender].CurrentMember IS [Gender].[M] THEN [Gender].[F]\n"
+                        + " ELSE NULL\n"
+                        + " END'\n"
+                        + "                \n"
+                        + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
+                "Axis #0:\n"
+                        + "{}\n"
+                        + "Axis #1:\n"
+                        + "{[Product].[CaseTest]}\n"
+                        + "Axis #2:\n"
+                        + "{[Gender].[F]}\n"
+                        + "Row #0: \n");
+        // This fails
+        assertQueryReturns(
+                "WITH\n"
+                        + " MEMBER [Product].[CaseTest] AS\n"
+                        + " 'CASE\n"
+                        + " WHEN [Gender].CurrentMember IS [Gender].[F] THEN NULL\n"
+                        + " ELSE [Gender].[F]\n"
+                        + " END'\n"
+                        + "                \n"
+                        + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
+                "Axis #0:\n"
+                        + "{}\n"
+                        + "Axis #1:\n"
+                        + "{[Product].[CaseTest]}\n"
+                        + "Axis #2:\n"
+                        + "{[Gender].[F]}\n"
+                        + "Row #0: \n");
     }
 
     /**
@@ -3503,10 +3556,10 @@ public class FunctionTest extends FoodMartTestCase {
         assertExprReturns("[Measures].[Store Sales].NAME", "Store Sales");
         // MS says that ID and KEY are standard member properties for
         // OLE DB for OLAP, but not for XML/A. We don't support them.
-        //TODO: ID Currently defaulting to MEMBER_KEY, no longer throws error 
-        //assertExprThrows(
-        //    "[Measures].[Store Sales].ID",
-        //    "MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
+        //TODO: ID Currently defaulting to MEMBER_KEY, no longer throws error
+        // assertExprThrows(
+        //"[Measures].[Store Sales].ID",
+        //"MDX object '[Measures].[Store Sales].ID' not found in cube 'Sales'");
 
         // Error for KEY is slightly different than for ID. It doesn't matter
         // very much.
@@ -12353,6 +12406,41 @@ Intel platforms):
                 + "Row #46: 263,793.22\n");
         }
     }
+
+    public void testLinkMember() throws Exception {
+        // apart from weekly having an all member,
+        // time and weekly hierarchies are equivalent up to year
+        if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
+            assertAxisReturns(
+                "LinkMember([Time].[1997], [Time].[Weekly])",
+                "[Time].[Weekly].[1997]");
+        } else {
+            assertAxisReturns(
+                "LinkMember([Time].[1997], [Time.Weekly])",
+                "[Time].[Weekly].[1997]");
+        }
+    }
+
+    public void testLinkMemberDims() throws Exception {
+        String doubleTimeCube =
+            "<Cube name=\"SalesTime\">\n"
+            + "  <Table name=\"sales_fact_1997\"/>\n"
+            + "  <DimensionUsage source=\"Time\" name=\"Time\" visible=\"true\" foreignKey=\"time_id\"/>\n"
+            + "  <DimensionUsage source=\"Time\" name=\"SecondTime\" visible=\"true\" foreignKey=\"time_id\"/>\n"
+            + "  <Measure name=\"Unit Sales\" column=\"unit_sales\" aggregator=\"sum\"/>"
+            + "</Cube>";
+        TestContext testContext = getTestContext().create(
+            null,
+            doubleTimeCube,
+            null,
+            null,
+            null,
+            null);
+        testContext.withCube("SalesTime").assertAxisReturns(
+            "LinkMember([Time].[1997].[Q1].[2], [SecondTime])",
+            "[SecondTime].[1997].[Q1].[2]");
+    }
+
 }
 
 // End FunctionTest.java
