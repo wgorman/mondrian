@@ -382,6 +382,10 @@ public abstract class ValidatorImpl implements Validator {
         return -1;
     }
 
+    public boolean isResolving(QueryPart queryPart) {
+        return resolvedNodes.get(queryPart) == placeHolder;
+    };
+
     /**
      * Defines a parameter.
      *

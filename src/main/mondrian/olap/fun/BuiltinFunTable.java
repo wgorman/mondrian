@@ -5,7 +5,7 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2002-2005 Julian Hyde
-// Copyright (C) 2005-2011 Pentaho and others
+// Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 */
 
@@ -564,6 +564,7 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(ValidMeasureFunDef.instance);
 
         builder.define(LinkMemberFunDef.instance);
+        builder.define(AxisFunDef.instance);
 
         //
         // NUMERIC FUNCTIONS

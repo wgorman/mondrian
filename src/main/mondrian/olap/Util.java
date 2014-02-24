@@ -3160,6 +3160,10 @@ public class Util extends XOMUtil {
             {
                 return null;
             }
+
+            public boolean isResolving(QueryPart queryPart) {
+                return false;
+            }
         };
     }
 

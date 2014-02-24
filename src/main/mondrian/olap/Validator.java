@@ -138,6 +138,14 @@ public interface Validator {
      * @return Schema reader
      */
     SchemaReader getSchemaReader();
+
+    /**
+     * Whether the expression object is currently being resolved for validation.
+     * <p>Provides some crude preemptive loop detection.
+     * @param queryPart the expression
+     * @return whether the expression is resolving
+     */
+    boolean isResolving(QueryPart queryPart);
 }
 
 // End Validator.java

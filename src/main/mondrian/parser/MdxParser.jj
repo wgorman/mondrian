@@ -515,6 +515,9 @@ String keyword() :
 |   <PROPERTIES> {
         return "Properties";
     }
+|   <AXIS> {
+        return "Axis";
+    }
 }
 
 Id compoundId() :
