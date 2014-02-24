@@ -56,7 +56,7 @@ public class CalculatedCellUtil {
     public static boolean insideSubcube(RolapEvaluator eval, CellCalc calc) {
         for (int i = 0; i < calc.cubeExps.length; i++) {
             if (calc.cubeExps[i] instanceof MemberExpr) {
-                RolapCubeMember member = (RolapCubeMember)((MemberExpr)calc.cubeExps[i]).getMember();
+                RolapMember member = (RolapMember)((MemberExpr)calc.cubeExps[i]).getMember();
                 final int ordinal = member.getHierarchy().getOrdinalInCube();
                 final RolapMember curr = (RolapMember)eval.getMembers()[ordinal];
                 if (!curr.equals(member)) {
@@ -71,7 +71,7 @@ public class CalculatedCellUtil {
                 }
             } else if (calc.cubeExps[i] instanceof ResolvedFunCall && ((ResolvedFunCall)calc.cubeExps[i]).getFunDef() instanceof DescendantsFunDef) {
                 if (((ResolvedFunCall)calc.cubeExps[i]).getArgCount() == 1 && ((ResolvedFunCall)calc.cubeExps[i]).getArg( 0 ) instanceof MemberExpr) {
-                    RolapCubeMember member = (RolapCubeMember)((MemberExpr)((ResolvedFunCall)calc.cubeExps[i]).getArg( 0 )).getMember();
+                    RolapMember member = (RolapMember)((MemberExpr)((ResolvedFunCall)calc.cubeExps[i]).getArg( 0 )).getMember();
                     final int ordinal = member.getHierarchy().getOrdinalInCube();
                     final RolapMember curr = (RolapMember)eval.getMembers()[ordinal];
                     if (!curr.isChildOrEqualTo(member)) {
@@ -79,7 +79,7 @@ public class CalculatedCellUtil {
                     }
                 } else if (((ResolvedFunCall)calc.cubeExps[i]).getArg(0) instanceof MemberExpr) {
                     // first grab the member object
-                    RolapCubeMember member = (RolapCubeMember)((MemberExpr)((ResolvedFunCall)calc.cubeExps[i]).getArg( 0 )).getMember();
+                    RolapMember member = (RolapMember)((MemberExpr)((ResolvedFunCall)calc.cubeExps[i]).getArg( 0 )).getMember();
                     final int ordinal = member.getHierarchy().getOrdinalInCube();
                     final RolapMember curr = (RolapMember)eval.getMembers()[ordinal];
                     
