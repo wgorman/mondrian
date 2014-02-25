@@ -1,12 +1,20 @@
+/*
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (c) 2014-2014 Pentaho
+// All rights reserved.
+*/
 package mondrian.xmla;
-
-import java.util.Properties;
 
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.Result;
 import mondrian.test.DiffRepository;
 import mondrian.test.TestContext;
 
+import java.util.Properties;
 
 /**
  * ADOMD.NET compliance tests and related MS SSAS compatibility
@@ -60,7 +68,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         doTest(
             "EXECUTE",
             getDefaultRequestProperties("EXECUTE"),
-            getTestContext() );
+            getTestContext());
     }
 
     /**
@@ -69,7 +77,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
      * @throws Exception
      */
     public void testDuplicateHierarchyInSlicer() throws Exception {
-        String storeStoreDim = 
+        String storeStoreDim =
             "  <Dimension type=\"StandardDimension\" visible=\"true\" name=\"SharedStore\">\n"
             + "    <Hierarchy name=\"SharedStore\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"store_id\">\n"
             + "      <Table name=\"store\"/>\n"
@@ -110,11 +118,12 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             + "    {[Store].[All Stores].[USA].[WA]} on rows\n"
             + "from \n"
             + "    [Sales]");
-        Object value = result.getCell(new int[]{0,0}).getValue();
+        Object value = result.getCell(new int[]{0, 0}).getValue();
         assertEquals(
             "CoalesceEmpty failed to replace empty string", "NotEmpty", value);
     }
 
+    // TODO: MOVE TO Ssas2005 and review commented tests
     /**
      * Children lookup by key and default
      * @throws Exception
@@ -132,33 +141,33 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         // test child by key, name != key
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].[USA].[CA].[Berkeley].&[371]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].[USA].[CA].[Berkeley].&[371]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
 
         // use keys at every level
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].&[USA].&[CA].&[Berkeley].&[371]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].&[USA].&[CA].&[Berkeley].&[371]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
 
         // test mixed name/key lookup
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
 
         // normal level lookup
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].[Name].&[371]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].[Name].&[371]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
     }
 
@@ -174,16 +183,16 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
                 MondrianProperties.instance().EnableNativeNonEmpty, false);
             assertQueryReturns(
                 "SELECT\n"
-                    + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                    + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
-                    + "FROM [Sales]",
+                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+                + "{[Customers].[USA].&[CA].[Berkeley].&[371]} ON ROWS\n"
+                + "FROM [Sales]",
                 "Axis #0:\n"
-                    + "{}\n"
-                    + "Axis #1:\n" 
-                    + "{[Measures].[Unit Sales]}\n"
-                    + "Axis #2:\n"
-                    + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
-                    + "Row #0: \n");
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[Unit Sales]}\n"
+                + "Axis #2:\n"
+                + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+                + "Row #0: \n");
         } finally {
             propSaver.set(
                 MondrianProperties.instance()
@@ -208,18 +217,19 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         // child by name after compound key
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].[City].&[Berkeley]&[CA].[Judith Frazier]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].[City].&[Berkeley]&[CA].[Judith Frazier]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
 
         // child by key after compound key
         assertQueryReturns(
             "SELECT\n"
-                + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
-                + "{[Customers].[City].&[Berkeley]&[CA].&[371]} ON ROWS\n"
-                + "FROM [Sales]",
+            + "{[Measures].[Unit Sales]} ON COLUMNS,\n"
+            + "{[Customers].[City].&[Berkeley]&[CA].&[371]} ON ROWS\n"
+            + "FROM [Sales]",
             result);
     }
 
 }
+// End XmlaAdomdTest.java

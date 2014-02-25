@@ -173,7 +173,7 @@ public abstract class HierarchyBase
             final Id.KeySegment keySegment = (Id.KeySegment) s;
             if (MondrianProperties.instance().SsasKeyLookup.get()) {
                 // SsasKeyLookup mode allows using keys from lower levels,
-                // i.e. [Products].&[Food].&[Produce]
+                // e.g. [Products].&[Food].&[Produce]
                 oe = levels[hasAll ? 1 : 0]
                     .lookupChild(schemaReader, keySegment, matchType);
             } else {

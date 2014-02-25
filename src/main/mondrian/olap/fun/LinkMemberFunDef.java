@@ -46,7 +46,7 @@ public class LinkMemberFunDef extends FunDefBase {
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
-        // TODO: does not type of validation whatsoever
+        // TODO: has no validations
 
         final MemberCalc memberArg = compiler.compileMember(call.getArg(0));
         final HierarchyCalc hierarchyArg =
@@ -64,6 +64,7 @@ public class LinkMemberFunDef extends FunDefBase {
           }
         };
     }
+
     private static Member getLinkMember(
         Evaluator evaluator,
         RolapMember member,
