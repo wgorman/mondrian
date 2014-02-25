@@ -116,6 +116,37 @@ public class CalculatedCellTest extends FoodMartTestCase {
             + "Row #0: 135,215\n"
             + "Row #0: 66,460\n"
             + "Row #0: 68,755\n");
+        
+        testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F], [Measures].[Unit Sales], [Marital Status].[Marital Status].Members)</SubCube>\n"
+            + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>"
+        );
+        testContext.assertQueryReturns(
+            "select {CrossJoin([Gender].[All Gender].Children,[Marital Status].Members)} on 0, {[Measures].[Unit Sales]} on 1 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F], [Marital Status].[All Marital Status]}\n"
+            + "{[Gender].[F], [Marital Status].[M]}\n"
+            + "{[Gender].[F], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[All Marital Status]}\n"
+            + "{[Gender].[M], [Marital Status].[M]}\n"
+            + "{[Gender].[M], [Marital Status].[S]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 131,558\n"
+            + "Row #0: 78,403\n" // 65,336
+            + "Row #0: 79,466\n" // 66,222
+            + "Row #0: 135,215\n"
+            + "Row #0: 66,460\n"
+            + "Row #0: 68,755\n");
     }
 
     public void testDecendantsCellCalculation() {
