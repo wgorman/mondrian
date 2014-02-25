@@ -1410,7 +1410,17 @@ recognized by ADOMD.NET.</p>
         <Type>String</Type>
         <Default></Default>
     </PropertyDefinition>
-        <PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaCalculateMemberOrdinal</Name>
+        <Path>mondrian.xmla.CalculateMemberOrdinal</Path>
+        <Description>
+<p>If enabled, member ordinal property will be calculated for xmla member requests, otherwise will always be 0.</p>
+<p>Member ordinal is a deprecated property that can take a significant amount of time and memory to calculate. It is recomended to disable this and use order key instead.</p>
+        </Description>
+        <Type>Boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>FetchChildrenCardinality</Name>
         <Path>mondrian.olap.FetchChildrenCardinality</Path>
         <Description>

@@ -6316,9 +6316,21 @@ TODO: see above
             }
 
             XmlaHandler.XmlaExtra extra = getExtra(connection);
-            //TODO: revert
-            member = extra.checkReplaceMemberOrdinal(member);
-            // extra.checkMemberOrdinal(member);
+
+            int memberOrdinal = 0;
+            if (MondrianProperties.instance().XmlaCalculateMemberOrdinal.get()) {
+                //TODO: revert
+                member = extra.checkReplaceMemberOrdinal(member);
+                // extra.checkMemberOrdinal(member);
+                memberOrdinal = member.getOrdinal();
+                // TODO: testing
+                if ( memberOrdinal < 0 ) {
+                    LOGGER.error(
+                        "negative MEMBER_ORDINAL for " + member.getName());
+                    // will at least prevent an exception
+                    memberOrdinal = 0;
+                }
+            }
 
             // Check whether the member is visible, otherwise do not dump.
             Boolean visible =
@@ -6345,13 +6357,7 @@ TODO: see above
             row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
             row.set(LevelUniqueName.name, level.getUniqueName());
             row.set(LevelNumber.name, adjustedLevelDepth);
-            int memberOrdinal = member.getOrdinal();
-            // TODO: testing
-            if ( memberOrdinal < 0 ) {
-              LOGGER.error("negative MEMBER_ORDINAL for " + member.getName());
-              // will at least prevent an exception
-              memberOrdinal = 0;
-            }
+
             row.set(MemberOrdinal.name, memberOrdinal);
             row.set(MemberName.name, member.getName());
             row.set(MemberUniqueName.name, member.getUniqueName());
