@@ -1117,6 +1117,28 @@ public class BuiltinFunTable extends FunTableImpl {
             }
         });
 
+        // <Dimension>.Member_Caption
+        builder.define(
+                new FunDefBase(
+                        "Member_Caption",
+                        "Returns the member_caption of a dimension.",
+                        "pSd")
+                {
+                    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+                    {
+                        final DimensionCalc dimensionCalc =
+                                compiler.compileDimension(call.getArg(0));
+                        return new AbstractStringCalc(call, new Calc[] {dimensionCalc})
+                        {
+                            public String evaluateString(Evaluator evaluator) {
+                                final Dimension dimension =
+                                        dimensionCalc.evaluateDimension(evaluator);
+                                return dimension.getCaption();
+                            }
+                        };
+                    }
+                });
+
         // <Hierarchy>.Caption
         builder.define(
             new FunDefBase(
@@ -1139,6 +1161,28 @@ public class BuiltinFunTable extends FunTableImpl {
             }
         });
 
+        // <Hierarchy>.Member_Caption
+        builder.define(
+                new FunDefBase(
+                        "Member_Caption",
+                        "Returns the member_caption of a hierarchy.",
+                        "pSh")
+                {
+                    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+                    {
+                        final HierarchyCalc hierarchyCalc =
+                                compiler.compileHierarchy(call.getArg(0));
+                        return new AbstractStringCalc(call, new Calc[] {hierarchyCalc})
+                        {
+                            public String evaluateString(Evaluator evaluator) {
+                                final Hierarchy hierarchy =
+                                        hierarchyCalc.evaluateHierarchy(evaluator);
+                                return hierarchy.getCaption();
+                            }
+                        };
+                    }
+                });
+
         // <Level>.Caption
         builder.define(
             new FunDefBase(
@@ -1158,6 +1202,26 @@ public class BuiltinFunTable extends FunTableImpl {
                 };
             }
         });
+
+        // <Level>.Member_Caption
+        builder.define(
+                new FunDefBase(
+                        "Member_Caption",
+                        "Returns the member_caption of a level.",
+                        "pSl")
+                {
+                    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+                    {
+                        final LevelCalc levelCalc =
+                                compiler.compileLevel(call.getArg(0));
+                        return new AbstractStringCalc(call, new Calc[] {levelCalc}) {
+                            public String evaluateString(Evaluator evaluator) {
+                                final Level level = levelCalc.evaluateLevel(evaluator);
+                                return level.getCaption();
+                            }
+                        };
+                    }
+                });
 
         // <Member>.Caption
         builder.define(
@@ -1179,6 +1243,27 @@ public class BuiltinFunTable extends FunTableImpl {
                 };
             }
         });
+
+        // <Member>.Member_Caption
+        builder.define(
+                new FunDefBase(
+                        "Member_Caption",
+                        "Returns the member_caption of a member.",
+                        "pSm")
+                {
+                    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+                    {
+                        final MemberCalc memberCalc =
+                                compiler.compileMember(call.getArg(0));
+                        return new AbstractStringCalc(call, new Calc[] {memberCalc}) {
+                            public String evaluateString(Evaluator evaluator) {
+                                final Member member =
+                                        memberCalc.evaluateMember(evaluator);
+                                return member.getCaption();
+                            }
+                        };
+                    }
+                });
 
         // <Dimension>.Name
         builder.define(
@@ -1393,6 +1478,35 @@ public class BuiltinFunTable extends FunTableImpl {
 
         //
         // OPERATORS
+
+        // <String Expression> + <String Expression>
+        builder.define(
+                new FunDefBase(
+                        "+",
+                        "Adds two String.",
+                        "iSSS")
+                {
+                    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+                    {
+                        final StringCalc calc0 = compiler.compileString(call.getArg(0));
+                        final StringCalc calc1 = compiler.compileString(call.getArg(1));
+
+                        return new AbstractStringCalc(call, new Calc[] {calc0, calc1}) {
+                            public String evaluateString(Evaluator evaluator) {
+                                final String s0 = calc0.evaluateString(evaluator);
+                                final String s1 = calc1.evaluateString(evaluator);
+
+                                if (s0 == null && s1 == null)
+                                    return null;
+                                else if (s0 == null)
+                                    return s1;
+                                else if (s1 == null)
+                                    return s1;
+                                return s0 + s1;
+                            }
+                        };
+                    }
+                });
 
         // <Numeric Expression> + <Numeric Expression>
         builder.define(

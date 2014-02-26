@@ -257,6 +257,30 @@ public class Vba {
 
     // public String str$(Object number)
 
+    @FunctionName("CStr")
+    @Signature("CStr(number)")
+    @Description("Returns a Variant (String) representation of a number.")
+    public static String cstr(Object number) {
+        if (number instanceof Number) {
+            try
+            {
+                int numInt = ((Number) number).intValue();
+                double numFractional = ((Number) number).doubleValue() - numInt;
+
+                return numFractional > 0.0?number.toString():Integer.toString(numInt);
+            }
+            catch(Exception ex)
+            {
+                return number.toString();
+            }
+        } else {
+            throw new InvalidArgumentException(
+                    "Invalid parameter. "
+                            + "number parameter " + number
+                            + " of CStr function must be " + "of type number");
+        }
+    }
+
     @FunctionName("Str")
     @Signature("Str(number)")
     @Description("Returns a Variant (String) representation of a number.")

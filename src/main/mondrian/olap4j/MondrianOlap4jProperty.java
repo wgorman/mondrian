@@ -87,6 +87,10 @@ class MondrianOlap4jProperty implements Property, Named {
             return Datatype.STRING;
         case TYPE_OTHER:
             return Datatype.VARIANT;
+        case TYPE_DATE:
+        case TYPE_TIME:
+        case TYPE_TIMESTAMP:
+            return Datatype.DATS;
         default:
             throw new RuntimeException("unexpected: " + property.getType());
         }

@@ -42,6 +42,13 @@ public class VbaTest extends TestCase {
 
     // Conversion functions
 
+
+    public void testCStr() {
+        assertEquals("1950", Vba.cstr(1950.0));
+        assertEquals("1951", Vba.cstr(1951));
+        assertEquals("1952.23", Vba.cstr(1952.23));
+    }
+
     public void testCBool() {
         assertEquals(true, Vba.cBool(Boolean.TRUE)); // not quite to spec
         assertEquals(false, Vba.cBool(Boolean.FALSE)); // not quite to spec
