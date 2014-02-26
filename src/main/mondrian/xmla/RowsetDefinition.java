@@ -4229,16 +4229,13 @@ TODO: see above
                 "Hierarchies in this dimension.");
 
         private static final Column DimensionVisibility =
-                new Column(
-                        "DIMENSION_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "DIMENSION_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -4348,6 +4345,7 @@ TODO: see above
             // How are they mapped to specific column numbers?
             row.set(DimensionUniqueSettings.name, 0);
             row.set(DimensionIsVisible.name, dimension.isVisible());
+            row.set(DimensionVisibility.name, true);
             if (deep) {
                 row.set(
                     Hierarchies.name,
@@ -4820,16 +4818,13 @@ TODO: see above
                 "Is hierarchy a parent.");
 
         private static final Column HierarchyVisibility =
-                new Column(
-                        "HIERARCHY_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "HIERARCHY_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -4982,6 +4977,7 @@ TODO: see above
             row.set(HierarchyDisplayFolder.name, "");
 
             row.set(ParentChild.name, isParentChild);
+            row.set(HierarchyVisibility.name, true);
             if (deep) {
                 row.set(
                     Levels.name,
@@ -5200,16 +5196,13 @@ TODO: see above
                 + "description exists.");
 
         private static final Column LevelVisibility =
-                new Column(
-                        "LEVEL_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "LEVEL_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -5349,6 +5342,7 @@ TODO: see above
             row.set(LevelUniqueSettings.name, uniqueSettings);
             row.set(LevelIsVisible.name, level.isVisible());
             row.set(Description.name, desc);
+            row.set(LevelVisibility.name, true);
             addRow(row, rows);
             return true;
         }
@@ -5601,14 +5595,13 @@ TODO: see above
                 Column.OPTIONAL,
                 "The default format string for the measure.");
         private static final Column MeasureVisibility =
-                new Column(
-                        "MEASURE_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "A Boolean that always returns True. If the measure is not visible, " +
-                                "it will not be included in the schema rowset.");
+            new Column(
+                "MEASURE_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -5755,6 +5748,7 @@ TODO: see above
 
             row.set(Description.name, desc != null ? desc : "");
             row.set(FormatString.name, formatString);
+            row.set(MeasureVisibility.name, true);
             addRow(row, rows);
         }
 

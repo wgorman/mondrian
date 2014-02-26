@@ -606,7 +606,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Sales</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
     </root>
   </return>
@@ -690,7 +690,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>HR</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - HR Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -705,7 +705,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Sales</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Sales Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -720,7 +720,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Sales 2</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Sales 2 Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -735,7 +735,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Sales Ragged</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Sales Ragged Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -750,7 +750,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Store</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Store Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -765,7 +765,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Warehouse</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Warehouse Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -780,7 +780,7 @@
         <IS_SQL_ENABLED>false</IS_SQL_ENABLED>
         <CUBE_CAPTION>Warehouse and Sales</CUBE_CAPTION>
         <DESCRIPTION>FoodMart Schema - Warehouse and Sales Cube</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
       </row>
     </root>
   </return>
@@ -849,6 +849,7 @@
             <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
             <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
             <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -868,6 +869,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
     </root>
   </return>
@@ -935,6 +937,7 @@
             <xsd:element minOccurs="0" name="DIMENSION_IS_VISIBLE" sql:field="DIMENSION_IS_VISIBLE" type="xsd:boolean"/>
             <xsd:element minOccurs="0" name="HIERARCHIES" sql:field="HIERARCHIES"/>
             <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="DIMENSION_VISIBILITY" sql:field="DIMENSION_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -954,6 +957,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -971,6 +975,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -988,6 +993,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1005,6 +1011,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1022,6 +1029,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1039,6 +1047,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1056,6 +1065,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1073,6 +1083,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1090,6 +1101,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1107,6 +1119,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1124,6 +1137,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1141,6 +1155,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1158,6 +1173,7 @@
         <IS_READWRITE>false</IS_READWRITE>
         <DIMENSION_UNIQUE_SETTINGS>0</DIMENSION_UNIQUE_SETTINGS>
         <DIMENSION_IS_VISIBLE>true</DIMENSION_IS_VISIBLE>
+        <DIMENSION_VISIBILITY>true</DIMENSION_VISIBILITY>
       </row>
     </root>
   </return>
@@ -1233,6 +1249,7 @@
             <xsd:element minOccurs="0" name="HIERARCHY_ORIGIN" sql:field="HIERARCHY_ORIGIN" type="xsd:unsignedShort"/>
             <xsd:element minOccurs="0" name="HIERARCHY_DISPLAY_FOLDER" sql:field="HIERARCHY_DISPLAY_FOLDER" type="xsd:string"/>
             <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="HIERARCHY_VISIBILITY" sql:field="HIERARCHY_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -1259,6 +1276,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1284,6 +1302,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
     </root>
   </return>
@@ -1358,6 +1377,7 @@
             <xsd:element minOccurs="0" name="HIERARCHY_ORIGIN" sql:field="HIERARCHY_ORIGIN" type="xsd:unsignedShort"/>
             <xsd:element minOccurs="0" name="HIERARCHY_DISPLAY_FOLDER" sql:field="HIERARCHY_DISPLAY_FOLDER" type="xsd:string"/>
             <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="HIERARCHY_VISIBILITY" sql:field="HIERARCHY_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -1385,6 +1405,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1410,6 +1431,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1435,6 +1457,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1460,6 +1483,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1484,6 +1508,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1509,6 +1534,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1534,6 +1560,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1559,6 +1586,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1584,6 +1612,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1609,6 +1638,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1634,6 +1664,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1658,6 +1689,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1683,6 +1715,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1708,6 +1741,7 @@
         <PARENT_CHILD>false</PARENT_CHILD>
         <HIERARCHY_ORIGIN>2</HIERARCHY_ORIGIN>
         <HIERARCHY_DISPLAY_FOLDER/>
+        <HIERARCHY_VISIBILITY>true</HIERARCHY_VISIBILITY>
       </row>
     </root>
   </return>
@@ -1772,6 +1806,7 @@
             <xsd:element name="LEVEL_UNIQUE_SETTINGS" sql:field="LEVEL_UNIQUE_SETTINGS" type="xsd:int"/>
             <xsd:element name="LEVEL_IS_VISIBLE" sql:field="LEVEL_IS_VISIBLE" type="xsd:boolean"/>
             <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
+            <xsd:element minOccurs="0" name="LEVEL_VISIBILITY" sql:field="LEVEL_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -1791,7 +1826,8 @@
         <LEVEL_UNIQUE_SETTINGS>1</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time Hierarchy - Year Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1809,7 +1845,8 @@
         <LEVEL_UNIQUE_SETTINGS>0</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time Hierarchy - Quarter Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1827,7 +1864,8 @@
         <LEVEL_UNIQUE_SETTINGS>0</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time Hierarchy - Month Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1845,7 +1883,8 @@
         <LEVEL_UNIQUE_SETTINGS>3</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time.Weekly Hierarchy - (All) Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1863,7 +1902,8 @@
         <LEVEL_UNIQUE_SETTINGS>1</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time.Weekly Hierarchy - Year Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1881,7 +1921,8 @@
         <LEVEL_UNIQUE_SETTINGS>0</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time.Weekly Hierarchy - Week Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -1899,7 +1940,8 @@
         <LEVEL_UNIQUE_SETTINGS>0</LEVEL_UNIQUE_SETTINGS>
         <LEVEL_IS_VISIBLE>true</LEVEL_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Time.Weekly Hierarchy - Day Level</DESCRIPTION>
-        <CUBE_SOURCE>2</CUBE_SOURCE>
+        <CUBE_SOURCE>1</CUBE_SOURCE>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
       </row>
     </root>
   </return>
@@ -1967,6 +2009,7 @@
             <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
             <xsd:element minOccurs="0" name="DEFAULT_FORMAT_STRING" sql:field="DEFAULT_FORMAT_STRING" type="xsd:string"/>
             <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+            <xsd:element minOccurs="0" name="MEASURE_VISIBILITY" sql:field="MEASURE_VISIBILITY" type="xsd:boolean"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
@@ -1987,6 +2030,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Customer Count Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>#,###</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2004,6 +2048,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Profit Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>$#,##0.00</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2021,6 +2066,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <DESCRIPTION>Sales Cube - Profit Growth Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>0.0%</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2039,6 +2085,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Promotion Sales Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>#,###.00</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2057,6 +2104,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Sales Count Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>#,###</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2075,6 +2123,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Store Cost Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>#,###.00</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2093,6 +2142,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Store Sales Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>#,###.00</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
       <row>
         <CATALOG_NAME>FoodMart</CATALOG_NAME>
@@ -2111,6 +2161,7 @@
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time].[Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <DESCRIPTION>Sales Cube - Unit Sales Member</DESCRIPTION>
         <DEFAULT_FORMAT_STRING>Standard</DEFAULT_FORMAT_STRING>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
       </row>
     </root>
   </return>
