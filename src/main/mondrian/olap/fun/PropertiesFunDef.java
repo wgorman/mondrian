@@ -25,7 +25,14 @@ import java.util.List;
  * @since Mar 23, 2006
  */
 class PropertiesFunDef extends FunDefBase {
-    static final ResolverImpl Resolver = new ResolverImpl();
+    static final ResolverImpl Resolver = new ResolverImpl(
+            "Properties",
+            "<Member>.Properties(<String> [,TYPED])",
+            "Returns the value of a member property.",
+            new String[] {"mvS", "mvSy"},
+            PropertiesFunDef.class,
+            new String[]{"TYPED"}
+    );
 
     public PropertiesFunDef(
         String name,
@@ -36,6 +43,10 @@ class PropertiesFunDef extends FunDefBase {
         int[] parameterTypes)
     {
         super(name, signature, description, syntax, returnType, parameterTypes);
+    }
+
+    public PropertiesFunDef(FunDef dummyFunDef) {
+        super(dummyFunDef);
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
@@ -67,27 +78,27 @@ class PropertiesFunDef extends FunDefBase {
         return o;
     }
 
-    /**
-     * Resolves calls to the <code>PROPERTIES</code> MDX function.
-     */
-    private static class ResolverImpl extends ResolverBase {
+
+    private static class ResolverImpl extends ReflectiveMultiResolver
+    {
         private static final int[] PARAMETER_TYPES = {
-            Category.Member, Category.String
+                Category.Member, Category.String
         };
 
-        private ResolverImpl() {
-            super(
-                "Properties",
-                "<Member>.Properties(<String Expression>)",
-                "Returns the value of a member property.",
-                Syntax.Method);
+        private static final int[] PARAMETER_TYPES_TYPED = {
+                Category.Member, Category.String, Category.Symbol
+        };
+
+        public ResolverImpl(String name, String signature, String description, String[] signatures, Class clazz, String[] reservedWords) {
+            super(name, signature, description, signatures, clazz, reservedWords);
         }
 
+
         private boolean matches(
-            Exp[] args,
-            int[] parameterTypes,
-            Validator validator,
-            List<Conversion> conversions)
+                Exp[] args,
+                int[] parameterTypes,
+                Validator validator,
+                List<Conversion> conversions)
         {
             if (parameterTypes.length != args.length) {
                 return false;
@@ -102,18 +113,20 @@ class PropertiesFunDef extends FunDefBase {
             return true;
         }
 
+
         public FunDef resolve(
-            Exp[] args,
-            Validator validator,
-            List<Conversion> conversions)
+                Exp[] args,
+                Validator validator,
+                List<Conversion> conversions)
         {
-            if (!matches(args, PARAMETER_TYPES, validator, conversions)) {
+
+            if (!matches(args, args.length == 2?PARAMETER_TYPES:PARAMETER_TYPES_TYPED, validator, conversions)) {
                 return null;
             }
             int returnType = deducePropertyCategory(args[0], args[1]);
             return new PropertiesFunDef(
-                getName(), getSignature(), getDescription(), getSyntax(),
-                returnType, PARAMETER_TYPES);
+                    getName(), getSignature(), getDescription(), getSyntax(),
+                    returnType, args.length == 2?PARAMETER_TYPES:PARAMETER_TYPES_TYPED);
         }
 
         /**
@@ -126,38 +139,38 @@ class PropertiesFunDef extends FunDefBase {
          * @return Category of the property
          */
         private int deducePropertyCategory(
-            Exp memberExp,
-            Exp propertyNameExp)
+                Exp memberExp,
+                Exp propertyNameExp)
         {
             if (!(propertyNameExp instanceof Literal)) {
                 return Category.Value;
             }
             String propertyName =
-                (String) ((Literal) propertyNameExp).getValue();
+                    (String) ((Literal) propertyNameExp).getValue();
             Hierarchy hierarchy = memberExp.getType().getHierarchy();
             if (hierarchy == null) {
                 return Category.Value;
             }
             Level[] levels = hierarchy.getLevels();
             Property property = lookupProperty(
-                levels[levels.length - 1], propertyName);
+                    levels[levels.length - 1], propertyName);
             if (property == null) {
                 // we'll likely get a runtime error
                 return Category.Value;
             } else {
                 switch (property.getType()) {
-                case TYPE_BOOLEAN:
-                    return Category.Logical;
-                case TYPE_NUMERIC:
-                    return Category.Numeric;
-                case TYPE_STRING:
-                    return Category.String;
-                case TYPE_DATE:
-                case TYPE_TIME:
-                case TYPE_TIMESTAMP:
-                    return Category.DateTime;
-                default:
-                    throw Util.badValue(property.getType());
+                    case TYPE_BOOLEAN:
+                        return Category.Logical;
+                    case TYPE_NUMERIC:
+                        return Category.Numeric;
+                    case TYPE_STRING:
+                        return Category.String;
+                    case TYPE_DATE:
+                    case TYPE_TIME:
+                    case TYPE_TIMESTAMP:
+                        return Category.DateTime;
+                    default:
+                        throw Util.badValue(property.getType());
                 }
             }
         }

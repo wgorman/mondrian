@@ -141,25 +141,6 @@ public class FunctionTest extends FoodMartTestCase {
             + "from [sales]");
     }
 
-    public void testCStrAndStringPlusOperation() {
-        TestContext testContext = TestContext.instance().createSubstitutingCube(
-                "Sales",
-                "<Dimension name=\"Time2\" type=\"TimeDimension\" foreignKey=\"time_id\">\n" +
-                "    <Hierarchy hasAll=\"false\" primaryKey=\"time_id\">\n" +
-                "      <Table name=\"time_by_day\"/>\n" +
-                "      <Level name=\"Year2\" column=\"the_year\" type=\"Numeric\" uniqueMembers=\"true\"\n" +
-                "          levelType=\"TimeYears\"/>\n" +
-                "      <Level name=\"Quarter2\" column=\"quarter\" uniqueMembers=\"false\"\n" +
-                "          levelType=\"TimeQuarters\"/>\n" +
-                "      <Level name=\"Month2\" column=\"month_of_year\" uniqueMembers=\"false\" type=\"Numeric\"\n" +
-                "          levelType=\"TimeMonths\">\n" +
-                "          <Property name=\"The Date\" column=\"the_date\" type=\"Timestamp\"/>\n" +
-                "      </Level>\n" +
-                "    </Hierarchy>\n" +
-                "</Dimension>");
-        testContext.assertExprReturns("StrToMember(\"[Time2].[Year2].&[\"+CStr(Year([Time2].[1997].[Q1].[1].Properties(\"The Date\")) + 1 *100/100)+\"]\").CAPTION", "1998");
-    }
-
     public void testStringPlusOperation() {
         assertExprReturns("[Time].[Year].Dimension.UniqueName + \" \" + [Time].[Year].Dimension.Caption ", "[Time] Time");
     }
@@ -181,6 +162,7 @@ public class FunctionTest extends FoodMartTestCase {
                 "    </Hierarchy>\n" +
                 "</Dimension>");
         testContext.assertExprReturns("[Time2].[1997].[Q1].[1].Properties(\"The Date\")", "35,432");
+        testContext.assertExprReturns("[Time2].[1997].[Q1].[1].Properties(\"The Date\", TYPED)", "35,432");
     }
 
     public void testCaseNull() {
