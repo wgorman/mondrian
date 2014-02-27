@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2012 Pentaho and others
 // All Rights Reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.*;
@@ -25,14 +24,8 @@ import java.util.List;
  * @since Mar 23, 2006
  */
 class PropertiesFunDef extends FunDefBase {
-    static final ResolverImpl Resolver = new ResolverImpl(
-            "Properties",
-            "<Member>.Properties(<String> [,TYPED])",
-            "Returns the value of a member property.",
-            new String[] {"mvS", "mvSy"},
-            PropertiesFunDef.class,
-            new String[]{"TYPED"}
-    );
+
+    static final ResolverImpl Resolver = new ResolverImpl();
 
     public PropertiesFunDef(
         String name,
@@ -89,16 +82,23 @@ class PropertiesFunDef extends FunDefBase {
                 Category.Member, Category.String, Category.Symbol
         };
 
-        public ResolverImpl(String name, String signature, String description, String[] signatures, Class clazz, String[] reservedWords) {
-            super(name, signature, description, signatures, clazz, reservedWords);
+        public ResolverImpl() {
+            super(
+                "Properties",
+                "<Member>.Properties(<String> [,TYPED])",
+                "Returns the value of a member property.",
+                new String[] {"mvS", "mvSy"},
+                PropertiesFunDef.class,
+                new String[]{"TYPED"}
+            );
         }
 
 
         private boolean matches(
-                Exp[] args,
-                int[] parameterTypes,
-                Validator validator,
-                List<Conversion> conversions)
+            Exp[] args,
+            int[] parameterTypes,
+            Validator validator,
+            List<Conversion> conversions)
         {
             if (parameterTypes.length != args.length) {
                 return false;
@@ -115,18 +115,21 @@ class PropertiesFunDef extends FunDefBase {
 
 
         public FunDef resolve(
-                Exp[] args,
-                Validator validator,
-                List<Conversion> conversions)
+            Exp[] args,
+            Validator validator,
+            List<Conversion> conversions)
         {
-
-            if (!matches(args, args.length == 2?PARAMETER_TYPES:PARAMETER_TYPES_TYPED, validator, conversions)) {
+            if (!matches(args, args.length == 2
+                    ? PARAMETER_TYPES
+                    : PARAMETER_TYPES_TYPED, validator, conversions))
+            {
                 return null;
             }
             int returnType = deducePropertyCategory(args[0], args[1]);
             return new PropertiesFunDef(
-                    getName(), getSignature(), getDescription(), getSyntax(),
-                    returnType, args.length == 2?PARAMETER_TYPES:PARAMETER_TYPES_TYPED);
+                getName(), getSignature(), getDescription(), getSyntax(),
+                returnType, args.length == 2
+                    ? PARAMETER_TYPES : PARAMETER_TYPES_TYPED);
         }
 
         /**
@@ -139,8 +142,8 @@ class PropertiesFunDef extends FunDefBase {
          * @return Category of the property
          */
         private int deducePropertyCategory(
-                Exp memberExp,
-                Exp propertyNameExp)
+            Exp memberExp,
+            Exp propertyNameExp)
         {
             if (!(propertyNameExp instanceof Literal)) {
                 return Category.Value;
@@ -153,24 +156,24 @@ class PropertiesFunDef extends FunDefBase {
             }
             Level[] levels = hierarchy.getLevels();
             Property property = lookupProperty(
-                    levels[levels.length - 1], propertyName);
+                levels[levels.length - 1], propertyName);
             if (property == null) {
                 // we'll likely get a runtime error
                 return Category.Value;
             } else {
                 switch (property.getType()) {
-                    case TYPE_BOOLEAN:
-                        return Category.Logical;
-                    case TYPE_NUMERIC:
-                        return Category.Numeric;
-                    case TYPE_STRING:
-                        return Category.String;
-                    case TYPE_DATE:
-                    case TYPE_TIME:
-                    case TYPE_TIMESTAMP:
-                        return Category.DateTime;
-                    default:
-                        throw Util.badValue(property.getType());
+                case TYPE_BOOLEAN:
+                    return Category.Logical;
+                case TYPE_NUMERIC:
+                    return Category.Numeric;
+                case TYPE_STRING:
+                    return Category.String;
+                case TYPE_DATE:
+                case TYPE_TIME:
+                case TYPE_TIMESTAMP:
+                    return Category.DateTime;
+                default:
+                    throw Util.badValue(property.getType());
                 }
             }
         }

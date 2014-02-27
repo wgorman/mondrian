@@ -253,20 +253,21 @@ public enum PropertyDefinition {
 
     // mondrian-specific property for advanced drill-through
     AdvancedFlag(
-            RowsetDefinition.Type.Boolean,
-            null,
-            XmlaConstants.Access.Read,
-            "false",
-            XmlaConstants.Method.DISCOVER_AND_EXECUTE,
-            ""),
+        RowsetDefinition.Type.Boolean,
+        null,
+        XmlaConstants.Access.Read,
+        "false",
+        XmlaConstants.Method.DISCOVER_AND_EXECUTE,
+        ""),
+
     // Show Hidden Cubes property
     ShowHiddenCubes(
-            RowsetDefinition.Type.Boolean,
-            null,
-            XmlaConstants.Access.Read,
-            "false",
-            XmlaConstants.Method.DISCOVER,
-            "");
+        RowsetDefinition.Type.Boolean,
+        null,
+        XmlaConstants.Access.Read,
+        "false",
+        XmlaConstants.Method.DISCOVER,
+        "");
 
     final RowsetDefinition.Type type;
     final Set<? extends Enum> enumSet;
