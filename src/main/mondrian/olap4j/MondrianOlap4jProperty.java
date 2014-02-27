@@ -4,9 +4,7 @@
 // http://www.eclipse.org/legal/epl-v10.html.
 // You must accept the terms of that agreement to use this software.
 //
-// Copyright (C) 2004-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
-// All Rights Reserved.
+// Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
 package mondrian.olap4j;
 
