@@ -180,6 +180,7 @@
         <LEVEL_NAME_SQL_COLUMN_NAME>Yearly Income:(All)!NAME</LEVEL_NAME_SQL_COLUMN_NAME>
         <LEVEL_KEY_SQL_COLUMN_NAME>Yearly Income:(All)!KEY</LEVEL_KEY_SQL_COLUMN_NAME>
         <LEVEL_UNIQUE_NAME_SQL_COLUMN_NAME>Yearly Income:(All)!UNIQUE_NAME</LEVEL_UNIQUE_NAME_SQL_COLUMN_NAME>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -204,6 +205,7 @@
         <LEVEL_NAME_SQL_COLUMN_NAME>Yearly Income:Yearly Income!NAME</LEVEL_NAME_SQL_COLUMN_NAME>
         <LEVEL_KEY_SQL_COLUMN_NAME>Yearly Income:Yearly Income!KEY</LEVEL_KEY_SQL_COLUMN_NAME>
         <LEVEL_UNIQUE_NAME_SQL_COLUMN_NAME>Yearly Income:Yearly Income!UNIQUE_NAME</LEVEL_UNIQUE_NAME_SQL_COLUMN_NAME>
+        <LEVEL_VISIBILITY>true</LEVEL_VISIBILITY>
     </row>
   </root>
   </return>

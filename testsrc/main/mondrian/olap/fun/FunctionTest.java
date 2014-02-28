@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import org.eigenbase.xom.StringEscaper;
 
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
@@ -140,57 +141,81 @@ public class FunctionTest extends FoodMartTestCase {
             + "from [sales]");
     }
 
+    public void testStringPlusOperation() {
+        assertExprReturns(
+            "[Time].[Year].Dimension.UniqueName + \" \" + "
+            + "[Time].[Year].Dimension.Caption ", "[Time] Time");
+    }
+
+    public void testDateProperties() {
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            "<Dimension name=\"Time2\" type=\"TimeDimension\" foreignKey=\"time_id\">\n"
+            + "    <Hierarchy hasAll=\"false\" primaryKey=\"time_id\">\n"
+            + "      <Table name=\"time_by_day\"/>\n"
+            + "      <Level name=\"Year2\" column=\"the_year\" type=\"Numeric\" uniqueMembers=\"true\"\n"
+            + "          levelType=\"TimeYears\"/>\n"
+            + "      <Level name=\"Quarter2\" column=\"quarter\" uniqueMembers=\"false\"\n"
+            + "          levelType=\"TimeQuarters\"/>\n"
+            + "      <Level name=\"Month2\" column=\"month_of_year\" uniqueMembers=\"false\" type=\"Numeric\"\n"
+            + "          levelType=\"TimeMonths\">\n"
+            + "          <Property name=\"The Date\" column=\"the_date\" type=\"Timestamp\"/>\n"
+            + "      </Level>\n"
+            + "    </Hierarchy>\n"
+            + "</Dimension>");
+        testContext.assertExprReturns(
+            "[Time2].[1997].[Q1].[1].Properties(\"The Date\")", "35,432");
+        testContext.assertExprReturns(
+            "[Time2].[1997].[Q1].[1].Properties(\"The Date\", TYPED)",
+                "35,432");
+    }
+
     public void testCaseNull() {
-        // works
         assertExprReturns(
-                "CASE 2 WHEN 1 THEN \"first\" WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
-                "");
-        // fails
+            "CASE 2 WHEN 1 THEN \"first\" WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
+            "");
         assertExprReturns(
-                "CASE 2 WHEN 1 THEN NULL WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
-                "");
-        // works
+            "CASE 2 WHEN 1 THEN NULL WHEN 4 THEN \"second\" WHEN 3 THEN \"third\" ELSE NULL END",
+            "");
         assertExprReturns(
-                "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
-                "");
-        // fails
+            "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
+            "");
         assertExprReturns(
-                "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
-                "");
+            "CASE WHEN 1=0 THEN \"first\" WHEN 1=4 THEN \"second\" WHEN 1=2 THEN \"third\" ELSE NULL END",
+            "");
         // This works because NULL is not the first attribute in the return
         assertQueryReturns(
-                "WITH\n"
-                        + " MEMBER [Product].[CaseTest] AS\n"
-                        + " 'CASE\n"
-                        + " WHEN [Gender].CurrentMember IS [Gender].[M] THEN [Gender].[F]\n"
-                        + " ELSE NULL\n"
-                        + " END'\n"
-                        + "                \n"
-                        + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
-                "Axis #0:\n"
-                        + "{}\n"
-                        + "Axis #1:\n"
-                        + "{[Product].[CaseTest]}\n"
-                        + "Axis #2:\n"
-                        + "{[Gender].[F]}\n"
-                        + "Row #0: \n");
-        // This fails
+            "WITH\n"
+            + " MEMBER [Product].[CaseTest] AS\n"
+            + " 'CASE\n"
+            + " WHEN [Gender].CurrentMember IS [Gender].[M] THEN [Gender].[F]\n"
+            + " ELSE NULL\n"
+            + " END'\n"
+            + "                \n"
+            + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[CaseTest]}\n"
+            + "Axis #2:\n"
+            + "{[Gender].[F]}\n"
+            + "Row #0: \n");
         assertQueryReturns(
-                "WITH\n"
-                        + " MEMBER [Product].[CaseTest] AS\n"
-                        + " 'CASE\n"
-                        + " WHEN [Gender].CurrentMember IS [Gender].[F] THEN NULL\n"
-                        + " ELSE [Gender].[F]\n"
-                        + " END'\n"
-                        + "                \n"
-                        + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
-                "Axis #0:\n"
-                        + "{}\n"
-                        + "Axis #1:\n"
-                        + "{[Product].[CaseTest]}\n"
-                        + "Axis #2:\n"
-                        + "{[Gender].[F]}\n"
-                        + "Row #0: \n");
+            "WITH\n"
+            + " MEMBER [Product].[CaseTest] AS\n"
+            + " 'CASE\n"
+            + " WHEN [Gender].CurrentMember IS [Gender].[F] THEN NULL\n"
+            + " ELSE [Gender].[F]\n"
+            + " END'\n"
+            + "                \n"
+            + "SELECT {[Product].[CaseTest]} ON 0, {[Gender].[F]} ON 1 FROM Sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[CaseTest]}\n"
+            + "Axis #2:\n"
+            + "{[Gender].[F]}\n"
+            + "Row #0: \n");
     }
 
     /**
@@ -5313,6 +5338,10 @@ public class FunctionTest extends FoodMartTestCase {
 
     public void testMemberCaption() {
         assertExprReturns("[Time].[1997].Caption", "1997");
+    }
+
+    public void testMemberMemberCaption() {
+        assertExprReturns("[Time].[1997].Member_Caption", "1997");
     }
 
     public void testDimensionName() {

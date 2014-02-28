@@ -154,6 +154,7 @@
         <EXPRESSION>[Measures].[Store Sales]-[Measures].[Store Cost]</EXPRESSION>
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Profit</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -172,6 +173,7 @@
         <EXPRESSION>[Measures].[Store Sales]/[Measures].[Sales Count]</EXPRESSION>
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Sales Average</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row>
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -188,6 +190,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Time].[Month],[Time.Weekly].[Day],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Promotion Sales</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -206,6 +209,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Time].[Month],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Sales Count</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -224,6 +228,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Time].[Month],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Store Cost</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -242,6 +247,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Time].[Month],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Store Sales</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -260,6 +266,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Time].[Month],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Store Sales Net</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
     <row
         xmlns="urn:schemas-microsoft-com:xml-analysis:rowset"
@@ -278,6 +285,7 @@
         <MEASURE_IS_VISIBLE>true</MEASURE_IS_VISIBLE>
         <LEVELS_LIST>[Store].[Store Name],[Time].[Month],[Product].[Product Name],[Promotion Media].[Media Type],[Promotions].[Promotion Name],[Customers].[Name],[Education Level].[Education Level],[Gender].[Gender],[Marital Status].[Marital Status],[Store Size in SQFT].[Store Sqft],[Store Type].[Store Type],[Yearly Income].[Yearly Income]</LEVELS_LIST>
         <MEASURE_NAME_SQL_COLUMN_NAME>Measures:Unit Sales</MEASURE_NAME_SQL_COLUMN_NAME>
+        <MEASURE_VISIBILITY>true</MEASURE_VISIBILITY>
     </row>
   </root>
   </return>

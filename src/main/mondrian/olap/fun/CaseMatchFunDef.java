@@ -1,12 +1,11 @@
 /*
-* This software is subject to the terms of the Eclipse Public License v1.0
-* Agreement, available at the following URL:
-* http://www.eclipse.org/legal/epl-v10.html.
-* You must accept the terms of that agreement to use this software.
-*
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.Calc;
@@ -134,17 +133,16 @@ class CaseMatchFunDef extends FunDefBase {
             }
             int valueType = args[0].getCategory();
             int returnType = -1;
-            for (int i = 2; i < args.length; i+=2)
-            {
+            for (int i = 2; i < args.length; i += 2) {
                 //If argument return type is null try next one
-                if (args[i].getCategory() != 16)
-                {
+                if (args[i].getCategory() != 16) {
                     returnType = args[i].getCategory();
                     break;
                 }
             }
-            if (returnType == -1)
+            if (returnType == -1) {
                 return null;
+            }
             int clauseCount = (args.length - 1) / 2;
             int j = 0;
             int mismatchingArgs = 0;

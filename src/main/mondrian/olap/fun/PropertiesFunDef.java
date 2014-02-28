@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2012 Pentaho and others
 // All Rights Reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.*;
@@ -25,6 +24,7 @@ import java.util.List;
  * @since Mar 23, 2006
  */
 class PropertiesFunDef extends FunDefBase {
+
     static final ResolverImpl Resolver = new ResolverImpl();
 
     public PropertiesFunDef(
@@ -36,6 +36,10 @@ class PropertiesFunDef extends FunDefBase {
         int[] parameterTypes)
     {
         super(name, signature, description, syntax, returnType, parameterTypes);
+    }
+
+    public PropertiesFunDef(FunDef dummyFunDef) {
+        super(dummyFunDef);
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
@@ -67,21 +71,28 @@ class PropertiesFunDef extends FunDefBase {
         return o;
     }
 
-    /**
-     * Resolves calls to the <code>PROPERTIES</code> MDX function.
-     */
-    private static class ResolverImpl extends ResolverBase {
+
+    private static class ResolverImpl extends ReflectiveMultiResolver
+    {
         private static final int[] PARAMETER_TYPES = {
-            Category.Member, Category.String
+                Category.Member, Category.String
         };
 
-        private ResolverImpl() {
+        private static final int[] PARAMETER_TYPES_TYPED = {
+                Category.Member, Category.String, Category.Symbol
+        };
+
+        public ResolverImpl() {
             super(
                 "Properties",
-                "<Member>.Properties(<String Expression>)",
+                "<Member>.Properties(<String> [,TYPED])",
                 "Returns the value of a member property.",
-                Syntax.Method);
+                new String[] {"mvS", "mvSy"},
+                PropertiesFunDef.class,
+                new String[]{"TYPED"}
+            );
         }
+
 
         private boolean matches(
             Exp[] args,
@@ -102,18 +113,23 @@ class PropertiesFunDef extends FunDefBase {
             return true;
         }
 
+
         public FunDef resolve(
             Exp[] args,
             Validator validator,
             List<Conversion> conversions)
         {
-            if (!matches(args, PARAMETER_TYPES, validator, conversions)) {
+            if (!matches(args, args.length == 2
+                    ? PARAMETER_TYPES
+                    : PARAMETER_TYPES_TYPED, validator, conversions))
+            {
                 return null;
             }
             int returnType = deducePropertyCategory(args[0], args[1]);
             return new PropertiesFunDef(
                 getName(), getSignature(), getDescription(), getSyntax(),
-                returnType, PARAMETER_TYPES);
+                returnType, args.length == 2
+                    ? PARAMETER_TYPES : PARAMETER_TYPES_TYPED);
         }
 
         /**
@@ -133,7 +149,7 @@ class PropertiesFunDef extends FunDefBase {
                 return Category.Value;
             }
             String propertyName =
-                (String) ((Literal) propertyNameExp).getValue();
+                    (String) ((Literal) propertyNameExp).getValue();
             Hierarchy hierarchy = memberExp.getType().getHierarchy();
             if (hierarchy == null) {
                 return Category.Value;
