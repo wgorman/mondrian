@@ -220,7 +220,7 @@ abstract class Rowset implements XmlaConstants {
             if (needConnection() && connection == null) {
               sc = handler.getConnectionGrant(
                        request,
-                       Collections.<String, String>emptyMap());
+                       extraProperties);
                 connection = sc.getConnection();
                 ourConnection = true;
             }
