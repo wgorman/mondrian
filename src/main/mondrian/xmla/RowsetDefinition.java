@@ -12,6 +12,7 @@ package mondrian.xmla;
 
 import mondrian.olap.*;
 import mondrian.util.Composite;
+import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 
 import org.olap4j.OlapConnection;
 import org.olap4j.OlapException;
@@ -6725,14 +6726,18 @@ TODO: see above
         }
 
         private void populateMember(List<Row> rows) throws SQLException {
-            OlapConnection connection =
-                handler.getConnection(
-                    request,
-                    Collections.<String, String>emptyMap());
-            for (Catalog catalog
-                : catIter(connection, catNameCond(), catalogCond))
-            {
-                populateCatalog(catalog, rows);
+            SessionConnection sc = null;
+            try {
+                sc = handler.getConnectionGrant(
+                         request,
+                         Collections.<String, String>emptyMap());
+                for (Catalog catalog
+                    : catIter(sc.getConnection(), catNameCond(), catalogCond))
+                {
+                    populateCatalog(catalog, rows);
+                }
+            } finally {
+                handler.releaseConnection(sc);
             }
         }
 

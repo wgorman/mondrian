@@ -502,6 +502,14 @@ public abstract class XmlaServlet
                 "Registered " + count + " callback" + (count > 1 ? "s" : ""));
         }
     }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        if (xmlaHandler != null) {
+            xmlaHandler.close();
+        }
+    }
 }
 
 // End XmlaServlet.java
