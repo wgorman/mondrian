@@ -6727,7 +6727,7 @@ TODO: see above
 
         private void populateMember(List<Row> rows) throws SQLException {
             SessionConnection sc = null;
-            try {
+            // try {
                 sc = handler.getConnectionGrant(
                          request,
                          Collections.<String, String>emptyMap());
@@ -6736,9 +6736,9 @@ TODO: see above
                 {
                     populateCatalog(catalog, rows);
                 }
-            } finally {
-                handler.releaseConnection(sc);
-            }
+            //} finally {
+            //    handler.releaseConnection(sc);
+            // }
         }
 
         protected void populateCatalog(
