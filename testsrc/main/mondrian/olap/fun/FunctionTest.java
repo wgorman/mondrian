@@ -147,7 +147,7 @@ public class FunctionTest extends FoodMartTestCase {
             + "[Time].[Year].Dimension.Caption ", "[Time] Time");
     }
 
-    public void testDateProperties() {
+    public void testPropertiesDateTYPED() {
         TestContext testContext = TestContext.instance().createSubstitutingCube(
             "Sales",
             "<Dimension name=\"Time2\" type=\"TimeDimension\" foreignKey=\"time_id\">\n"
@@ -163,11 +163,12 @@ public class FunctionTest extends FoodMartTestCase {
             + "      </Level>\n"
             + "    </Hierarchy>\n"
             + "</Dimension>");
+
         testContext.assertExprReturns(
-            "[Time2].[1997].[Q1].[1].Properties(\"The Date\")", "35,432");
+            "Month([Time2].[1997].[Q1].[1].Properties(\"The Date\"))", "1");
         testContext.assertExprReturns(
-            "[Time2].[1997].[Q1].[1].Properties(\"The Date\", TYPED)",
-                "35,432");
+            "Month([Time2].[1997].[Q1].[1].Properties(\"The Date\", TYPED))",
+                "1");
     }
 
     public void testCaseNull() {
