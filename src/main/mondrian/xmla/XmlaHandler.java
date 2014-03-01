@@ -1822,13 +1822,18 @@ public class XmlaHandler {
             Arrays.asList(
                 rename(StandardCellProperty.VALUE, "Value"),
                 rename(StandardCellProperty.FORMATTED_VALUE, "FmtValue"),
-                rename(StandardCellProperty.FORMAT_STRING, "FormatString"));
+                rename(StandardCellProperty.FORMAT_STRING, "FormatString"),
+                rename(StandardCellProperty.FORE_COLOR, "ForeColor"),
+                rename(StandardCellProperty.BACK_COLOR, "BackColor")
+                );
 
         protected static final List<StandardCellProperty> cellPropLongs =
             Arrays.asList(
                 StandardCellProperty.VALUE,
                 StandardCellProperty.FORMATTED_VALUE,
-                StandardCellProperty.FORMAT_STRING);
+                StandardCellProperty.FORMAT_STRING,
+                StandardCellProperty.FORE_COLOR,
+                StandardCellProperty.BACK_COLOR);
 
         protected static final List<Property> defaultProps =
             Arrays.asList(
