@@ -8,7 +8,6 @@
 // Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.*;
@@ -298,7 +297,8 @@ public class BuiltinFunTable extends FunTableImpl {
                 return new AbstractMemberCalc(call, new Calc[] {memberCalc}) {
                     public Member evaluateMember(Evaluator evaluator) {
                         Member member = memberCalc.evaluateMember(evaluator);
-                        return member.getDataMember();
+                        return member.getDataMember() == null
+                                ? member : member.getDataMember();
                     }
                 };
             }
@@ -1180,6 +1180,27 @@ public class BuiltinFunTable extends FunTableImpl {
             }
         });
 
+        // <Member>.Member_Caption
+        builder.define(
+            new FunDefBase(
+                "Member_Caption",
+                "Returns the member_caption of a member.",
+                "pSm")
+        {
+            public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
+            {
+                final MemberCalc memberCalc =
+                        compiler.compileMember(call.getArg(0));
+                return new AbstractStringCalc(call, new Calc[] {memberCalc}) {
+                    public String evaluateString(Evaluator evaluator) {
+                        final Member member =
+                                memberCalc.evaluateMember(evaluator);
+                        return member.getCaption();
+                    }
+                };
+            }
+        });
+
         // <Dimension>.Name
         builder.define(
             new FunDefBase(
@@ -1393,6 +1414,41 @@ public class BuiltinFunTable extends FunTableImpl {
 
         //
         // OPERATORS
+
+        // <String Expression> + <String Expression>
+        builder.define(
+            new FunDefBase(
+                "+",
+                "Adds two String.",
+                "iSSS")
+            {
+                public Calc compileCall(
+                    ResolvedFunCall call, ExpCompiler compiler)
+                {
+                    final StringCalc calc0 =
+                            compiler.compileString(call.getArg(0));
+                    final StringCalc calc1 =
+                            compiler.compileString(call.getArg(1));
+
+                    return new AbstractStringCalc(
+                        call, new Calc[] {calc0, calc1}) {
+                        public String evaluateString(Evaluator evaluator) {
+                            final String s0 = calc0.evaluateString(evaluator);
+                            final String s1 = calc1.evaluateString(evaluator);
+
+                            if (s0 != null && s1 != null) {
+                                return s0 + s1;
+                            } else if (s0 == null) {
+                                return s1;
+                            } else if (s1 == null) {
+                                return s0;
+                            } else {
+                                return null;
+                            }
+                        }
+                    };
+                }
+            });
 
         // <Numeric Expression> + <Numeric Expression>
         builder.define(

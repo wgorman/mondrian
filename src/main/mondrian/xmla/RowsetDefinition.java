@@ -12,6 +12,7 @@ package mondrian.xmla;
 
 import mondrian.olap.*;
 import mondrian.util.Composite;
+import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 
 import org.olap4j.OlapConnection;
 import org.olap4j.OlapException;
@@ -3538,7 +3539,9 @@ TODO: see above
         //private final Util.Functor1<Boolean, Cube> cubeNameCond;
         //private final Util.Functor1<Boolean, Cube> measureGroupNameCond;
 
-        MdschemaMeasureGroupDimensionsRowSet(XmlaRequest request, XmlaHandler handler) {
+        MdschemaMeasureGroupDimensionsRowSet(
+            XmlaRequest request, XmlaHandler handler)
+        {
             super(MDSCHEMA_MEASUREGROUP_DIMENSIONS, request, handler);
             //catalogNameCond = makeCondition(CATALOG_NAME_GETTER, CatalogName);
             //cubeNameCond = makeCondition(ELEMENT_NAME_GETTER, CubeName);
@@ -3583,8 +3586,8 @@ TODO: see above
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
-                "The number of instances a measure in the measure " +
-                "group can have for a single dimension member.");
+                "The number of instances a measure in the measure "
+                + "group can have for a single dimension member.");
         private static final Column DimensionUniqueName =
             new Column(
                 "DIMENSION_UNIQUE_NAME",
@@ -3600,8 +3603,8 @@ TODO: see above
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
-                "The number of instances a dimension member can have for " +
-                "a single instance of a measure group measure.");
+                "The number of instances a dimension member can have for "
+                + "a single instance of a measure group measure.");
         private static final Column DimensionIsVisible =
             new Column(
                 "DIMENSION_IS_VISIBLE",
@@ -3609,8 +3612,8 @@ TODO: see above
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
-                "A Boolean that indicates whether hieararchies " +
-                "in the dimension are visible.");
+                "A Boolean that indicates whether hieararchies "
+                + "in the dimension are visible.");
         private static final Column DimensionIsFactDimension =
             new Column(
                 "DIMENSION_IS_FACT_DIMENSION",
@@ -3618,8 +3621,8 @@ TODO: see above
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
-                "A Boolean that indicates whether the dimension " +
-                "is a fact dimension.");
+                "A Boolean that indicates whether the dimension "
+                + "is a fact dimension.");
         private static final Column DimensionPath =
             new Column(
                 "DIMENSION_PATH",
@@ -3638,23 +3641,22 @@ TODO: see above
                 "The unique name of the granularity hierarchy.");
 
         public void populateImpl(
-                XmlaResponse response,
-                OlapConnection connection,
-                List<Row> rows)
-                throws XmlaException, SQLException
+            XmlaResponse response,
+            OlapConnection connection,
+            List<Row> rows)
+            throws XmlaException, SQLException
         {
-
         }
 
         protected void setProperty(
-                PropertyDefinition propertyDef,
-                String value)
+            PropertyDefinition propertyDef,
+            String value)
         {
             switch (propertyDef) {
-                case Content:
-                    break;
-                default:
-                    super.setProperty(propertyDef, value);
+            case Content:
+                break;
+            default:
+                super.setProperty(propertyDef, value);
             }
         }
     }
@@ -3731,23 +3733,22 @@ TODO: see above
                 "Caption of the measure group.");
 
         public void populateImpl(
-                XmlaResponse response,
-                OlapConnection connection,
-                List<Row> rows)
-                throws XmlaException, SQLException
+            XmlaResponse response,
+            OlapConnection connection,
+            List<Row> rows)
+            throws XmlaException, SQLException
         {
-
         }
 
         protected void setProperty(
-                PropertyDefinition propertyDef,
-                String value)
+            PropertyDefinition propertyDef,
+            String value)
         {
             switch (propertyDef) {
-                case Content:
-                    break;
-                default:
-                    super.setProperty(propertyDef, value);
+            case Content:
+                break;
+            default:
+                super.setProperty(propertyDef, value);
             }
         }
     }
@@ -4229,16 +4230,13 @@ TODO: see above
                 "Hierarchies in this dimension.");
 
         private static final Column DimensionVisibility =
-                new Column(
-                        "DIMENSION_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "DIMENSION_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -4348,6 +4346,7 @@ TODO: see above
             // How are they mapped to specific column numbers?
             row.set(DimensionUniqueSettings.name, 0);
             row.set(DimensionIsVisible.name, dimension.isVisible());
+            row.set(DimensionVisibility.name, true);
             if (deep) {
                 row.set(
                     Hierarchies.name,
@@ -4820,16 +4819,13 @@ TODO: see above
                 "Is hierarchy a parent.");
 
         private static final Column HierarchyVisibility =
-                new Column(
-                        "HIERARCHY_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "HIERARCHY_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -4982,6 +4978,7 @@ TODO: see above
             row.set(HierarchyDisplayFolder.name, "");
 
             row.set(ParentChild.name, isParentChild);
+            row.set(HierarchyVisibility.name, true);
             if (deep) {
                 row.set(
                     Levels.name,
@@ -5200,16 +5197,13 @@ TODO: see above
                 + "description exists.");
 
         private static final Column LevelVisibility =
-                new Column(
-                        "LEVEL_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "(Optional) A bitmap with one of the following valid values:\n" +
-                                "1 Visible\n" +
-                                "2 Not visible\n" +
-                                "Default restriction is a value of 1.");
+            new Column(
+                "LEVEL_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -5349,6 +5343,7 @@ TODO: see above
             row.set(LevelUniqueSettings.name, uniqueSettings);
             row.set(LevelIsVisible.name, level.isVisible());
             row.set(Description.name, desc);
+            row.set(LevelVisibility.name, true);
             addRow(row, rows);
             return true;
         }
@@ -5601,14 +5596,13 @@ TODO: see above
                 Column.OPTIONAL,
                 "The default format string for the measure.");
         private static final Column MeasureVisibility =
-                new Column(
-                        "MEASURE_VISIBILITY",
-                        Type.Boolean,
-                        null,
-                        Column.RESTRICTION,
-                        Column.OPTIONAL,
-                        "A Boolean that always returns True. If the measure is not visible, " +
-                                "it will not be included in the schema rowset.");
+            new Column(
+                "MEASURE_VISIBILITY",
+                Type.Boolean,
+                null,
+                Column.RESTRICTION,
+                Column.OPTIONAL,
+                "Always TRUE.");
 
         public void populateImpl(
             XmlaResponse response,
@@ -5755,6 +5749,7 @@ TODO: see above
 
             row.set(Description.name, desc != null ? desc : "");
             row.set(FormatString.name, formatString);
+            row.set(MeasureVisibility.name, true);
             addRow(row, rows);
         }
 
@@ -5771,34 +5766,35 @@ TODO: see above
 
         /**
          * http://msdn.microsoft.com/en-us/library/windows/desktop/ms715867%28v=vs.85%29.aspx
-         * @return maximum number of digits for numeric data types in XmlaConstants.DBType, null otherwise
+         * @return maximum number of digits for numeric data types in
+         * XmlaConstants.DBType, null otherwise
          */
         private Object getDataTypePrecision(XmlaConstants.DBType dbType) {
-          switch (dbType) {
+            switch (dbType) {
             case CY:
-              return 19;
+                return 19;
             case I4:
-              return 10;
+                return 10;
             case I8:
-              return 19;
+                return 19;
             case R8:
-              return 15;
+                return 15;
             case UI2:
-              return 5;
+                return 5;
             case UI4:
-              return 10;
+                return 10;
             default:
-              return 65535;
-          }
+                return 65535;
+            }
         }
 
         private Object getDataTypeScale(XmlaConstants.DBType dbType) {
-          switch (dbType) {
+            switch (dbType) {
             case CY:
-              return 4;
+                return 4;
             default:
-              return -1;
-          }
+                return -1;
+            }
         }
     }
 
@@ -5993,7 +5989,7 @@ TODO: see above
                 null,
                 Column.NOT_RESTRICTION,
                 Column.OPTIONAL,
-                "Will always be empty." );
+                "Will always be empty.");
         private static final Column TreeOp_ =
             new Column(
                 "TREE_OP",
@@ -6318,13 +6314,16 @@ TODO: see above
             XmlaHandler.XmlaExtra extra = getExtra(connection);
 
             int memberOrdinal = 0;
-            if (MondrianProperties.instance().XmlaCalculateMemberOrdinal.get()) {
+
+            MondrianProperties prop = MondrianProperties.instance();
+
+            if (prop.XmlaCalculateMemberOrdinal.get()) {
                 //TODO: revert
                 member = extra.checkReplaceMemberOrdinal(member);
                 // extra.checkMemberOrdinal(member);
                 memberOrdinal = member.getOrdinal();
                 // TODO: testing
-                if ( memberOrdinal < 0 ) {
+                if (memberOrdinal < 0) {
                     LOGGER.error(
                         "negative MEMBER_ORDINAL for " + member.getName());
                     // will at least prevent an exception
@@ -6727,15 +6726,19 @@ TODO: see above
         }
 
         private void populateMember(List<Row> rows) throws SQLException {
-            OlapConnection connection =
-                handler.getConnection(
-                    request,
-                    Collections.<String, String>emptyMap());
-            for (Catalog catalog
-                : catIter(connection, catNameCond(), catalogCond))
-            {
-                populateCatalog(catalog, rows);
-            }
+            SessionConnection sc = null;
+            // try {
+                sc = handler.getConnectionGrant(
+                         request,
+                         Collections.<String, String>emptyMap());
+                for (Catalog catalog
+                    : catIter(sc.getConnection(), catNameCond(), catalogCond))
+                {
+                    populateCatalog(catalog, rows);
+                }
+            //} finally {
+            //    handler.releaseConnection(sc);
+            // }
         }
 
         protected void populateCatalog(

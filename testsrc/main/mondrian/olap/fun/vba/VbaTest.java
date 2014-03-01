@@ -1,12 +1,13 @@
 /*
-* This software is subject to the terms of the Eclipse Public License v1.0
-* Agreement, available at the following URL:
-* http://www.eclipse.org/legal/epl-v10.html.
-* You must accept the terms of that agreement to use this software.
-*
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (C) 2003-2005 Julian Hyde
+// Copyright (C) 2005-2014 Pentaho and others
+// All Rights Reserved.
 */
-
 package mondrian.olap.fun.vba;
 
 import mondrian.olap.InvalidArgumentException;
@@ -41,6 +42,13 @@ public class VbaTest extends TestCase {
         || timeZoneName.equals("Pacific Standard Time");
 
     // Conversion functions
+
+
+    public void testCStr() {
+        assertEquals("1950", Vba.cstr(1950.0));
+        assertEquals("1951", Vba.cstr(1951));
+        assertEquals("1952.23", Vba.cstr(1952.23));
+    }
 
     public void testCBool() {
         assertEquals(true, Vba.cBool(Boolean.TRUE)); // not quite to spec

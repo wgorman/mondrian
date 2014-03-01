@@ -1421,6 +1421,43 @@ recognized by ADOMD.NET.</p>
         <Default>true</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>XmlaSessionConnectionManagement</Name>
+        <Path>mondrian.xmla.SessionConnectionManagement</Path>
+        <Description>
+<p>If enabled, connections may be reused within the same xmla session. This should improve performance for consecutive accesses within the same session.</p>
+        </Description>
+        <Type>Boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaSessionConnectionTTLSeconds</Name>
+        <Path>mondrian.xmla.SessionConnectionTTLSeconds</Path>
+        <Description>
+<p>Maximum number of seconds for which cached connections are allowed to exist.</p>
+<p>While a connection is cached, any changes to the schema will not take effect for that session.</p>
+        </Description>
+        <Type>int</Type>
+        <Default>3</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaMaxSessionConnections</Name>
+        <Path>mondrian.xmla.MaxSessionConnections</Path>
+        <Description>
+<p>Maximum number of connections that can be cached. This is a last resort limit that will result in a full connection cache flush.</p>
+        </Description>
+        <Type>int</Type>
+        <Default>1000</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaMaxSCCleanQueueSize</Name>
+        <Path>mondrian.xmla.MaxSessionConnectionCleanQueueSize</Path>
+        <Description>
+<p>Limit on the internal queue that is used to keep track of expirations. This is a last resort limit that will result in a full connection cache flush.</p>
+        </Description>
+        <Type>int</Type>
+        <Default>10000</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>FetchChildrenCardinality</Name>
         <Path>mondrian.olap.FetchChildrenCardinality</Path>
         <Description>

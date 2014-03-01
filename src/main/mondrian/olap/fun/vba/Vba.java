@@ -1,12 +1,11 @@
 /*
-* This software is subject to the terms of the Eclipse Public License v1.0
-* Agreement, available at the following URL:
-* http://www.eclipse.org/legal/epl-v10.html.
-* You must accept the terms of that agreement to use this software.
-*
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
-
 package mondrian.olap.fun.vba;
 
 import mondrian.olap.InvalidArgumentException;
@@ -256,6 +255,28 @@ public class Vba {
     }
 
     // public String str$(Object number)
+
+    @FunctionName("CStr")
+    @Signature("CStr(number)")
+    @Description("Returns a Variant (String) representation of a number.")
+    public static String cstr(Object number) {
+        if (number instanceof Number) {
+            try {
+                int numInt = ((Number) number).intValue();
+                double numFractional = ((Number) number).doubleValue() - numInt;
+
+                return numFractional > 0.0
+                        ? number.toString() : Integer.toString(numInt);
+            } catch (Exception ex) {
+                return number.toString();
+            }
+        } else {
+            throw new InvalidArgumentException(
+                "Invalid parameter. "
+                + "number parameter " + number
+                + " of CStr function must be " + "of type number");
+        }
+    }
 
     @FunctionName("Str")
     @Signature("Str(number)")
