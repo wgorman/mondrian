@@ -537,6 +537,16 @@ public class RolapCell implements Cell {
                 return canDrillThrough() ? MDACTION_TYPE_DRILLTHROUGH : 0;
             case Property.DRILLTHROUGH_COUNT_ORDINAL:
                 return canDrillThrough() ? getDrillThroughCount() : -1;
+            case Property.BACK_COLOR_ORDINAL:
+                if (ci.backColor != null) {
+                    return ci.backColor;
+                }
+                break;
+            case Property.FORE_COLOR_ORDINAL:
+                if (ci.foreColor != null) {
+                    return ci.foreColor;
+                }
+                break;
             default:
                 // fall through
             }

@@ -11,7 +11,9 @@ package mondrian.rolap;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import mondrian.calc.Calc;
 import mondrian.mdx.LevelExpr;
@@ -28,6 +30,7 @@ import mondrian.olap.Query;
 import mondrian.olap.QueryAxis;
 import mondrian.olap.QueryPart;
 import mondrian.olap.SchemaReader;
+import mondrian.olap.Util;
 import mondrian.olap.ValidatorImpl;
 import mondrian.olap.fun.DescendantsFunDef;
 import mondrian.olap.fun.DescendantsFunDef.Flag;
@@ -218,6 +221,7 @@ public class CalculatedCellUtil {
             try {
                 cellCalc.cubeExp = cube.getSchema().getInternalConnection().parseExpression(subcubeString);
                 cellCalc.cellExp = cube.getSchema().getInternalConnection().parseExpression(cellString);
+                CellValidator valid = new CellValidator(cube.getSchema().getFunTable(), cube.getSchemaReader(), cube);
                 for (MondrianDef.CalculatedCellProperty prop : calculatedCells[i].cellProperties) {
                     if (prop.name.equals(Property.SOLVE_ORDER.name)) {
                         try {
@@ -225,9 +229,35 @@ public class CalculatedCellUtil {
                         } catch (NumberFormatException e) {
                             // not a number, ignore
                         }
+                    } else {
+                        if (prop.value == null && prop.expression == null) {
+                            // TODO: create clean error message
+                            throw new UnsupportedOperationException();
+                        }
+                        String propExpr = null;
+                        if (prop.value != null) {
+                            // quote literal
+                            propExpr = Util.quoteForMdx(prop.value);
+                        } else {
+                            propExpr = prop.expression;
+                        }
+                        Exp propExp = cube.getSchema().getInternalConnection().parseExpression(propExpr);
+                        Exp resolvedExp = valid.validate(propExp, false);
+                        cellCalc.cellProperties.put(prop.name, resolvedExp);
                     }
                 }
-                CellValidator valid = new CellValidator(cube.getSchema().getFunTable(), cube.getSchemaReader(), cube);
+
+                for (String prop : Property.FORMAT_PROPERTIES) {
+                    Exp formatExp = (Exp)cellCalc.cellProperties.get(prop);
+                        if (formatExp != null) {
+                            cellCalc.cellProperties.put(
+                                Property.FORMAT_EXP_PARSED.name, formatExp);
+                            cellCalc.cellProperties.put(
+                                Property.FORMAT_EXP.name, Util.unparse(formatExp));
+                        break;
+                    }
+                }
+
                 if (((UnresolvedFunCall)cellCalc.cubeExp).getFunName().equals("()")) {
                     cellCalc.cubeExps = new Exp[((UnresolvedFunCall)cellCalc.cubeExp).getArgCount()];
                     for (int j = 0; j < ((UnresolvedFunCall)cellCalc.cubeExp).getArgCount(); j++) {
@@ -285,5 +315,10 @@ public class CalculatedCellUtil {
         Exp cubeExps[];
         Exp cellExp;
         int solve_order;
+        Map<String, Object> cellProperties = new HashMap<String, Object>();
+
+        public Object getPropertyValue(String name) {
+            return cellProperties.get(name);
+        }
     }
 }
