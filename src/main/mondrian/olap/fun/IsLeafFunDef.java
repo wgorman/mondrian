@@ -4,7 +4,7 @@
 // http://www.eclipse.org/legal/epl-v10.html.
 // You must accept the terms of that agreement to use this software.
 //
-// Copyright (C) 2006-2009 Pentaho
+// Copyright (C) 2014-2014 Pentaho
 // All Rights Reserved.
 */
 package mondrian.olap.fun;
@@ -16,7 +16,6 @@ import mondrian.calc.impl.AbstractBooleanCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Evaluator;
 import mondrian.olap.FunDef;
-import mondrian.olap.Member;
 import mondrian.resource.MondrianResource;
 import mondrian.rolap.RolapLevel;
 import mondrian.rolap.RolapMember;
@@ -49,7 +48,6 @@ public class IsLeafFunDef extends FunDefBase {
                 compiler.compileMember(call.getArg(0));
 
         return new AbstractBooleanCalc(call, new Calc[] {memberCalc}) {
-            @Override
             public boolean evaluateBoolean(Evaluator evaluator) {
                 RolapMember rolapMember =
                     (RolapMember) memberCalc.evaluateMember(evaluator);
