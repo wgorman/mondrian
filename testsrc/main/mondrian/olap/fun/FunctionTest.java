@@ -764,6 +764,36 @@ public class FunctionTest extends FoodMartTestCase {
         // todo: test for this
     }
 
+    public void testIsLeaf() {
+        assertBooleanExprReturns(
+            "IsLeaf([Store].[USA].[CA].[Los Angeles])",
+            false);
+
+        // Store 7 is at the bottom
+        assertBooleanExprReturns(
+            "IsLeaf([Store].[USA].[CA].[Los Angeles].[Store 7])",
+            true);
+
+        assertBooleanExprReturns(
+            "IsLeaf([Gender].[All Gender])",
+            false);
+
+        // test parent-child hierarchies.
+        // only the Employees dimension has the closure table
+        // TODO: test for Sheri Nowmer: supervisor of multiple people
+        // "IsLeaf([Employees].[All Employees].[Sheri Nowmer])",
+
+        // TODO: test for Jennifer Cooper in HR . Not a supervisor
+        // "IsLeaf([Employees].[All Employees].[Jennifer Cooper])",
+
+        // TODO: test for Vatican in [Sales Ragged] cube
+        // The Vatican is the only ragged example in the Foodmart DB
+        // "IsLeaf([Store].[Vatican])",
+        // "IsLeaf([Geography].[Vatican])",
+
+        // TODO: check Measures, Security, CalculatedMembers
+   }
+
     public void testQueryWithoutValidMeasure() {
         assertQueryReturns(
             "with\n"
