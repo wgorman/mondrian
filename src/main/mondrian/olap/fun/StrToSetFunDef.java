@@ -1,12 +1,11 @@
 /*
-* This software is subject to the terms of the Eclipse Public License v1.0
-* Agreement, available at the following URL:
-* http://www.eclipse.org/legal/epl-v10.html.
-* You must accept the terms of that agreement to use this software.
-*
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.*;
@@ -54,6 +53,20 @@ class StrToSetFunDef extends FunDefBase {
                         parseMemberList(evaluator, string, hierarchy));
                 }
             };
+        } else if (
+            elementType == null || elementType.equals(MemberType.Unknown))
+        {
+            return new AbstractListCalc(call, new Calc[] {stringCalc}) {
+                public TupleList evaluateList(Evaluator evaluator) {
+                    String string = stringCalc.evaluateString(evaluator);
+                    if (string == null) {
+                        throw newEvalException(
+                            MondrianResource.instance().NullValue.ex());
+                    }
+                    return new UnaryTupleList(
+                        parseMemberList(evaluator, string, null));
+                }
+            };
         } else {
             TupleType tupleType = (TupleType) elementType;
             final List<Hierarchy> hierarchyList = tupleType.getHierarchies();
@@ -72,22 +85,27 @@ class StrToSetFunDef extends FunDefBase {
 
     public Exp createCall(Validator validator, Exp[] args) {
         final int argCount = args.length;
-        if (argCount <= 1) {
+        if (argCount < 1) {
             throw MondrianResource.instance().MdxFuncArgumentsNum.ex(getName());
         }
-        for (int i = 1; i < argCount; i++) {
-            final Exp arg = args[i];
-            if (arg instanceof DimensionExpr) {
-                // if arg is a dimension, switch to dimension's default
-                // hierarchy
-                DimensionExpr dimensionExpr = (DimensionExpr) arg;
-                Dimension dimension = dimensionExpr.getDimension();
-                args[i] = new HierarchyExpr(dimension.getHierarchy());
-            } else if (arg instanceof HierarchyExpr) {
-                // nothing
-            } else {
-                throw MondrianResource.instance().MdxFuncNotHier.ex(
-                    i + 1, getName());
+        if (argCount == 2 && getParameterCategories()[1] == Category.Symbol) {
+            // TODO: should at least have a warning here
+            // functionaly we just ignore it
+        } else {
+            for (int i = 1; i < argCount; i++) {
+                final Exp arg = args[i];
+                if (arg instanceof DimensionExpr) {
+                    // if arg is a dimension, switch to dimension's default
+                    // hierarchy
+                    DimensionExpr dimensionExpr = (DimensionExpr) arg;
+                    Dimension dimension = dimensionExpr.getDimension();
+                    args[i] = new HierarchyExpr(dimension.getHierarchy());
+                } else if (arg instanceof HierarchyExpr) {
+                    // nothing
+                } else {
+                    throw MondrianResource.instance().MdxFuncNotHier.ex(
+                        i + 1, getName());
+                }
             }
         }
         return super.createCall(validator, args);
@@ -98,11 +116,14 @@ class StrToSetFunDef extends FunDefBase {
         case 1:
             // This is a call to the standard version of StrToSet,
             // which doesn't give us any hints about type.
-            return new SetType(null);
+            return new SetType(MemberType.Unknown);
 
         case 2:
         {
             final Type argType = args[1].getType();
+            if (argType instanceof SymbolType) {
+                return new SetType(MemberType.Unknown);
+            }
             return new SetType(
                 new MemberType(
                     argType.getDimension(),
@@ -134,12 +155,18 @@ class StrToSetFunDef extends FunDefBase {
     }
 
     private static class ResolverImpl extends ResolverBase {
+        private static final String[] KEYWORDS = new String[] {"CONSTRAINED"};
+
         ResolverImpl() {
             super(
                 "StrToSet",
-                "StrToSet(<String Expression>)",
+                "StrToSet(<String Expression>[, <Hierarchy>])",
                 "Constructs a set from a string expression.",
                 Syntax.Function);
+        }
+
+        public String[] getReservedWords() {
+            return KEYWORDS;
         }
 
         public FunDef resolve(
@@ -156,19 +183,29 @@ class StrToSetFunDef extends FunDefBase {
             {
                 return null;
             }
-            for (int i = 1; i < args.length; i++) {
-                Exp exp = args[i];
-                if (!(exp instanceof DimensionExpr
-                      || exp instanceof HierarchyExpr))
-                {
-                    return null;
-                }
-            }
             int[] argTypes = new int[args.length];
             argTypes[0] = Category.String;
-            for (int i = 1; i < argTypes.length; i++) {
-                argTypes[i] = Category.Hierarchy;
+            if (args.length == 2
+                && validator.canConvert(
+                    1, args[1], Category.Symbol, conversions))
+            {
+                // we don't support CONSTRAINED syntax, but we'll allow it
+                argTypes[1] = Category.Symbol;
+            } else {
+                // with hierarchies
+                for (int i = 1; i < args.length; i++) {
+                    Exp exp = args[i];
+                    if (!(exp instanceof DimensionExpr
+                          || exp instanceof HierarchyExpr))
+                    {
+                        return null;
+                    }
+                }
+                for (int i = 1; i < argTypes.length; i++) {
+                    argTypes[i] = Category.Hierarchy;
+                }
             }
+
             return new StrToSetFunDef(argTypes);
         }
 

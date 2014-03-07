@@ -9190,6 +9190,32 @@ public class FunctionTest extends FoodMartTestCase {
             + "[Store].[USA].[WA]");
     }
 
+    public void testStrToSetSingleArg() {
+        assertAxisReturns(
+            "StrToSet('{[Gender].[F], [Gender].[M]}')",
+            "[Gender].[F]\n"
+            + "[Gender].[M]");
+        assertAxisReturns(
+            "StrToSet("
+            + "\""
+            + "{"
+            + " [Store].[USA].[CA], "
+            + " [Store].[All Stores].[USA].OR,"
+            + " [Store].[All Stores]. [USA] . [WA]"
+            + "}"
+            + "\")",
+            "[Store].[USA].[CA]\n"
+            + "[Store].[USA].[OR]\n"
+            + "[Store].[USA].[WA]");
+    }
+
+    public void testStrToSetAcceptsConstrained() {
+        assertAxisReturns(
+            "StrToSet('{[Gender].[F], [Gender].[M]}', CONSTRAINED)",
+            "[Gender].[F]\n"
+            + "[Gender].[M]");
+    }
+
     public void testStrToSetDupDimensionsFails() {
         assertAxisThrows(
             "StrToSet("
