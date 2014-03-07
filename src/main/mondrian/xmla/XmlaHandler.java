@@ -14,6 +14,7 @@ import mondrian.olap.MondrianProperties;
 import mondrian.olap.Parameter;
 import mondrian.olap.Util;
 import mondrian.util.CompositeList;
+import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 import mondrian.xmla.impl.DefaultSaxWriter;
 
 import org.apache.log4j.Logger;
@@ -67,6 +68,8 @@ public class XmlaHandler {
 
     final ConnectionFactory connectionFactory;
     private final String prefix;
+
+    private final XmlaSessionConnectionManager connectionMgr;
 
     public static XmlaExtra getExtra(OlapConnection connection) {
         try {
@@ -128,6 +131,7 @@ public class XmlaHandler {
             // REVIEW: Security hole?
             sessionId = "<no_session>";
         }
+
         LOGGER.debug(
             "Creating new connection for user [" + request.getUsername()
             + "] and session [" + sessionId + "]");
@@ -173,13 +177,11 @@ public class XmlaHandler {
                     "unexpected restriction type: " + restriction.getClass());
             }
         }
-
-        return
-            getConnection(
-                databaseName,
-                catalogName,
-                request.getRoleName(),
-                props);
+        return getConnection(
+                  databaseName,
+                  catalogName,
+                  request.getRoleName(),
+                  props);
     }
 
     private enum SetType {
@@ -651,6 +653,7 @@ public class XmlaHandler {
         assert prefix != null;
         this.connectionFactory = connectionFactory;
         this.prefix = prefix;
+        this.connectionMgr = new XmlaSessionConnectionManager(this);
     }
 
     /**
@@ -1379,9 +1382,12 @@ public class XmlaHandler {
         OlapConnection connection = null;
         OlapStatement statement = null;
         ResultSet resultSet = null;
+        SessionConnection sc = null;
         try {
-            connection =
-                getConnection(request, Collections.<String, String>emptyMap());
+            sc = getConnectionGrant(
+                    request,
+                    Collections.<String, String>emptyMap());
+            connection = sc.getConnection();
             statement = connection.createStatement();
             resultSet =
                 getExtra(connection).executeDrillthrough(
@@ -1422,12 +1428,8 @@ public class XmlaHandler {
                     // ignore
                 }
             }
-            if (connection != null) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    // ignore
-                }
+            if (sc != null) {
+                releaseConnection(sc);
             }
         }
     }
@@ -1692,9 +1694,14 @@ public class XmlaHandler {
         PreparedOlapStatement statement = null;
         CellSet cellSet = null;
         boolean success = false;
+        SessionConnection sc = null;
         try {
-            connection =
-                getConnection(request, Collections.<String, String>emptyMap());
+            long startConn = System.currentTimeMillis();
+            sc = getConnectionGrant(
+                    request,
+                    Collections.<String, String>emptyMap());
+            connection = sc.getConnection();
+            LOGGER.debug("getConnection full " + (System.currentTimeMillis() - startConn) + "ms");
             getExtra(connection).setPreferList(connection);
             try {
                 if ( request.getParameters() != null ) {
@@ -1765,12 +1772,8 @@ public class XmlaHandler {
                         // ignore
                     }
                 }
-                if (connection != null) {
-                    try {
-                        connection.close();
-                    } catch (SQLException e) {
-                        // ignore
-                    }
+                if (sc != null) {
+                    releaseConnection(sc);
                 }
             }
         }
@@ -1822,13 +1825,18 @@ public class XmlaHandler {
             Arrays.asList(
                 rename(StandardCellProperty.VALUE, "Value"),
                 rename(StandardCellProperty.FORMATTED_VALUE, "FmtValue"),
-                rename(StandardCellProperty.FORMAT_STRING, "FormatString"));
+                rename(StandardCellProperty.FORMAT_STRING, "FormatString"),
+                rename(StandardCellProperty.FORE_COLOR, "ForeColor"),
+                rename(StandardCellProperty.BACK_COLOR, "BackColor")
+                );
 
         protected static final List<StandardCellProperty> cellPropLongs =
             Arrays.asList(
                 StandardCellProperty.VALUE,
                 StandardCellProperty.FORMATTED_VALUE,
-                StandardCellProperty.FORMAT_STRING);
+                StandardCellProperty.FORMAT_STRING,
+                StandardCellProperty.FORE_COLOR,
+                StandardCellProperty.BACK_COLOR);
 
         protected static final List<Property> defaultProps =
             Arrays.asList(
@@ -3339,6 +3347,9 @@ public class XmlaHandler {
             : hierarchy.getName();
     }
 
+    public void close() {
+        connectionMgr.close();
+    }
     /**
      * Creates an olap4j connection for responding to XMLA requests.
      *
@@ -3381,6 +3392,24 @@ public class XmlaHandler {
          * response
          */
         Map<String, Object> getPreConfiguredDiscoverDatasourcesResponse();
+    }
+
+    /**
+     * Gets a {@link SessionConnection}.
+     * @param request
+     * @param properties
+     * @return A wrapped connection
+     */
+    public SessionConnection getConnectionGrant(XmlaRequest request, Map<String, String> properties) {
+        return connectionMgr.getConnectionGrant(request, properties);
+    }
+
+    /**
+     * Closes the connection or keeps it for reuse.
+     * @param sc the connection
+     */
+    public void releaseConnection(SessionConnection sc) {
+        connectionMgr.releaseConnection(sc);
     }
 }
 

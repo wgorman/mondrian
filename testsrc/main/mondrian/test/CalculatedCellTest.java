@@ -9,6 +9,9 @@
 */
 package mondrian.test;
 
+import mondrian.olap.Cell;
+import mondrian.olap.Result;
+
 /**
  * CalculatedCell Work to do:
  *  - implement compilation approach for subcube checks
@@ -26,6 +29,56 @@ package mondrian.test;
  *
  */
 public class CalculatedCellTest extends FoodMartTestCase {
+
+    public void testCalculatedCellProperties() {
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F])</SubCube>\n"
+            + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"0\"/>\n"
+            + "    <CalculatedCellProperty name=\"FORMAT_STRING\" value=\"|0.0|style=red\"/>\n"
+            + "    <CalculatedCellProperty name=\"BACK_COLOR\" expression=\"IIf([Measures].CurrentMember &gt; 78500, 12345,54321)\"/>\n"
+            + "  </CalculatedCell>"
+        );
+  
+        Result result = testContext.executeQuery("select {CrossJoin([Gender].[All Gender].Children,[Marital Status].[All Marital Status].Children)} on 0, {[Measures].[Unit Sales]} on 1 from [sales] CELL PROPERTIES BACK_COLOR");
+        String desiredResult = 
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F], [Marital Status].[M]}\n"
+            + "{[Gender].[F], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[M]}\n"
+            + "{[Gender].[M], [Marital Status].[S]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: |78403.2|style=red\n" // Normally would be 65,336
+            + "Row #0: |79466.4|style=red\n" // Normally would be 66,222
+            + "Row #0: 66,460\n"
+            + "Row #0: 68,755\n";
+        String resultString = TestContext.toString(result);
+        if (desiredResult != null) {
+            TestContext.assertEqualsVerbose(
+                desiredResult,
+                testContext.upgradeActual(resultString));
+        }
+  
+        Cell cell = result.getCell(new int[] {0, 0});
+        assertEquals("|0.0|style=red", cell.getPropertyValue("FORMAT_STRING"));
+        assertEquals("54321.0", cell.getPropertyValue("BACK_COLOR"));
+        
+        cell = result.getCell(new int[] {1, 0});
+        assertEquals("|0.0|style=red", cell.getPropertyValue("FORMAT_STRING"));
+        assertEquals("12345.0", cell.getPropertyValue("BACK_COLOR"));
+        
+        cell = result.getCell(new int[] {2, 0});
+        assertEquals("Standard", cell.getPropertyValue("FORMAT_STRING"));
+        assertNull(cell.getPropertyValue("BACK_COLOR"));
+    }
 
     public void testMemberCellCalculation() {
         TestContext testContext = TestContext.instance().createSubstitutingCube(
@@ -123,7 +176,7 @@ public class CalculatedCellTest extends FoodMartTestCase {
             null,
             null,
             "  <CalculatedCell>\n"
-            + "    <SubCube>([Gender].[F], [Measures].[Unit Sales], [Marital Status].[Marital Status].Members)</SubCube>\n"
+            + "    <SubCube>([Gender].[F], [Customers].[All Customers], [Measures].[Unit Sales], [Marital Status].[Marital Status].Members)</SubCube>\n"
             + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
             + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
             + "  </CalculatedCell>"

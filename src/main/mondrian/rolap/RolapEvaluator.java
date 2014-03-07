@@ -100,6 +100,10 @@ public class RolapEvaluator implements Evaluator {
     private int commandCount;
     private Object[] commands;
 
+    // this list is used later for property values, similar to current members.
+    // TODO: review alternative approaches
+    Set<CellCalc> activeCellCalcs = new HashSet<CellCalc>();
+
     /**
      * Set of expressions actively being expanded. Prevents infinite cycle of
      * expansions.
@@ -659,7 +663,9 @@ public class RolapEvaluator implements Evaluator {
 
         // if there are calculated cells, apply the context if we are in a subcube
         List<CellCalc> currentCellCalcs = CalculatedCellUtil.applyCellCalculations(this);
-
+        if (currentCellCalcs != null) {
+            activeCellCalcs.addAll(currentCellCalcs);
+        }
         RolapCalculation maxSolveMember;
         switch (calculationCount) {
         case 0:
@@ -696,9 +702,9 @@ public class RolapEvaluator implements Evaluator {
         }
         // unregister calculated cells from root evaluator after processing.
         if (currentCellCalcs != null) {
-          for (CellCalc cellCalc : currentCellCalcs) {
-            root.activeCellCalcs.remove(cellCalc);
-          }
+            for (CellCalc cellCalc : currentCellCalcs) {
+                root.activeCellCalcs.remove(cellCalc);
+            }
         }
         if (o == Util.nullValue) {
             return null;
@@ -865,6 +871,18 @@ public class RolapEvaluator implements Evaluator {
                 }
             }
         }
+        // traverse cell calculations for properties as well
+        if (activeCellCalcs != null) {
+            for (CellCalc c : activeCellCalcs) {
+                if (c.solve_order > maxSolve) {
+                    final Object p = c.getPropertyValue(name);
+                    if (p != null) {
+                        o = p;
+                        maxSolve = c.solve_order;
+                    }
+                }
+            }
+        }
         return o;
     }
 
@@ -887,6 +905,15 @@ public class RolapEvaluator implements Evaluator {
             return "Standard";
         }
         return o.toString();
+    }
+
+    /**
+     * This is used to evaluate FORE_COLOR and BACK_COLOR
+     */
+    public final String evaluateProperty(Exp expr) {
+        final Calc formatCalc = root.getCompiled(expr, true, null);
+        final Object o = formatCalc.evaluate(this);
+        return o == null ? null : o.toString();
     }
 
     private Format getFormat() {

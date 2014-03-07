@@ -705,7 +705,7 @@ public class Property extends EnumeratedValues.BasicValue {
     /**
      * The various property names which define a format string.
      */
-    static final Set<String> FORMAT_PROPERTIES =
+    public static final Set<String> FORMAT_PROPERTIES =
         new HashSet<String>(
             Arrays.asList(
                 "format", "format_string", "FORMAT", FORMAT_STRING.name));

@@ -283,6 +283,11 @@ public abstract class DefaultXmlaServlet extends XmlaServlet {
 
                 // Make sure Element has mustUnderstand=1 attribute.
                 Attr attr = e.getAttributeNode(SOAP_MUST_UNDERSTAND_ATTR);
+                if (attr == null) {
+                    // adomd uses soap 1.1 namespace for it
+                    attr = e.getAttributeNodeNS(
+                        NS_SOAP_ENV_1_1, SOAP_MUST_UNDERSTAND_ATTR);
+                }
                 boolean mustUnderstandValue =
                     attr != null
                     && attr.getValue() != null

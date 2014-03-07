@@ -12,6 +12,7 @@
 package mondrian.xmla;
 
 import mondrian.olap.Util;
+import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 
 import org.apache.log4j.Logger;
 
@@ -214,9 +215,13 @@ abstract class Rowset implements XmlaConstants {
         throws XmlaException
     {
         boolean ourConnection = false;
+        SessionConnection sc = null;
         try {
             if (needConnection() && connection == null) {
-                connection = handler.getConnection(request, extraProperties);
+              sc = handler.getConnectionGrant(
+                       request,
+                       extraProperties);
+                connection = sc.getConnection();
                 ourConnection = true;
             }
             populateImpl(response, connection, rows);
@@ -228,11 +233,7 @@ abstract class Rowset implements XmlaConstants {
                 e);
         } finally {
             if (connection != null && ourConnection) {
-                try {
-                    connection.close();
-                } catch (SQLException e) {
-                    // ignore
-                }
+                handler.releaseConnection(sc);
             }
         }
     }

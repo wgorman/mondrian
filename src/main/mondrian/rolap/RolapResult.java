@@ -52,6 +52,8 @@ public class RolapResult extends ResultBase {
     private Modulos modulos = null;
     private final int maxEvalDepth =
             MondrianProperties.instance().MaxEvalDepth.get();
+    private final boolean calcForeColor;
+    private final boolean calcBackColor;
 
     private final Map<Integer, Boolean> positionsHighCardinality =
         new HashMap<Integer, Boolean>();
@@ -101,6 +103,9 @@ public class RolapResult extends ResultBase {
             (query.axes.length > 4)
                 ? new CellInfoMap(point)
                 : new CellInfoPool(query.axes.length);
+
+        calcForeColor = query.hasCellProperty("FORE_COLOR");
+        calcBackColor = query.hasCellProperty("BACK_COLOR");
 
         if (!execute) {
             return;
@@ -1096,6 +1101,22 @@ public class RolapResult extends ResultBase {
 
                     ci.formatString = cachedFormatString;
                     ci.valueFormatter = valueFormatter;
+
+                    // Calculation of optional fore_color and back_color, if defined in CELL PROPERTIES
+                    if (calcForeColor) {
+                        Object foreProp = revaluator.getProperty("FORE_COLOR", null);
+                        if (foreProp instanceof Exp) {
+                            foreProp = revaluator.evaluateProperty((Exp)foreProp);
+                        }
+                        ci.foreColor = foreProp;
+                    }
+                    if (calcBackColor) {
+                        Object backProp = revaluator.getProperty("BACK_COLOR", null);
+                        if (backProp instanceof Exp) {
+                            backProp = revaluator.evaluateProperty((Exp)backProp);
+                        }
+                        ci.backColor = backProp;
+                    }
                 } catch (ResultLimitExceededException e) {
                     // Do NOT ignore a ResultLimitExceededException!!!
                     throw e;
@@ -1116,6 +1137,9 @@ public class RolapResult extends ResultBase {
                 if (o != RolapUtil.valueNotReadyException) {
                     ci.value = o;
                 }
+
+                // TODO: figure out the correct state management so this call doesn't need to exist
+                revaluator.activeCellCalcs.clear();
             }
         } else {
             RolapAxis axis = (RolapAxis) axes[axisOrdinal];
@@ -1774,6 +1798,8 @@ public class RolapResult extends ResultBase {
     static class CellInfo {
         Object value;
         String formatString;
+        Object foreColor;
+        Object backColor;
         ValueFormatter valueFormatter;
         long key;
 

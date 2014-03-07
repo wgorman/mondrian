@@ -242,6 +242,7 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(IsEmptyFunDef.FunctionResolver);
         builder.define(IsEmptyFunDef.PostfixResolver);
         builder.define(IsNullFunDef.Resolver);
+        builder.define(IsLeafFunDef.Resolver);
         builder.define(IsFunDef.Resolver);
         builder.define(AsFunDef.RESOLVER);
 
@@ -1090,6 +1091,8 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(RangeFunDef.instance); // "<member> : <member>" operator
         builder.define(SetFunDef.Resolver); // "{ <member> [,...] }" operator
         builder.define(NativizeSetFunDef.Resolver);
+        // Existing <Set>
+        builder.define(ExistingFunDef.instance);
 
         //
         // STRING FUNCTIONS
