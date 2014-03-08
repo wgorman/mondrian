@@ -4897,6 +4897,8 @@ TODO: see above
             }
         }
 
+
+
         protected void populateHierarchy(
             OlapConnection connection,
             Catalog catalog,
@@ -4921,7 +4923,10 @@ TODO: see above
             row.set(CubeName.name, cube.getName());
             row.set(DimensionUniqueName.name, dimension.getUniqueName());
             row.set(HierarchyName.name, hierarchy.getName());
-            row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
+            row.set(
+                HierarchyUniqueName.name,
+                getUnambiguousHierarchyUniqueName(hierarchy));
+
             //row.set(HierarchyGuid.name, "");
 
             row.set(HierarchyCaption.name, hierarchy.getCaption());
@@ -5314,7 +5319,9 @@ TODO: see above
             row.set(
                 DimensionUniqueName.name,
                 hierarchy.getDimension().getUniqueName());
-            row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
+            row.set(
+                HierarchyUniqueName.name,
+                getUnambiguousHierarchyUniqueName(hierarchy));
             row.set(LevelName.name, level.getName());
             row.set(LevelUniqueName.name, level.getUniqueName());
             //row.set(LevelGuid.name, "");
@@ -6353,7 +6360,9 @@ TODO: see above
             row.set(SchemaName.name, cube.getSchema().getName());
             row.set(CubeName.name, cube.getName());
             row.set(DimensionUniqueName.name, dimension.getUniqueName());
-            row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
+            row.set(
+                HierarchyUniqueName.name,
+                getUnambiguousHierarchyUniqueName(hierarchy));
             row.set(LevelUniqueName.name, level.getUniqueName());
             row.set(LevelNumber.name, adjustedLevelDepth);
 
@@ -6852,7 +6861,9 @@ TODO: see above
             row.set(SchemaName.name, cube.getSchema().getName());
             row.set(CubeName.name, cube.getName());
             row.set(DimensionUniqueName.name, dimension.getUniqueName());
-            row.set(HierarchyUniqueName.name, hierarchy.getUniqueName());
+            row.set(
+                HierarchyUniqueName.name,
+                getUnambiguousHierarchyUniqueName(hierarchy));
             row.set(LevelUniqueName.name, level.getUniqueName());
             //TODO: what is the correct value here
             //row.set(MemberUniqueName.name, "");
@@ -6986,6 +6997,20 @@ TODO: see above
             Collections.singletonList(
                 new SharedDimensionHolderCube(schema)),
             iterable);
+    }
+
+    protected static String getUnambiguousHierarchyUniqueName(
+        Hierarchy hierarchy)
+    {
+        if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
+            return hierarchy.getDimension().getName().equals(
+                hierarchy.getName())
+                ? Util.makeFqName(
+                    hierarchy.getDimension().getUniqueName(),
+                    hierarchy.getName())
+                : hierarchy.getUniqueName();
+        }
+        return hierarchy.getUniqueName();
     }
 
     private static String getHierarchyName(Hierarchy hierarchy) {
