@@ -83,6 +83,8 @@ public class SqlQuery {
     private final ClauseList orderBy;
     private final List<ClauseList> groupingSets;
     private final ClauseList groupingFunctions;
+    private Integer offset;
+    private Integer limit;
 
     private final List<SqlStatement.Type> types =
         new ArrayList<SqlStatement.Type>();
@@ -187,6 +189,20 @@ public class SqlQuery {
      */
     public void setAllowHints(boolean t) {
         this.allowHints = t;
+    }
+
+    /**
+     * If supported by the dialect, set an offset for the query.
+     */
+    public void setOffset(Integer offset) {
+      this.offset = offset;
+    }
+    
+    /**
+     * If supported by the dialect, set a limit for the query.
+     */
+    public void setLimit(Integer limit) {
+      this.limit = limit;
     }
 
     /**
@@ -676,6 +692,12 @@ public class SqlQuery {
             buf, generateFormattedSql, prefix, " having ", " and ", "", "");
         orderBy.toBuffer(
             buf, generateFormattedSql, prefix, " order by ", ", ", "", "");
+        if (limit != null) {
+            buf.append(" limit ").append(limit);
+        }
+        if (offset != null) {
+            buf.append(" offset ").append(offset);
+        }
     }
 
     private void groupingFunctionsToBuffer(StringBuilder buf, String prefix) {

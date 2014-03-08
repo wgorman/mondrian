@@ -113,6 +113,10 @@ public class VerticaDialect extends JdbcDialectImpl {
         logTypeInfo(metaData, columnIndex, internalType);
         return internalType;
     }
+
+    public boolean supportsLimitAndOffset() {
+        return true;
+    }
 }
 
 // End VerticaDialect.java

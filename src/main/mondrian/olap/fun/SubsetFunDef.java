@@ -9,11 +9,16 @@
 
 package mondrian.olap.fun;
 
+import java.util.List;
+
 import mondrian.calc.*;
 import mondrian.calc.impl.AbstractListCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Evaluator;
 import mondrian.olap.FunDef;
+import mondrian.olap.Member;
+import mondrian.olap.NativeEvaluator;
+import mondrian.olap.SchemaReader;
 
 /**
  * Definition of the <code>Subset</code> MDX function.
@@ -35,8 +40,8 @@ class SubsetFunDef extends FunDefBase {
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
-        final ListCalc listCalc =
-            compiler.compileList(call.getArg(0));
+        final IterCalc listCalc =
+            compiler.compileIter(call.getArg(0));
         final IntegerCalc startCalc =
             compiler.compileInteger(call.getArg(1));
         final IntegerCalc countCalc =
@@ -47,31 +52,55 @@ class SubsetFunDef extends FunDefBase {
             call, new Calc[] {listCalc, startCalc, countCalc})
         {
             public TupleList evaluateList(Evaluator evaluator) {
+                ResolvedFunCall call = (ResolvedFunCall) exp;
+                // Use a native evaluator, if more efficient.
+                SchemaReader schemaReader = evaluator.getSchemaReader();
+                NativeEvaluator nativeEvaluator =
+                    schemaReader.getNativeSetEvaluator(
+                        call.getFunDef(), call.getArgs(), evaluator, this);
+                if (nativeEvaluator != null) {
+                    return (TupleList) nativeEvaluator.execute(
+                        ResultStyle.ITERABLE);
+                } else {
+                    return evaluateListNonNative(evaluator);
+                }
+            }
+
+            public TupleList evaluateListNonNative(Evaluator evaluator) {
                 final int savepoint = evaluator.savepoint();
                 try {
                     evaluator.setNonEmpty(false);
-                    final TupleList list = listCalc.evaluateList(evaluator);
+                    final TupleIterable iter = listCalc.evaluateIterable(evaluator);
                     final int start = startCalc.evaluateInteger(evaluator);
                     int end;
                     if (countCalc != null) {
                         final int count = countCalc.evaluateInteger(evaluator);
                         end = start + count;
                     } else {
-                        end = list.size();
+                        end = Integer.MAX_VALUE;
                     }
-                    if (end > list.size()) {
-                        end = list.size();
+
+                    if (start == 0 && end == Integer.MAX_VALUE) {
+                        return TupleCollections.materialize( iter, false );
                     }
+                    
                     if (start >= end || start < 0) {
-                        return TupleCollections.emptyList(list.getArity());
+                        return TupleCollections.emptyList(iter.getArity());
                     }
-                    if (start == 0 && end == list.size()) {
-                        return list;
+                    TupleIterator iterator = iter.tupleIterator();
+                    int curr = 0;
+                    TupleList list = TupleCollections.createList(iter.getArity());
+                    while (iterator.hasNext() && curr < start) {
+                        iterator.next();
+                        curr++;
                     }
-                    assert 0 <= start;
-                    assert start < end;
-                    assert end <= list.size();
-                    return list.subList(start, end);
+                    while (iterator.hasNext() && curr < end) {
+                        // Add to a Tuple List 
+                        List<Member> tuple = iterator.next();
+                        list.add(tuple);
+                        curr++;
+                    }
+                    return list;
                 } finally {
                     evaluator.restore(savepoint);
                 }

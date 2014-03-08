@@ -783,6 +783,16 @@ level.members and member descendants will be computed in SQL.</p>
         <Default>true</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>EnableNativeSubset</Name>
+        <Path>mondrian.native.subset.enable</Path>
+        <Category>SQL generation</Category>
+        <Description>
+<p>If enabled some Subset functions will be computed in SQL.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>AlertNativeEvaluationUnsupported</Name>
         <Path>mondrian.native.unsupported.alert</Path>
         <Category>SQL generation</Category>

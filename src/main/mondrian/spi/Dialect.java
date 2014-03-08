@@ -458,6 +458,14 @@ public interface Dialect {
     boolean supportsUnlimitedValueList();
 
     /**
+     * Returns whether this dialect supports the ability to limit and 
+     * offset a query.
+     * 
+     * @return whether limit and offset are supported.
+     */
+    boolean supportsLimitAndOffset();
+    
+    /**
      * Returns true if this Dialect can include expressions in the GROUP BY
      * clause only by adding an expression to the SELECT clause and using
      * its alias.
