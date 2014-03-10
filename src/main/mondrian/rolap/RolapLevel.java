@@ -658,8 +658,18 @@ public class RolapLevel extends LevelBase {
                 return true;
             }
         }
-        // Handle the general case in the traditional way.
-        return getHierarchy().isRagged();
+
+        if (getHierarchy().isRagged()) {
+            // check to see if the current level and all parents are Never, if so, we aren't too ragged
+            for (int i = getDepth(); i >= 0; i--) {
+                if (((RolapLevel)getHierarchy().getLevels()[i]).getHideMemberCondition() != HideMemberCondition.Never) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 
 
