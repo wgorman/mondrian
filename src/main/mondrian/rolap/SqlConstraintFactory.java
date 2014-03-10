@@ -13,7 +13,9 @@ package mondrian.rolap;
 
 import mondrian.olap.*;
 import mondrian.rolap.sql.*;
+import mondrian.spi.Dialect;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -144,6 +146,33 @@ public class SqlConstraintFactory {
         MemberChildrenConstraint mcc)
     {
         return new DescendantsConstraint(parentMembers, mcc);
+    }
+
+    /**
+     * Gets a constraint for a key lookup on a level.
+     * @param level Level being fetched
+     * @param keyValues Member Key
+     * @return Constraint
+     */
+    public TupleConstraint getMemberKeyConstraint(
+        RolapLevel level, List<Comparable> keyValues)
+    {
+        List<Dialect.Datatype> datatypeList = new ArrayList<Dialect.Datatype>();
+        List<MondrianDef.Expression> columnList =
+            new ArrayList<MondrianDef.Expression>();
+        for (RolapLevel x = level;; x = (RolapLevel) x.getParentLevel()) {
+            if (x.getKeyExp() != null) {
+                columnList.add(x.getKeyExp());
+                datatypeList.add(x.getDatatype());
+            }
+            if (x.isUnique()) {
+                break;
+            }
+        }
+        return new MemberKeyConstraint(
+            columnList,
+            datatypeList,
+            keyValues);
     }
 }
 
