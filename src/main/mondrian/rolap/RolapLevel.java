@@ -666,10 +666,11 @@ public class RolapLevel extends LevelBase {
                     return true;
                 }
             }
-            return false;
-        } else {
-            return true;
         }
+
+        // either we are in a regular hierarchy or we are in a ragged hierarchy
+        // but all levels current and above aren't too ragged 
+        return false;
     }
 
 
