@@ -97,8 +97,21 @@ public class SmartMemberReader implements MemberReader {
     public RolapMember getMemberByKey(
         RolapLevel level, List<Comparable> keyValues)
     {
-        // Caching by key is not supported.
-        return source.getMemberByKey(level, keyValues);
+        TupleConstraint constraint =
+            sqlConstraintFactory.getMemberKeyConstraint(level, keyValues);
+        List<RolapMember> list = getMembersInLevel(level, constraint);
+        switch (list.size()) {
+        case 0:
+            return null;
+        case 1:
+            return list.get(0);
+        default:
+            throw Util.newError(
+                "More than one member in level " + level + " with key "
+                + keyValues);
+        }
+        //  // Caching by key is not supported.
+        //  return source.getMemberByKey(level, keyValues);
     }
 
     // implement MemberReader
