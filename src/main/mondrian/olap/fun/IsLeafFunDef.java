@@ -16,6 +16,8 @@ import mondrian.calc.impl.AbstractBooleanCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Evaluator;
 import mondrian.olap.FunDef;
+import mondrian.olap.Level;
+import mondrian.olap.Member;
 import mondrian.resource.MondrianResource;
 import mondrian.rolap.RolapLevel;
 import mondrian.rolap.RolapMember;
@@ -65,7 +67,13 @@ public class IsLeafFunDef extends FunDefBase {
                     return rolapMember.isParentChildLeaf();
                 }
 
+                //Ragged: check if is a ragged hierarchy
                 if (rolapLevel.getHierarchy().isRagged()) {
+
+                    if (evaluator.getSchemaReader().getRole().getAccessDetails(
+                            rolapMember.getHierarchy()).getBottomLevelDepth()  == rolapLevel.getDepth())
+                        return true;
+
                     return rolapLevel.getDimension()
                             .getSchema().getSchemaReader()
                             .getMemberChildren(rolapMember).size() == 0;
@@ -78,6 +86,10 @@ public class IsLeafFunDef extends FunDefBase {
                  {
                      return true;
                  }
+
+                if (evaluator.getSchemaReader().getRole().getAccessDetails(
+                        rolapMember.getHierarchy()).getBottomLevelDepth()  == rolapLevel.getDepth())
+                    return true;
 
                 return false;
             }

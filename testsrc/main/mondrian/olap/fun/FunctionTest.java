@@ -764,6 +764,54 @@ public class FunctionTest extends FoodMartTestCase {
         // todo: test for this
     }
 
+    private static TestContext roleContextSalesCubeBottomLevel(
+        String bottomLevel)
+    {
+        return TestContext.instance().create(
+            null, null, null, null, null,
+            "<Role name=\"Orlando manager\">\n"
+            + "  <SchemaGrant access=\"none\">\n"
+            + "    <CubeGrant cube=\"Sales\" access=\"all\">\n"
+            + "      <HierarchyGrant hierarchy=\"[Store]\" "
+            + " access=\"custom\" bottomLevel=\"" + bottomLevel + "\">\n"
+            + "        <MemberGrant member=\"[Store].[USA].[OR]\" access=\"all\"/>\n"
+            + "      </HierarchyGrant>"
+            + "    </CubeGrant>\n"
+            + "  </SchemaGrant>\n"
+            + "</Role>")
+            .withRole("Orlando manager");
+    }
+
+    public void testIsLeafWithRole() {
+        roleContextSalesCubeBottomLevel(
+            "[Store].[Store City]").assertQueryReturns(
+                "SELECT Filter([Store].members, IsLeaf("
+                + "[Store].currentmember)) on Columns, "
+                + "[Measures].[Unit Sales] on Rows "
+                + "FROM [Sales]", "Axis #0:\n"
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Store].[USA].[OR].[Portland]}\n"
+                + "{[Store].[USA].[OR].[Salem]}\n"
+                + "Axis #2:\n"
+                + "{[Measures].[Unit Sales]}\n"
+                + "Row #0: 26,079\n"
+                + "Row #0: 41,580\n");
+
+        roleContextSalesCubeBottomLevel(
+            "[Store].[Store State]").assertQueryReturns(
+                "SELECT Filter([Store].members, IsLeaf("
+                + "[Store].currentmember)) on Columns, "
+                + "[Measures].[Unit Sales] on Rows "
+                + "FROM [Sales]", "Axis #0:\n"
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Store].[USA].[OR]}\n"
+                + "Axis #2:\n"
+                + "{[Measures].[Unit Sales]}\n"
+                + "Row #0: 67,659\n");
+    }
+
     public void testIsLeaf() {
         assertBooleanExprReturns(
             "IsLeaf([Store].[USA].[CA].[Los Angeles])",
@@ -778,21 +826,84 @@ public class FunctionTest extends FoodMartTestCase {
             "IsLeaf([Gender].[All Gender])",
             false);
 
-        // test parent-child hierarchies.
-        // only the Employees dimension has the closure table
-        // TODO: test for Sheri Nowmer: supervisor of multiple people
-        // "IsLeaf([Employees].[All Employees].[Sheri Nowmer])",
+        // TODO: check Measures, CalculatedMembers
+    }
 
-        // TODO: test for Jennifer Cooper in HR . Not a supervisor
-        // "IsLeaf([Employees].[All Employees].[Jennifer Cooper])",
+    public void testIsLeafOnMeasuresAndCalculedMembers()
+    {
+        assertBooleanExprReturns("IsLeaf([Measures].[Unit Sales])", true);
 
-        // TODO: test for Vatican in [Sales Ragged] cube
-        // The Vatican is the only ragged example in the Foodmart DB
-        // "IsLeaf([Store].[Vatican])",
-        // "IsLeaf([Geography].[Vatican])",
+        assertBooleanExprReturns("IsLeaf([Measures].[Promotion Sales])", true);
 
-        // TODO: check Measures, Security, CalculatedMembers
-   }
+        assertBooleanExprReturns("IsLeaf([Measures].[Profit])", true);
+
+        assertBooleanExprReturns("IsLeaf([Measures].[Profit Growth])", true);
+    }
+
+    public void testIsLeafRagged()
+    {
+        final TestContext testContextRagged =
+            getTestContext().withCube("[Sales Ragged]");
+        // Should Return null
+        Member member = testContextRagged.executeSingletonAxis(
+            "Filter([Store].[Vatican], IsLeaf([Store].[Vatican]))");
+        Assert.assertNull(member);
+        // Should Return not null
+        member = testContextRagged.executeSingletonAxis(
+            "Filter([Geography].[Vatican], IsLeaf([Geography].[Vatican]))");
+        Assert.assertNotNull(member);
+    }
+
+    private static TestContext roleContextSalesRaggedCubeBottomLevel() {
+        return TestContext.instance().create(
+            null, null, null, null, null,
+            "<Role name=\"Orlando manager\">\n"
+            + "  <SchemaGrant access=\"none\">\n"
+            + "    <CubeGrant cube=\"Sales Ragged\" access=\"all\">\n"
+            + "      <HierarchyGrant hierarchy=\"[Geography]\" "
+            + " access=\"custom\" bottomLevel=\"[Geography].[Country]\">\n"
+            + "      </HierarchyGrant>"
+            + "      <HierarchyGrant hierarchy=\"[Store]\" "
+            + " access=\"custom\" bottomLevel=\"[Store].[Store Country]\">\n"
+            + "      </HierarchyGrant>"
+            + "    </CubeGrant>\n"
+            + "  </SchemaGrant>\n"
+            + "</Role>")
+            .withRole("Orlando manager");
+    }
+
+    public void testIsLeafRaggedWithRole()
+    {
+        final TestContext testContextRagged =
+            roleContextSalesRaggedCubeBottomLevel().withCube("[Sales Ragged]");
+
+        // Should Return not null
+        Member member = testContextRagged.executeSingletonAxis(
+            "Filter([Store].[Vatican], IsLeaf([Store].[Vatican]))");
+        Assert.assertNotNull(member);
+        // Should Return not null
+        member = testContextRagged.executeSingletonAxis(
+            "Filter([Geography].[Vatican], IsLeaf([Geography].[Vatican]))");
+        Assert.assertNotNull(member);
+    }
+
+    public void testIsLeafParentChild()
+    {
+        final TestContext testContextHR =
+            getTestContext().withCube("[HR]");
+        // Should Return null
+        Member member = testContextHR.executeSingletonAxis(
+            "Filter([Employees].[Sheri Nowmer], "
+            + "IsLeaf([Employees].[Sheri Nowmer]))");
+        Assert.assertNull(member);
+        // Should Return not null
+        member = testContextHR.executeSingletonAxis(
+            "Filter([Employees].[Sheri Nowmer].[Roberta Damstra]."
+            + "[Jennifer Cooper], IsLeaf([Employees].[Sheri Nowmer]"
+            + ".[Roberta Damstra].[Jennifer Cooper]))");
+        Assert.assertNotNull(member);
+    }
+
 
     public void testQueryWithoutValidMeasure() {
         assertQueryReturns(
