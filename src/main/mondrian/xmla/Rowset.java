@@ -176,6 +176,9 @@ abstract class Rowset implements XmlaConstants {
                 }
                 return;
             }
+        case Roles:
+
+            break;
             // fall through
         default:
             LOGGER.warn(

@@ -685,8 +685,25 @@ public abstract class MondrianOlap4jConnection implements OlapConnection {
             this.roleNames = Collections.emptyList();
             connection1.setRole(role);
         } else {
-            setRoleNames(Collections.singletonList(roleName));
+            setRoleNames(getRolesFromString(roleName));//Collections.singletonList(roleName)
         }
+    }
+
+    private List<String> getRolesFromString(String roleName)
+    {
+        List<String> listRoles = new LinkedList<String>();
+
+        String roles[] = roleName.split(",");
+
+        if (roles != null) {
+            for (String role : roles)
+            {
+                listRoles.add(role);
+            }
+        } else {
+            listRoles.add(roleName);
+        }
+        return listRoles;
     }
 
     /**
