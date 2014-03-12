@@ -1089,6 +1089,34 @@ public class Util extends XOMUtil {
             reader, hierarchy, memberName, MatchType.EXACT);
     }
 
+    public static Member lookupHierarchyRootMemberExactKey(
+        SchemaReader reader,
+        Hierarchy hierarchy,
+        Id.KeySegment memberKey )
+    {
+        
+        List<Member> rootMembers = reader.getHierarchyRootMembers(hierarchy);
+        if (rootMembers.size() == 0) {
+            return null;
+        }
+        if (rootMembers.get(0).isAll()) {
+            return reader.lookupMemberChildByName(
+                rootMembers.get(0),
+                memberKey,
+                MatchType.EXACT);
+        }
+        if (!(hierarchy instanceof RolapHierarchy)) {
+            return null;
+        }
+        RolapLevel rootLevel = (RolapLevel) hierarchy.getLevels()[0];
+        return RolapUtil.findBestMemberMatch(
+            rootMembers,
+            null,
+            rootLevel,
+            memberKey,
+            MatchType.EXACT);
+    }
+
     /**
      * Finds a root member of a hierarchy with a given name.
      *

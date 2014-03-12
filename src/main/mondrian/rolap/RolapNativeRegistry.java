@@ -35,6 +35,7 @@ public class RolapNativeRegistry extends RolapNative {
         register("CrossJoin".toUpperCase(), new RolapNativeCrossJoin());
         register("TopCount".toUpperCase(), new RolapNativeTopCount());
         register("Filter".toUpperCase(), new RolapNativeFilter());
+        register("Subset".toUpperCase(), new RolapNativeSubset());
     }
 
     /**

@@ -121,6 +121,9 @@ public class PostgreSqlDialect extends JdbcDialectImpl {
         return super.getType(metaData, columnIndex);
     }
 
+    public boolean supportsLimitAndOffset() {
+        return true;
+    }
 }
 
 // End PostgreSqlDialect.java

@@ -314,6 +314,10 @@ public class MySqlDialect extends JdbcDialectImpl {
         }
         return sb.toString();
     }
+
+    public boolean supportsLimitAndOffset() {
+        return true;
+    }
 }
 
 // End MySqlDialect.java

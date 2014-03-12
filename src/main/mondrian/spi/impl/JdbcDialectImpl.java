@@ -1167,6 +1167,10 @@ public class JdbcDialectImpl implements Dialect {
             Util.close(resultSet, statement, null);
         }
     }
+
+    public boolean supportsLimitAndOffset() {
+      return false;
+    }
 }
 
 // End JdbcDialectImpl.java

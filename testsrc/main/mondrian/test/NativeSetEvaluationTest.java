@@ -15,6 +15,7 @@ package mondrian.test;
 
 import mondrian.olap.MondrianProperties;
 import mondrian.rolap.BatchTestCase;
+import mondrian.spi.Dialect;
 import mondrian.spi.Dialect.DatabaseProduct;
 
 /**
@@ -1236,6 +1237,81 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             "Native native filter mismatch", ctx);
        
         propSaver.reset();
+    }
+
+    /**
+     * Test case for <a href="http://jira.pentaho.com/browse/MONDRIAN-1430">
+     * Mondrian-1430:</a> Native top count support for + and
+     * tuple (Parentheses) expressions in Calculated member slicer
+     */
+    public void testNativeSubset() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS 'Subset([Product].[Food].Children, 2, 10 )'\n"
+            + "\n"
+            + "  SELECT NON EMPTY [Measures].[Unit Sales] on 0,\n"
+            + "    TC ON 1 \n"
+            + "  FROM [Sales] WHERE {([Time].[1997])}\n";
+
+        String mysqlQuery = 
+            "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` = 'Food')\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 10 offset 2";
+
+        if (MondrianProperties.instance().EnableNativeSubset.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Breakfast Foods]}\n"
+            + "{[Product].[Food].[Canned Foods]}\n"
+            + "{[Product].[Food].[Canned Products]}\n"
+            + "{[Product].[Food].[Dairy]}\n"
+            + "{[Product].[Food].[Deli]}\n"
+            + "{[Product].[Food].[Eggs]}\n"
+            + "{[Product].[Food].[Frozen Foods]}\n"
+            + "{[Product].[Food].[Meat]}\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "Row #0: 3,317\n"
+            + "Row #1: 19,026\n"
+            + "Row #2: 1,812\n"
+            + "Row #3: 12,885\n"
+            + "Row #4: 12,037\n"
+            + "Row #5: 4,132\n"
+            + "Row #6: 26,655\n"
+            + "Row #7: 1,714\n"
+            + "Row #8: 37,792\n"
+            + "Row #9: 1,764\n");
     }
 }
 // End NativeSetEvaluationTest.java

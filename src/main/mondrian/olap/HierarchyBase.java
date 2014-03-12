@@ -174,8 +174,14 @@ public abstract class HierarchyBase
             if (MondrianProperties.instance().SsasKeyLookup.get()) {
                 // SsasKeyLookup mode allows using keys from lower levels,
                 // e.g. [Products].&[Food].&[Produce]
-                oe = levels[hasAll ? 1 : 0]
-                    .lookupChild(schemaReader, keySegment, matchType);
+                oe = Util.lookupHierarchyRootMemberExactKey(
+                    schemaReader,
+                    this,
+                    keySegment);
+                if (oe == null) {
+                    oe = levels[hasAll ? 1 : 0]
+                        .lookupChild(schemaReader, keySegment, matchType);
+                }
             } else {
                 // Key segment searches bottom level by default. For example,
                 // [Products].&[1] is shorthand for

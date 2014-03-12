@@ -1204,8 +1204,123 @@ public class FilterTest extends BatchTestCase {
             });
     }
 
+    /**
+     * Test for Native Count Filter Scenario
+     * 
+     * TODO: Test Virtual Cubes
+     * TODO: Add support for more than just related All members
+     */
+    public void testNativeCountFilter() {  
+      TestContext testContext = TestContext.instance()
+      .createSubstitutingCube(
+          "Sales",
+          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+          + "      <Table name=\"customer\"/>\n"
+          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "  </Dimension>"
+          + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
+          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
+          + "      <Table name=\"store\"/>\n"
+          + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "  </Dimension>");
 
+      // expected native filter with a join against the fact table
+      String sql = 
+          "select `customer`.`customer_id` as `c0` "
+          + "from `customer` as `customer`, `sales_fact_1997` as `sales_fact_1997`, "
+          + "`time_by_day` as `time_by_day`, `promotion` as `promotion` "
+          + "where `sales_fact_1997`.`customer_id` = `customer`.`customer_id` "
+          + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
+          + "and `time_by_day`.`the_year` = 1997 "
+          + "and `sales_fact_1997`.`promotion_id` = `promotion`.`promotion_id` "
+          + "and `promotion`.`promotion_name` = 'Big Promo' "
+          + "and `customer`.`gender` = 'F' "
+          + "group by `customer`.`customer_id` "
+          + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+      String mdx = 
+          "WITH\n"
+          + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
+          + "     SET [Customer IDs Subset] AS 'Subset([Customer IDs Fullset], 0, 25)'\n"
+          + "SELECT\n"
+          + "     {[Store IDs].[All Store IDs]} ON COLUMNS,\n"
+          + "     {[Customer IDs Subset], Ascendants([Customer IDs].[All Customer IDs])} ON ROWS\n"
+          + "FROM\n"
+          + "      [Sales]\n"
+          + "WHERE\n"
+          + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales] )\n"
+          + "CELL PROPERTIES\n"
+          + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
+      
+      assertQuerySql(
+          testContext,
+          mdx,
+          new SqlPattern[] {
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+          });
 
+      testContext.assertQueryReturns(
+          mdx,          
+          "Axis #0:\n"
+          + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales]}\n"
+          + "Axis #1:\n"
+          + "{[Store IDs].[All Store IDs]}\n"
+          + "Axis #2:\n"
+          + "{[Customer IDs].[158]}\n"
+          + "{[Customer IDs].[229]}\n"
+          + "{[Customer IDs].[485]}\n"
+          + "{[Customer IDs].[617]}\n"
+          + "{[Customer IDs].[1024]}\n"
+          + "{[Customer IDs].[1057]}\n"
+          + "{[Customer IDs].[1607]}\n"
+          + "{[Customer IDs].[1652]}\n"
+          + "{[Customer IDs].[1813]}\n"
+          + "{[Customer IDs].[1965]}\n"
+          + "{[Customer IDs].[2035]}\n"
+          + "{[Customer IDs].[2244]}\n"
+          + "{[Customer IDs].[2390]}\n"
+          + "{[Customer IDs].[2459]}\n"
+          + "{[Customer IDs].[2664]}\n"
+          + "{[Customer IDs].[2918]}\n"
+          + "{[Customer IDs].[2942]}\n"
+          + "{[Customer IDs].[3015]}\n"
+          + "{[Customer IDs].[3160]}\n"
+          + "{[Customer IDs].[3245]}\n"
+          + "{[Customer IDs].[3310]}\n"
+          + "{[Customer IDs].[4269]}\n"
+          + "{[Customer IDs].[4287]}\n"
+          + "{[Customer IDs].[4322]}\n"
+          + "{[Customer IDs].[4340]}\n"
+          + "{[Customer IDs].[All Customer IDs]}\n"
+          + "Row #0: 18\n"
+          + "Row #1: 12\n"
+          + "Row #2: 20\n"
+          + "Row #3: 16\n"
+          + "Row #4: 9\n"
+          + "Row #5: 8\n"
+          + "Row #6: 12\n"
+          + "Row #7: 8\n"
+          + "Row #8: 9\n"
+          + "Row #9: 20\n"
+          + "Row #10: 17\n"
+          + "Row #11: 25\n"
+          + "Row #12: 23\n"
+          + "Row #13: 10\n"
+          + "Row #14: 10\n"
+          + "Row #15: 24\n"
+          + "Row #16: 41\n"
+          + "Row #17: 12\n"
+          + "Row #18: 31\n"
+          + "Row #19: 16\n"
+          + "Row #20: 14\n"
+          + "Row #21: 23\n"
+          + "Row #22: 9\n"
+          + "Row #23: 21\n"
+          + "Row #24: 21\n"
+          + "Row #25: 936\n");
+    }
 }
 
 // End FilterTest.java
