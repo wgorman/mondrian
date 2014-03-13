@@ -153,6 +153,10 @@ public class SqlStatement {
                 sqllog.append(sql);
                 sqllog.append(']');
                 RolapUtil.SQL_LOGGER.debug(sqllog.toString());
+                
+                if (RolapUtil.SQL_LOGGER.isTraceEnabled()) {
+                  RolapUtil.SQL_LOGGER.trace(id +  " debug stacktrace", new Exception());
+                }
             }
 
             // Execute hook.
