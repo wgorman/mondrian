@@ -13,6 +13,8 @@ package mondrian.xmla;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.Parameter;
 import mondrian.olap.Util;
+import mondrian.olap4j.MondrianOlap4jConnection;
+import mondrian.rolap.RolapConnection;
 import mondrian.util.CompositeList;
 import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 import mondrian.xmla.impl.DefaultSaxWriter;
@@ -177,11 +179,38 @@ public class XmlaHandler {
                     "unexpected restriction type: " + restriction.getClass());
             }
         }
-        return getConnection(
-                  databaseName,
-                  catalogName,
-                  request.getRoleName(),
-                  props);
+
+        OlapConnection connection = getConnection(
+            databaseName,
+            catalogName,
+            request.getRoleName(),
+            props);
+
+
+        final String customData = request.getProperties().get(
+            PropertyDefinition.CustomData.name());
+
+        if (customData != null) {
+            try {
+                ((MondrianOlap4jConnection)connection).setCustomData(
+                    customData);
+            } catch (OlapException e) {
+                //ignore
+            }
+        }
+
+        String roleName = request.getProperties().get(
+            PropertyDefinition.Roles.name());
+
+        if (roleName != null) {
+            try {
+                connection.setRoleName(roleName);
+            } catch (OlapException e) {
+                // ignore
+            }
+        }
+
+        return connection;
     }
 
     private enum SetType {
@@ -1385,8 +1414,8 @@ public class XmlaHandler {
         SessionConnection sc = null;
         try {
             sc = getConnectionGrant(
-                    request,
-                    Collections.<String, String>emptyMap());
+                request,
+                Collections.<String, String>emptyMap());
             connection = sc.getConnection();
             statement = connection.createStatement();
             resultSet =
@@ -1698,19 +1727,20 @@ public class XmlaHandler {
         try {
             long startConn = System.currentTimeMillis();
             sc = getConnectionGrant(
-                    request,
+                request,
                     Collections.<String, String>emptyMap());
             connection = sc.getConnection();
-            LOGGER.debug("getConnection full " + (System.currentTimeMillis() - startConn) + "ms");
+            LOGGER.debug(
+                "getConnection full "
+                + (System.currentTimeMillis() - startConn) + "ms");
             getExtra(connection).setPreferList(connection);
             try {
-                if ( request.getParameters() != null ) {
+                if (request.getParameters() != null) {
                     statement = getExtra(connection).prepareOlapStatement(
                         connection,
                         mdx,
                         request.getParameters());
-                }
-                else {
+                } else {
                     statement = connection.prepareOlapStatement(mdx);
                 }
             } catch (XmlaException ex) {
@@ -1827,8 +1857,7 @@ public class XmlaHandler {
                 rename(StandardCellProperty.FORMATTED_VALUE, "FmtValue"),
                 rename(StandardCellProperty.FORMAT_STRING, "FormatString"),
                 rename(StandardCellProperty.FORE_COLOR, "ForeColor"),
-                rename(StandardCellProperty.BACK_COLOR, "BackColor")
-                );
+                rename(StandardCellProperty.BACK_COLOR, "BackColor"));
 
         protected static final List<StandardCellProperty> cellPropLongs =
             Arrays.asList(
@@ -3143,8 +3172,7 @@ public class XmlaHandler {
         PreparedOlapStatement prepareOlapStatement(
             OlapConnection connection,
             String mdx,
-            List<Parameter> parameters) throws OlapException; 
-
+            List<Parameter> parameters) throws OlapException;
         class FunctionDefinition {
             public final String functionName;
             public final String description;
@@ -3323,7 +3351,8 @@ public class XmlaHandler {
         public PreparedOlapStatement prepareOlapStatement(
             OlapConnection connection,
             String mdx,
-            List<Parameter> parameters) throws OlapException {
+            List<Parameter> parameters) throws OlapException
+        {
             return connection.prepareOlapStatement(mdx);
         }
     }
@@ -3400,7 +3429,10 @@ public class XmlaHandler {
      * @param properties
      * @return A wrapped connection
      */
-    public SessionConnection getConnectionGrant(XmlaRequest request, Map<String, String> properties) {
+    public SessionConnection getConnectionGrant(
+        XmlaRequest request,
+        Map<String, String> properties)
+    {
         return connectionMgr.getConnectionGrant(request, properties);
     }
 

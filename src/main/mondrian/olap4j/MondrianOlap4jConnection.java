@@ -4,9 +4,8 @@
 * http://www.eclipse.org/legal/epl-v10.html.
 * You must accept the terms of that agreement to use this software.
 *
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+* Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
-
 package mondrian.olap4j;
 
 import mondrian.mdx.*;
@@ -15,6 +14,7 @@ import mondrian.olap.Member;
 import mondrian.olap.fun.MondrianEvaluationException;
 import mondrian.rolap.*;
 import mondrian.util.Bug;
+import mondrian.xmla.PropertyDefinition;
 import mondrian.xmla.XmlaHandler;
 
 import org.olap4j.Axis;
@@ -676,6 +676,13 @@ public abstract class MondrianOlap4jConnection implements OlapConnection {
         return mondrianConnection.getLocale();
     }
 
+    public void setCustomData(String value) throws OlapException
+    {
+        final RolapConnection rConn = getMondrianConnection();
+
+        rConn.getConnectInfo().put(PropertyDefinition.CustomData.name(), value);
+    }
+
     public void setRoleName(String roleName) throws OlapException {
         if (roleName == null) {
             final RolapConnection connection1 = getMondrianConnection();
@@ -685,8 +692,25 @@ public abstract class MondrianOlap4jConnection implements OlapConnection {
             this.roleNames = Collections.emptyList();
             connection1.setRole(role);
         } else {
-            setRoleNames(Collections.singletonList(roleName));
+            //Collections.singletonList(roleName)
+            setRoleNames(getRolesFromString(roleName));
         }
+    }
+
+    private List<String> getRolesFromString(String roleName)
+    {
+        List<String> listRoles = new ArrayList<String>();
+
+        String roles[] = roleName.split(",");
+
+        if (roles != null) {
+            for (String role : roles) {
+                listRoles.add(role);
+            }
+        } else {
+            listRoles.add(roleName);
+        }
+        return listRoles;
     }
 
     /**

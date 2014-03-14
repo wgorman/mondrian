@@ -5,12 +5,11 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2001-2005 Julian Hyde
-// Copyright (C) 2005-2012 Pentaho and others
+// Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 //
 // jhyde, 10 August, 2001
 */
-
 package mondrian.rolap;
 
 import mondrian.calc.Calc;
@@ -21,6 +20,7 @@ import mondrian.rolap.CalculatedCellUtil.CellCalc;
 import mondrian.server.Statement;
 import mondrian.spi.Dialect;
 import mondrian.util.Format;
+import mondrian.xmla.PropertyDefinition;
 
 import org.apache.log4j.Logger;
 
@@ -661,8 +661,10 @@ public class RolapEvaluator implements Evaluator {
         // (b) has the highest solve order. If there are no calculated members,
         // go ahead and compute the cell.
 
-        // if there are calculated cells, apply the context if we are in a subcube
-        List<CellCalc> currentCellCalcs = CalculatedCellUtil.applyCellCalculations(this);
+        // if there are calculated cells,
+        // apply the context if we are in a subcube
+        List<CellCalc> currentCellCalcs =
+                CalculatedCellUtil.applyCellCalculations(this);
         if (currentCellCalcs != null) {
             activeCellCalcs.addAll(currentCellCalcs);
         }
@@ -927,6 +929,12 @@ public class RolapEvaluator implements Evaluator {
 
     public final Locale getConnectionLocale() {
         return root.connection.getLocale();
+    }
+
+    public final String getConnectionCustomData()
+    {
+        return root.connection.getConnectInfo().get(
+            PropertyDefinition.CustomData.name(), "");
     }
 
     public final String format(Object o) {
