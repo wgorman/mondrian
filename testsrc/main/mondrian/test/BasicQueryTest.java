@@ -8336,6 +8336,46 @@ public class BasicQueryTest extends FoodMartTestCase {
             + "Row #25: 655\n"
             + "Row #25: 936\n");
     }
+    
+    public void testLargeDimQuery2() {  
+      TestContext testContext = TestContext.instance()
+      .createSubstitutingCube(
+          "Sales",
+          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+          + "      <Table name=\"customer\"/>\n"
+          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "  </Dimension>"
+          + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
+          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
+          + "      <Table name=\"store\"/>\n"
+          + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "    <Hierarchy name=\"Country ID\" hasAll=\"true\" allMemberName=\"All Country IDs\" primaryKey=\"store_id\">\n"
+          + "      <Table name=\"store\"/>\n"
+          + "      <Level name=\"Country ID\" column=\"store_country\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "  </Dimension>");
+      testContext.assertQueryReturns(
+          "WITH\n"
+          + "     MEMBER [Measures].[F Visit] as '([Gender].[F], [Store IDs.Country ID].[All Country IDs].[USA], [Store IDs].[Store IDs].CurrentMember, [Measures].[Customer Count])'\n"
+          + "     MEMBER [Measures].[Store Cost per F Visit] as '([Measures].[Store Cost], [Gender].[F])/[Measures].[F Visit]'\n"
+          + "     MEMBER [Measures].[Sales] as '[Measures].[Store Sales]'\n"
+          + "     MEMBER [Measures].[Count of Customers] as '[Measures].[Customer Count]'\n"
+          + "     MEMBER [Measures].[% of Customers] as 'IIf(([Customer IDs].CurrentMember.Parent IS NULL), 1, IIf(((NOT IsEmpty([Measures].[Count of Customers])) AND (([Customer IDs].CurrentMember.Parent, [Measures].[Count of Customers]) = 0)), 1, ([Measures].[Count of Customers] / ([Customer IDs].CurrentMember.Parent, [Measures].[Count of Customers]))))', FORMAT_STRING = \"Percent\", SOLVE_ORDER = 500\n"
+          + "     SET [All Measures Fullset] as '{[Measures].[Sales Count], [Measures].[F Visit], [Measures].[Store Cost per F Visit], [Measures].[Sales], [Measures].[Unit Sales], [Measures].[Store Cost], [Measures].[Count of Customers], [Measures].[% of Customers]}'\n"
+          + "     MEMBER [Measures].[Empty measure] as 'NULL'\n"
+          + "     MEMBER [Measures].[(Axis Members Count)] as 'Count(Filter({AddCalculatedMembers({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)})},Count(Crossjoin({[Customer IDs].CurrentMember}, [All Measures Fullset]), EXCLUDEEMPTY)))', SOLVE_ORDER = 1000\n"
+          + "SELECT {[Measures].[(Axis Members Count)]} ON COLUMNS\n"
+          + "FROM [Sales]"
+          + "WHERE ([Promotions].[Big Promo], [Time].[1997], [Gender].[F])",          
+          "Axis #0:\n"
+          + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[F]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[(Axis Members Count)]}\n"
+          + "Row #0: 63\n");
+  }
 }
 
 // End BasicQueryTest.java

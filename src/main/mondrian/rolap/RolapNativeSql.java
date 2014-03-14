@@ -665,16 +665,26 @@ public class RolapNativeSql {
                     rs.unknownFound = true; 
                 }
             } else if (exp instanceof MemberExpr) {
-                if (( (MemberExpr) exp ).getMember().isMeasure()) {
+                // Note that we cannot assume that calculated measures are directly tied to a member.  There could be logic in the 
+                // calculated member that sometimes evaluates to empty and other times where it will not.
+                if (( (MemberExpr) exp ).getMember().isMeasure() && !((MemberExpr) exp).getMember().isCalculated()) {
                     rs.measureFound = true;
                 } else {
                     Member m = ((MemberExpr)exp).getMember();
-                    if (m.isAll()) {
-                        rs.allHierarchies.add(m.getHierarchy());
-                    } else {
-                        rs.nonAllHierarchies.add(m.getHierarchy());
+                    if (!m.isMeasure()) {
+                        if (m.isAll()) {
+                            rs.allHierarchies.add(m.getHierarchy());
+                        } else {
+                            rs.nonAllHierarchies.add(m.getHierarchy());
+                        }
                     }
                 }
+            } else if (exp instanceof NamedSetExpr) {
+                NamedSet set = ((NamedSetExpr)exp).getNamedSet();
+                // verify all the elements in the set are measures, which imply that we are joining to the fact table.  At this time we don't support
+                // other scenarios
+                Exp nsExp = set.getExp();
+                traverseExp(nsExp, rs);
             } else {
                 LOGGER.debug("BooleanCountSqlCompiler: Unknown Expression Type: " + exp);
                 rs.unknownFound = true;
@@ -687,6 +697,11 @@ public class RolapNativeSql {
             // return a list of related hierarchies, if their all member is present somewhere in the stack
             // if there is a hierarchy present without an all member, return null for now.
   
+            if (!(rolapLevel instanceof RolapCubeLevel) || ((RolapCubeLevel)rolapLevel).getCube().isVirtual()) {
+              // we currently don't support virtual cubes in this use case.
+              // Additional logic would be needed to determine that only a single cube measures are in play
+              return null;
+            }
             RecursiveState rs = new RecursiveState();
             traverseExp(exp, rs);
   
