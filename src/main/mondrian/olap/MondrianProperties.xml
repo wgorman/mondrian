@@ -793,6 +793,16 @@ level.members and member descendants will be computed in SQL.</p>
         <Default>true</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>EnableNativeNonEmptyFunction</Name>
+        <Path>mondrian.native.nonemptyfunction.enable</Path>
+        <Category>SQL generation</Category>
+        <Description>
+<p>If enabled, some NonEmpty() calls will be computed in SQL.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>AlertNativeEvaluationUnsupported</Name>
         <Path>mondrian.native.unsupported.alert</Path>
         <Category>SQL generation</Category>

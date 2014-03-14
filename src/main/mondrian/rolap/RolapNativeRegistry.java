@@ -36,6 +36,7 @@ public class RolapNativeRegistry extends RolapNative {
         register("TopCount".toUpperCase(), new RolapNativeTopCount());
         register("Filter".toUpperCase(), new RolapNativeFilter());
         register("Subset".toUpperCase(), new RolapNativeSubset());
+        register("NonEmpty".toUpperCase(), new RolapNativeNonEmptyFunction());
     }
 
     /**

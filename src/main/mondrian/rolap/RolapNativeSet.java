@@ -129,6 +129,13 @@ public abstract class RolapNativeSet extends RolapNative {
             return null;
         }
 
+        public void constrainExtraLevels(
+            RolapCube baseCube,
+            BitKey levelBitKey)
+        {
+            // noop
+        }
+
         /**
          * returns a key to cache the result
          */

@@ -1093,6 +1093,7 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(NativizeSetFunDef.Resolver);
         // Existing <Set>
         builder.define(ExistingFunDef.instance);
+        builder.define(NonEmptyFunDef.NonEmptyResolver);
 
         //
         // STRING FUNCTIONS
