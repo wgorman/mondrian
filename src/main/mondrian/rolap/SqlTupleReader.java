@@ -1330,27 +1330,9 @@ public class SqlTupleReader implements TupleReader {
 
         measureBitKey.set(bitPosition);
 
-        if (constraint
-            instanceof RolapNativeCrossJoin.NonEmptyCrossJoinConstraint)
-        {
-            // Cannot evaluate NonEmptyCrossJoinConstraint using an agg
-            // table if one of its args is a DescendantsConstraint.
-            RolapNativeCrossJoin.NonEmptyCrossJoinConstraint necj =
-                (RolapNativeCrossJoin.NonEmptyCrossJoinConstraint)
-                    constraint;
-            for (CrossJoinArg arg : necj.args) {
-                if (arg instanceof DescendantsCrossJoinArg
-                    || arg instanceof MemberListCrossJoinArg)
-                {
-                    final RolapLevel level = arg.getLevel();
-                    if (level != null && !level.isAll()) {
-                        RolapStar.Column column =
-                            ((RolapCubeLevel)level)
-                                .getBaseStarKeyColumn(baseCube);
-                        levelBitKey.set(column.getBitPosition());
-                    }
-                }
-            }
+        if (constraint instanceof RolapNativeSet.SetConstraint) {
+            ((RolapNativeSet.SetConstraint) constraint)
+                .constrainExtraLevels(baseCube, levelBitKey);
         }
 
         // find the aggstar using the masks

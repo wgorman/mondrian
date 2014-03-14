@@ -69,6 +69,27 @@ public class RolapNativeCrossJoin extends RolapNativeSet {
             super(args, evaluator, false);
         }
 
+        @Override
+        public void constrainExtraLevels(
+            RolapCube baseCube,
+            BitKey levelBitKey)
+        {
+            super.constrainExtraLevels(baseCube, levelBitKey);
+            for (CrossJoinArg arg : args) {
+                if (arg instanceof DescendantsCrossJoinArg
+                    || arg instanceof MemberListCrossJoinArg)
+                {
+                    final RolapLevel level = arg.getLevel();
+                    if (level != null && !level.isAll()) {
+                        RolapStar.Column column =
+                            ((RolapCubeLevel)level)
+                                .getBaseStarKeyColumn(baseCube);
+                        levelBitKey.set(column.getBitPosition());
+                    }
+                }
+            }
+        }
+
         public RolapMember findMember(Object key) {
             for (CrossJoinArg arg : args) {
                 if (arg instanceof MemberListCrossJoinArg) {

@@ -12673,6 +12673,189 @@ Intel platforms):
             + "Row #0: 50,236\n");
     }
 
+    public void testNonEmptyFunSlicer() {
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Gender].[All Gender].Children } ON COLUMNS,\n"
+            + "  NonEmpty( [Store].[Store Country].Members ) ON ROWS\n"
+            + "FROM [Sales]\n"
+            + "WHERE {[Time].[1998]}",
+            "Axis #0:\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F]}\n"
+            + "{[Gender].[M]}\n"
+            + "Axis #2:\n");
+    }
+
+    public void testNonEmptyFunSlicerOverride() {
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Gender].[All Gender].Children } ON COLUMNS,\n"
+            + "  NonEmpty( [Store].[Store Country].Members, CrossJoin({ [Time].[1997]}, { Measures.[Unit Sales] }) ) ON ROWS\n"
+            + "FROM [Sales]\n"
+            + "WHERE {[Time].[1998]}",
+            "Axis #0:\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F]}\n"
+            + "{[Gender].[M]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: \n"
+            + "Row #0: \n");
+    }
+
+
+    public void testNonEmptyFunOneArg() {
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[Year].Members } ON COLUMNS,\n"
+            + "NonEmpty( [Store].[Store Country].Members ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997]}\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 266,773\n"
+            + "Row #0: \n");
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[Year].[1997] } ON COLUMNS,\n"
+            + "NonEmpty( CrossJoin( [Product].[Food].Children, [Store].[Store Country].Members) ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Baked Goods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Baking Goods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Breakfast Foods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Canned Foods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Canned Products], [Store].[USA]}\n"
+            + "{[Product].[Food].[Dairy], [Store].[USA]}\n"
+            + "{[Product].[Food].[Deli], [Store].[USA]}\n"
+            + "{[Product].[Food].[Eggs], [Store].[USA]}\n"
+            + "{[Product].[Food].[Frozen Foods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Meat], [Store].[USA]}\n"
+            + "{[Product].[Food].[Produce], [Store].[USA]}\n"
+            + "{[Product].[Food].[Seafood], [Store].[USA]}\n"
+            + "{[Product].[Food].[Snack Foods], [Store].[USA]}\n"
+            + "{[Product].[Food].[Snacks], [Store].[USA]}\n"
+            + "{[Product].[Food].[Starchy Foods], [Store].[USA]}\n"
+            + "Row #0: 7,870\n"
+            + "Row #1: 20,245\n"
+            + "Row #2: 3,317\n"
+            + "Row #3: 19,026\n"
+            + "Row #4: 1,812\n"
+            + "Row #5: 12,885\n"
+            + "Row #6: 12,037\n"
+            + "Row #7: 4,132\n"
+            + "Row #8: 26,655\n"
+            + "Row #9: 1,714\n"
+            + "Row #10: 37,792\n"
+            + "Row #11: 1,764\n"
+            + "Row #12: 30,545\n"
+            + "Row #13: 6,884\n"
+            + "Row #14: 5,262\n");
+    }
+
+    public void testNonEmptyFunOneArgNonEmpty() {
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[1998] } ON COLUMNS,\n"
+            + "  NonEmpty( [Store].[Store Country].Members ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: \n");
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[1998] } ON COLUMNS,\n"
+            + "  NON EMPTY NonEmpty( [Store].[Store Country].Members ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #2:\n");
+    }
+
+    public void testNonEmptyFunIgnoreColumns() {
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[1998] } ON COLUMNS,\n"
+            + "NonEmpty( [Store].[Store Country].Members, { [Time].[1997] } ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1998]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: \n");
+        assertQueryReturns(
+            "SELECT\n"
+            + "  { [Time].[1997] } ON COLUMNS,\n"
+            + "NonEmpty( [Store].[Store Country].Members, { [Time].[1998] } ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #2:\n");
+    }
+
+    public void testNonEmptyFunInSlicer() {
+        assertQueryReturns(
+            "WITH SET NonEmptyCountries AS\n"
+            + "    'NonEmpty( [Store].[Store State].Members, {Measures.[Unit Sales]} )'\n"
+            + "SELECT { Measures.[Unit Sales] } ON 0,\n"
+            + "       NonEmpty( CrossJoin( [Time].[Quarter].Members, [Product].[Food]) , { Measures.[Unit Sales] }) ON 1\n"
+            + "FROM [Sales]\n"
+            + "WHERE NonEmptyCountries",
+            "baah");
+    }
+
+    public void testNonEmptyFunCoalescedMeasure() {
+        assertQueryReturns(
+            "WITH MEMBER Measures.NeverEmpty AS 'CoalesceEmpty(Measures.[Store Sales], 0)'\n"
+            + "SELECT { Measures.[Unit Sales] } ON COLUMNS,\n"
+            + "       NonEmpty( [Store].[Store Country].Members, { Measures.NeverEmpty } ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[Canada]}\n"
+            + "{[Store].[Mexico]}\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: \n"
+            + "Row #1: \n"
+            + "Row #2: 266,773\n");
+        assertQueryReturns(
+            "WITH MEMBER Measures.NeverEmpty AS 'CoalesceEmpty(Measures.[Store Sales], 0)'\n"
+            + "SELECT { Measures.[NeverEmpty] } ON COLUMNS,\n"
+            + "       NonEmpty( [Store].[Store Country].Members ) ON ROWS\n"
+            + "FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[NeverEmpty]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 565,238.13\n");
+    }
+
 }
 
 // End FunctionTest.java

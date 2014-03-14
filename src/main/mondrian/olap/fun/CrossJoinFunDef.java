@@ -17,7 +17,6 @@ import mondrian.mdx.*;
 import mondrian.olap.*;
 import mondrian.olap.type.*;
 import mondrian.rolap.RolapEvaluator;
-import mondrian.rolap.RolapUtil;
 import mondrian.util.CartesianProductList;
 
 import java.util.*;
@@ -77,7 +76,7 @@ public class CrossJoinFunDef extends FunDefBase {
      * @param type Type to add to list
      * @param list List of types to add to
      */
-    private static void addTypes(final Type type, List<MemberType> list) {
+    public static void addTypes(final Type type, List<MemberType> list) {
         if (type instanceof SetType) {
             SetType setType = (SetType) type;
             addTypes(setType.getElementType(), list);
@@ -767,25 +766,7 @@ public class CrossJoinFunDef extends FunDefBase {
         // This information is used for each iteration so it makes
         // sense to create and cache it.
         if (measureSet == null) {
-            measureSet = new HashSet<Member>();
-            Set<Member> queryMeasureSet = query.getMeasuresMembers();
-            MeasureVisitor visitor = new MeasureVisitor(measureSet, call);
-            for (Member m : queryMeasureSet) {
-                if (m.isCalculated()) {
-                    Exp exp = m.getExpression();
-                    exp.accept(visitor);
-                } else {
-                    measureSet.add(m);
-                }
-            }
-
-            Formula[] formula = query.getFormulas();
-            if (formula != null) {
-                for (Formula f : formula) {
-                    f.accept(visitor);
-                }
-            }
-
+            measureSet = calculateMeasureSet(call, query);
             query.putEvalCache(measureSetKey, measureSet);
         }
 
@@ -823,18 +804,7 @@ public class CrossJoinFunDef extends FunDefBase {
             }
             // Iterate the list of slicer members, grouping them by hierarchy
             Map<Hierarchy, Set<Member>> mapOfSlicerMembers =
-                new HashMap<Hierarchy, Set<Member>>();
-            if (slicerMembers != null) {
-                for (Member slicerMember : slicerMembers) {
-                    Hierarchy hierarchy = slicerMember.getHierarchy();
-                    if (!mapOfSlicerMembers.containsKey(hierarchy)) {
-                        mapOfSlicerMembers.put(
-                            hierarchy,
-                            new HashSet<Member>());
-                    }
-                    mapOfSlicerMembers.get(hierarchy).add(slicerMember);
-                }
-            }
+                getSlicerMemberMap(slicerMembers);
 
             // Now we have the non-List-Members, but some of them may not be
             // All Members (default Member need not be the All Member) and
@@ -846,85 +816,12 @@ public class CrossJoinFunDef extends FunDefBase {
             allMemberList = new ArrayList<Member>();
             List<Member[]> nonAllMemberList = new ArrayList<Member[]>();
 
-            Member em;
-            boolean isSlicerMember;
-            for (Member evalMember : evalMembers) {
-                em = evalMember;
-
-                isSlicerMember =
-                    slicerMembers != null
-                        && slicerMembers.contains(em);
-
-                if (em == null) {
-                    // Above we might have removed some by setting them
-                    // to null. These are the CrossJoin axes.
-                    continue;
-                }
-                if (em.isMeasure()) {
-                    continue;
-                }
-
-                //
-                // The unconstrained members need to be replaced by the "All"
-                // member based on its usage and property. This is currently
-                // also the behavior of native cross join evaluation. See
-                // SqlConstraintUtils.addContextConstraint()
-                //
-                // on slicer? | calculated? | replace with All?
-                // -----------------------------------------------
-                //     Y      |      Y      |      Y always
-                //     Y      |      N      |      N
-                //     N      |      Y      |      N
-                //     N      |      N      |      Y if not "All"
-                // -----------------------------------------------
-                //
-                if ((isSlicerMember && !em.isCalculated())
-                    || (!isSlicerMember && em.isCalculated()))
-                {
-                    // If the slicer contains multiple members from this one's
-                    // hierarchy, add them to nonAllMemberList
-                    if (isSlicerMember) {
-                        Set<Member> hierarchySlicerMembers =
-                            mapOfSlicerMembers.get(em.getHierarchy());
-                        if (hierarchySlicerMembers.size() > 1) {
-                            nonAllMemberList.add(
-                                hierarchySlicerMembers.toArray(
-                                    new Member[hierarchySlicerMembers.size()]));
-                        }
-                    }
-                    continue;
-                }
-
-                // If the member is not the All member;
-                // or if it is a slicer member,
-                // replace with the "all" member.
-                if (isSlicerMember || !em.isAll()) {
-                    Hierarchy h = em.getHierarchy();
-                    final List<Member> rootMemberList =
-                        schemaReader.getHierarchyRootMembers(h);
-                    if (h.hasAll()) {
-                        // The Hierarchy has an All member
-                        boolean found = false;
-                        for (Member m : rootMemberList) {
-                            if (m.isAll()) {
-                                allMemberList.add(m);
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (!found) {
-                            System.out.println(
-                                "CrossJoinFunDef.nonEmptyListNEW: ERROR");
-                        }
-                    } else {
-                        // The Hierarchy does NOT have an All member
-                        Member[] rootMembers =
-                            rootMemberList.toArray(
-                                new Member[rootMemberList.size()]);
-                        nonAllMemberList.add(rootMembers);
-                    }
-                }
-            }
+            fillAllMemberLists(
+                schemaReader,
+                evalMembers,
+                mapOfSlicerMembers,
+                slicerMembers,
+                allMemberList, nonAllMemberList);
             nonAllMembers =
                 nonAllMemberList.toArray(
                     new Member[nonAllMemberList.size()][]);
@@ -960,6 +857,160 @@ public class CrossJoinFunDef extends FunDefBase {
         } finally {
             evaluator.restore(savepoint);
         }
+    }
+
+    private Map<Hierarchy, Set<Member>> getSlicerMemberMap(
+        List<Member> slicerMembers)
+    {
+        Map<Hierarchy, Set<Member>> mapOfSlicerMembers =
+            new HashMap<Hierarchy, Set<Member>>();
+        if (slicerMembers != null) {
+            for (Member slicerMember : slicerMembers) {
+                Hierarchy hierarchy = slicerMember.getHierarchy();
+                if (!mapOfSlicerMembers.containsKey(hierarchy)) {
+                    mapOfSlicerMembers.put(
+                        hierarchy,
+                        new HashSet<Member>());
+                }
+                mapOfSlicerMembers.get(hierarchy).add(slicerMember);
+            }
+        }
+        return mapOfSlicerMembers;
+    }
+
+    /**
+     *  The unconstrained members need to be replaced by the "All"
+     * member based on its usage and property. This is currently
+     * also the behavior of native cross join evaluation. See
+     * SqlConstraintUtils.addContextConstraint()
+     * @param schemaReader
+     * @param evalMembers
+     * @param mapOfSlicerMembers
+     * @param slicerMembers
+     * @param allMemberList the
+     * @param nonAllMemberList the
+     */
+    private void fillAllMemberLists(
+        final SchemaReader schemaReader,
+        final Member[] evalMembers,
+        final Map<Hierarchy, Set<Member>> mapOfSlicerMembers,
+        final List<Member> slicerMembers,
+        List<Member> allMemberList,
+        List<Member[]> nonAllMemberList)
+    {
+        Member em;
+        boolean isSlicerMember;
+        for (Member evalMember : evalMembers) {
+            em = evalMember;
+
+            // TODO: use map?
+            isSlicerMember =
+                slicerMembers != null
+                    && slicerMembers.contains(em);
+
+            if (em == null) {
+                // Above we might have removed some by setting them
+                // to null. These are the CrossJoin axes.
+                continue;
+            }
+            if (em.isMeasure()) {
+                continue;
+            }
+
+            //
+            // The unconstrained members need to be replaced by the "All"
+            // member based on its usage and property. This is currently
+            // also the behavior of native cross join evaluation. See
+            // SqlConstraintUtils.addContextConstraint()
+            //
+            // on slicer? | calculated? | replace with All?
+            // -----------------------------------------------
+            //     Y      |      Y      |      Y always
+            //     Y      |      N      |      N
+            //     N      |      Y      |      N
+            //     N      |      N      |      Y if not "All"
+            // -----------------------------------------------
+            //
+            if ((isSlicerMember && !em.isCalculated())
+                || (!isSlicerMember && em.isCalculated()))
+            {
+                // If the slicer contains multiple members from this one's
+                // hierarchy, add them to nonAllMemberList
+                if (isSlicerMember) {
+                    Set<Member> hierarchySlicerMembers =
+                        mapOfSlicerMembers.get(em.getHierarchy());
+                    if (hierarchySlicerMembers.size() > 1) {
+                        nonAllMemberList.add(
+                            hierarchySlicerMembers.toArray(
+                                new Member[hierarchySlicerMembers.size()]));
+                    }
+                }
+                continue;
+            }
+
+            // If the member is not the All member;
+            // or if it is a slicer member,
+            // replace with the "all" member.
+            if (isSlicerMember || !em.isAll()) {
+                Hierarchy h = em.getHierarchy();
+                final List<Member> rootMemberList =
+                    schemaReader.getHierarchyRootMembers(h);
+                if (h.hasAll()) {
+                    // The Hierarchy has an All member
+                    boolean found = false;
+                    for (Member m : rootMemberList) {
+                        if (m.isAll()) {
+                            allMemberList.add(m);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        System.out.println(
+                            "CrossJoinFunDef.nonEmptyListNEW: ERROR");
+                    }
+                } else {
+                    // The Hierarchy does NOT have an All member
+                    Member[] rootMembers =
+                        rootMemberList.toArray(
+                            new Member[rootMemberList.size()]);
+                    nonAllMemberList.add(rootMembers);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the measures used in the query, ignoring those under the
+     * function call. Includes measures used in calculated measures.
+     * @param call
+     * @param query
+     * @return
+     */
+    private static Set<Member> calculateMeasureSet(
+        ResolvedFunCall call,
+        final Query query)
+    {
+        Set<Member> measureSet;
+        measureSet = new HashSet<Member>();
+        Set<Member> queryMeasureSet = query.getMeasuresMembers();
+        MeasureVisitor visitor = new MeasureVisitor(measureSet, call);
+        for (Member m : queryMeasureSet) {
+            if (m.isCalculated()) {
+                Exp exp = m.getExpression();
+                exp.accept(visitor);
+            } else {
+                measureSet.add(m);
+            }
+        }
+
+        Formula[] formula = query.getFormulas();
+        if (formula != null) {
+            for (Formula f : formula) {
+                f.accept(visitor);
+            }
+        }
+        return measureSet;
     }
 
     /**

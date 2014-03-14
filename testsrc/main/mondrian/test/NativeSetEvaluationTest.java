@@ -4,12 +4,7 @@
 // http://www.eclipse.org/legal/epl-v10.html.
 // You must accept the terms of that agreement to use this software.
 //
-<<<<<<< HEAD
-// Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
-=======
-// Copyright (C) 2012-2013 Pentaho and others
-// All Rights Reserved.
->>>>>>> [MONDRIAN-1785] Fixes issues with Hive. A lot of SQL related classes had to be fixed. The alias was not used consistently according to the dialect rules. Now all SQL generated uses the aliasses correctly.
+// Copyright (c) 2002-2014 Pentaho Corporation..  All rights reserved.
 */
 package mondrian.test;
 
@@ -1312,6 +1307,119 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #7: 1,714\n"
             + "Row #8: 37,792\n"
             + "Row #9: 1,764\n");
+    }
+
+    public void testNativeNonEmptyFunc() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "SELECT\n"
+            + "  { Measures.[Store Sales] } ON COLUMNS,\n"
+            + "NonEmpty( [Store].[Store City].Members, [Product].[Food].Children ) ON ROWS\n"
+            + "FROM [Sales]";
+
+        if (MondrianProperties.instance().EnableNativeNonEmptyFunction.get()) {
+            final boolean useAgg =
+                MondrianProperties.instance().UseAggregates.get()
+                && MondrianProperties.instance().ReadAggregates.get();
+            SqlPattern mysqlPattern =
+                ((useAgg)
+                    ? new SqlPattern(
+                        Dialect.DatabaseProduct.MYSQL,
+                        "select\n"
+                        + "    `store`.`store_country` as `c0`,\n"
+                        + "    `store`.`store_state` as `c1`,\n"
+                        + "    `store`.`store_city` as `c2`\n"
+                        + "from\n"
+                        + "    `store` as `store`,\n"
+                        + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`,\n"
+                        + "    `product_class` as `product_class`,\n"
+                        + "    `product` as `product`\n"
+                        + "where\n"
+                        + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                        + "and\n"
+                        + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+                        + "and\n"
+                        + "    `agg_c_14_sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                        + "and\n"
+                        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                        + "and\n"
+                        + "    (`product_class`.`product_family` = 'Food')\n"
+                        + "group by\n"
+                        + "    `store`.`store_country`,\n"
+                        + "    `store`.`store_state`,\n"
+                        + "    `store`.`store_city`\n"
+                        + "order by\n"
+                        + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+                        + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+                        + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC",
+                        null)
+                    : new SqlPattern(
+                        Dialect.DatabaseProduct.MYSQL,
+                        "select\n"
+                        + "    `store`.`store_country` as `c0`,\n"
+                        + "    `store`.`store_state` as `c1`,\n"
+                        + "    `store`.`store_city` as `c2`\n"
+                        + "from\n"
+                        + "    `store` as `store`,\n"
+                        + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                        + "    `time_by_day` as `time_by_day`,\n"
+                        + "    `product` as `product`,\n"
+                        + "    `product_class` as `product_class`\n"
+                        + "where\n"
+                        + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                        + "and\n"
+                        + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                        + "and\n"
+                        + "    `time_by_day`.`the_year` = 1997\n"
+                        + "and\n"
+                        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                        + "and\n"
+                        + "    (`product_class`.`product_family` = 'Food')\n"
+                        + "group by\n"
+                        + "    `store`.`store_country`,\n"
+                        + "    `store`.`store_state`,\n"
+                        + "    `store`.`store_city`\n"
+                        + "order by\n"
+                        + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+                        + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+                        + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC",
+                        null));
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[CA].[San Francisco]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bellingham]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Walla Walla]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Row #0: 45,750.24\n"
+            + "Row #1: 54,545.28\n"
+            + "Row #2: 54,431.14\n"
+            + "Row #3: 4,441.18\n"
+            + "Row #4: 55,058.79\n"
+            + "Row #5: 87,218.28\n"
+            + "Row #6: 4,739.23\n"
+            + "Row #7: 52,896.30\n"
+            + "Row #8: 52,644.07\n"
+            + "Row #9: 49,634.46\n"
+            + "Row #10: 74,843.96\n"
+            + "Row #11: 4,705.97\n"
+            + "Row #12: 24,329.23\n");
     }
 }
 // End NativeSetEvaluationTest.java
