@@ -16,6 +16,7 @@ import mondrian.test.FoodMartTestCase;
 import mondrian.test.TestContext;
 import mondrian.udf.*;
 import mondrian.util.Bug;
+import mondrian.xmla.PropertyDefinition;
 
 import junit.framework.Assert;
 import junit.framework.ComparisonFailure;
@@ -168,6 +169,36 @@ public class FunctionTest extends FoodMartTestCase {
         testContext.assertExprReturns(
             "Month([Time2].[1997].[Q1].[1].Properties(\"The Date\", TYPED))",
                 "1");
+    }
+
+    public void testCustomData() {
+        TestContext testContextCustomData = new TestContext() {
+            public mondrian.olap.Connection getConnection() {
+                Util.PropertyList properties =
+                    Util.parseConnectString(getConnectString());
+                properties.put(
+                    PropertyDefinition.CustomData.name(),
+                    "User1");
+                return DriverManager.getConnection(properties, null);
+            }};
+        // Should return User1 from CustomData
+        testContextCustomData.assertQueryReturns(
+            "WITH MEMBER [Measures].CustomData0 AS CustomData() "
+            + "SELECT [Measures].CustomData0 ON COLUMNS FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[CustomData0]}\n"
+            + "Row #0: User1\n");
+        // Should return empty row no CustomData defined
+        assertQueryReturns(
+            "WITH MEMBER [Measures].CustomData0 AS CustomData() "
+            + "SELECT [Measures].CustomData0 ON COLUMNS FROM [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[CustomData0]}\n"
+            + "Row #0: \n");
     }
 
     public void testCaseNull() {

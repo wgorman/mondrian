@@ -13600,6 +13600,14 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <IsRequired>false</IsRequired>
                         <Value/>
                     </row>
+                    <row>
+                        <PropertyName>CustomData</PropertyName>
+                        <PropertyDescription>CustomData.</PropertyDescription>
+                        <PropertyType>string</PropertyType>
+                        <PropertyAccessType>Read</PropertyAccessType>
+                        <IsRequired>false</IsRequired>
+                        <Value/>
+                    </row>
                 </root>
             </return>
         </DiscoverResponse>
