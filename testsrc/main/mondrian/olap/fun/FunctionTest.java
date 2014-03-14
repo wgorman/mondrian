@@ -12822,7 +12822,21 @@ Intel platforms):
             + "       NonEmpty( CrossJoin( [Time].[Quarter].Members, [Product].[Food]) , { Measures.[Unit Sales] }) ON 1\n"
             + "FROM [Sales]\n"
             + "WHERE NonEmptyCountries",
-            "baah");
+            "Axis #0:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA].[OR]}\n"
+            + "{[Store].[USA].[WA]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q1], [Product].[Food]}\n"
+            + "{[Time].[1997].[Q2], [Product].[Food]}\n"
+            + "{[Time].[1997].[Q3], [Product].[Food]}\n"
+            + "{[Time].[1997].[Q4], [Product].[Food]}\n"
+            + "Row #0: 47,809\n"
+            + "Row #1: 44,825\n"
+            + "Row #2: 47,440\n"
+            + "Row #3: 51,866\n");
     }
 
     public void testNonEmptyFunCoalescedMeasure() {
