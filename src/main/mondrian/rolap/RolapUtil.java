@@ -437,6 +437,11 @@ public class RolapUtil {
             // no support for other match types with keys
             return null;
         }
+
+        if (searchName == null) {
+          return null;
+        }
+
         final Id.NameSegment nameSegment =
             (searchName instanceof Id.NameSegment)
                 ? (Id.NameSegment) searchName
