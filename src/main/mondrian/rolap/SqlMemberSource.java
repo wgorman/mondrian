@@ -94,25 +94,10 @@ class SqlMemberSource
         if (level.isAll()) {
             return null;
         }
-        List<Dialect.Datatype> datatypeList = new ArrayList<Dialect.Datatype>();
-        List<MondrianDef.Expression> columnList =
-            new ArrayList<MondrianDef.Expression>();
-        for (RolapLevel x = level;; x = (RolapLevel) x.getParentLevel()) {
-            if (x.getKeyExp() != null) {
-                columnList.add(x.getKeyExp());
-                datatypeList.add(x.getDatatype());
-            }
-            if (x.isUnique()) {
-                break;
-            }
-        }
+        TupleConstraint memberKeyConstraint =
+            sqlConstraintFactory.getMemberKeyConstraint(level, keyValues);
         final List<RolapMember> list =
-            getMembersInLevel(
-                level,
-                new MemberKeyConstraint(
-                    columnList,
-                    datatypeList,
-                    keyValues));
+            getMembersInLevel(level, memberKeyConstraint);
         switch (list.size()) {
         case 0:
             return null;
