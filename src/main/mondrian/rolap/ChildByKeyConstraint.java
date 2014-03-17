@@ -51,7 +51,7 @@ class ChildByKeyConstraint extends DefaultMemberChildrenConstraint {
     }
 
     public String toString() {
-        return "ChildByNameConstraint(" + childKey + ")";
+        return "ChildByKeyConstraint(" + childKey + ")";
     }
 
     public Object getCacheKey() {
