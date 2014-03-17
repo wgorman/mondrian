@@ -5,10 +5,9 @@
 // You must accept the terms of that agreement to use this software.
 //
 // Copyright (C) 2001-2005 Julian Hyde
-// Copyright (C) 2005-2013 Pentaho and others
+// Copyright (C) 2005-2014 Pentaho and others
 // All Rights Reserved.
 */
-
 package mondrian.olap;
 
 import mondrian.mdx.*;
@@ -748,28 +747,10 @@ public class Util extends XOMUtil {
             if (names.get(i) instanceof Id.NameSegment) {
                 name = (Id.NameSegment) names.get(i);
                 child = schemaReader.getElementChild(parent, name, matchType);
-            } else if (parent instanceof RolapLevel
-                       && names.get(i) instanceof Id.KeySegment
-                       && names.get(i).getKeyParts().size() == 1)
-            {
-                // The following code is for SsasCompatibleNaming=false.
-                // Continues the very limited support for key segments in
-                // mondrian-3.x. To be removed in mondrian-4, when
-                // SsasCompatibleNaming=true is the only option.
-                final Id.KeySegment keySegment = (Id.KeySegment) names.get(i);
-                name = keySegment.getKeyParts().get(0);
-                final List<Member> levelMembers =
-                    schemaReader.getLevelMembers(
-                        (Level) parent, false);
-                child = null;
-                for (Member member : levelMembers) {
-                    if (((RolapMember) member).getKey().toString().equals(
-                            name.getName()))
-                    {
-                        child = member;
-                        break;
-                    }
-                }
+            } else if (names.get(i) instanceof Id.KeySegment) {
+                final Id.KeySegment key = (Id.KeySegment) names.get(i);
+                name = key.getKeyParts().get(0);
+                child = schemaReader.getElementChild(parent, key, matchType);
             } else {
                 name = null;
                 child = schemaReader.getElementChild(parent, name, matchType);
@@ -1092,9 +1073,8 @@ public class Util extends XOMUtil {
     public static Member lookupHierarchyRootMemberExactKey(
         SchemaReader reader,
         Hierarchy hierarchy,
-        Id.KeySegment memberKey )
+        Id.KeySegment memberKey)
     {
-        
         List<Member> rootMembers = reader.getHierarchyRootMembers(hierarchy);
         if (rootMembers.size() == 0) {
             return null;

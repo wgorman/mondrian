@@ -231,5 +231,17 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             result);
     }
 
+    public void testKeyLookupStrToMember() {
+        assertAxisReturns(
+            "StrToMember('[Customers].[USA].[CA].&[Berkeley]')",
+            "[Customers].[USA].[CA].[Berkeley]");
+        assertAxisReturns(
+            "StrToMember('[Customers].&[USA].&[CA].&[Berkeley]')",
+            "[Customers].[USA].[CA].[Berkeley]");
+        assertAxisReturns(
+            "StrToMember('[Customers].[City].&[Berkeley]&[CA].&[371]')",
+            "[Customers].[USA].[CA].[Berkeley].[Judith Frazier]");
+    }
+
 }
 // End XmlaAdomdTest.java
