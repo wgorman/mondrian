@@ -561,6 +561,62 @@ public class SqlTupleReader implements TupleReader {
         return n;
     }
 
+    /**
+     * This method performs a native count on the tuples being requested. 
+     */
+    public int countTuples(DataSource dataSource) {
+        SqlStatement stmt = null;
+        String message = "Calculating count with members for " + targets;
+        final ResultSet resultSet;
+        try {
+            List<TargetBase> partialTargets = new ArrayList<TargetBase>();
+            for (TargetBase target : targets) {
+                if (target.srcMembers == null) {
+                    partialTargets.add(target);
+                }
+            }
+
+            final Pair<String, List<SqlStatement.Type>> pair =
+                makeLevelMembersSql(dataSource);
+            
+            SqlQuery countQuery = SqlQuery.newQuery(dataSource, "");
+            // Add the subquery to the wrapper query.
+            countQuery.addFromQuery(
+                pair.left, "countQuery", true);
+    
+            // Dont forget to select all columns.
+            countQuery.addSelect("COUNT(*)", null, null);
+            String sql = countQuery.toSqlAndTypes().left;
+            
+            assert sql != null && !sql.equals("");
+            
+            stmt = RolapUtil.executeQuery(
+                dataSource, sql, null, maxRows, 0,
+                new SqlStatement.StatementLocus(
+                    Locus.peek().execution,
+                    "SqlTupleReader.countTuples " + partialTargets,
+                    message,
+                    SqlStatementEvent.Purpose.TUPLES, 0),
+                -1, -1, null);
+            resultSet = stmt.getResultSet();
+            if (resultSet.next()) {
+                ++stmt.rowCount;
+                return resultSet.getInt(1);
+            }
+        } catch (SQLException e) {
+          if (stmt == null) {
+              throw Util.newError(e, message);
+          } else {
+              throw stmt.handle(e);
+          }
+        } finally {
+            if (stmt != null) {
+                stmt.close();
+            }
+        }
+        return -1;
+    }
+
     public TupleList readTuples(
         DataSource jdbcConnection,
         TupleList partialResult,

@@ -13,6 +13,8 @@ import mondrian.calc.*;
 import mondrian.calc.impl.AbstractIntegerCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 
 /**
  * Definition of the <code>Count</code> MDX function.
@@ -37,7 +39,7 @@ class CountFunDef extends AbstractAggregateFunDef {
         super(dummyFunDef);
     }
 
-    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
+    public Calc compileCall(final ResolvedFunCall call, final ExpCompiler compiler) {
         final Calc calc =
             compiler.compileAs(
                 call.getArg(0), null, ResultStyle.ITERABLE_ANY);
@@ -54,19 +56,35 @@ class CountFunDef extends AbstractAggregateFunDef {
                 try {
                     evaluator.setNonEmpty(false);
                     final int count;
-                    if (calc instanceof IterCalc) {
-                        IterCalc iterCalc = (IterCalc) calc;
-                        TupleIterable iterable =
-                            evaluateCurrentIterable(iterCalc, evaluator);
-                        count = count(evaluator, iterable, includeEmpty);
+                    RolapEvaluator manyToManyEval =
+                        ManyToManyUtil.getManyToManyEvaluator(
+                            (RolapEvaluator)evaluator);
+                    SchemaReader schemaReader = evaluator.getSchemaReader();
+                    NativeEvaluator nativeEvaluator =
+                        schemaReader.getNativeSetEvaluator(
+                            call.getFunDef(),
+                            call.getArgs(),
+                            manyToManyEval,
+                            this);
+                    if (nativeEvaluator != null) {
+                        // TODO: Test how this performs for empty and non-empty scenarios.
+                        count = (Integer)nativeEvaluator.execute(ResultStyle.VALUE);
                     } else {
-                        // must be ListCalc
-                        ListCalc listCalc = (ListCalc) calc;
-                        TupleList list =
-                            evaluateCurrentList(listCalc, evaluator);
-                        count = count(evaluator, list, includeEmpty);
+                      if (calc instanceof IterCalc) {
+                          IterCalc iterCalc = (IterCalc) calc;
+                          TupleIterable iterable =
+                              evaluateCurrentIterable(iterCalc, evaluator);
+                          count = count(evaluator, iterable, includeEmpty);
+                      } else {
+                          // must be ListCalc
+                          ListCalc listCalc = (ListCalc) calc;
+                          TupleList list =
+                              evaluateCurrentList(listCalc, evaluator);
+                          count = count(evaluator, list, includeEmpty);
+                      }
                     }
                     return count;
+                    
                 } finally {
                     evaluator.restore(savepoint);
                 }
