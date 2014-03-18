@@ -660,6 +660,23 @@ public class RolapNativeSql {
                         LOGGER.debug("BooleanCountSqlCompiler: Unknown Param for Children: " + call.getArg(0));
                         rs.unknownFound = true;
                     }
+                } else if (call.getFunName().equals("Descendants")) {
+                    // this usecase only behaves if the all member is referenced
+                    boolean allInDecendants = false;
+                    if (call.getArgCount() == 3 && call.getArg(0) instanceof MemberExpr) {
+                        Member m = ((MemberExpr)call.getArg(0)).getMember();
+                        if (m.isAll()) {
+                            if (call.getArg(2) instanceof Literal) {
+                                if(((Literal)call.getArg(2)).getValue().toString().toLowerCase().indexOf("self") >= 0) {
+                                    allInDecendants = true;
+                                }
+                            }
+                        }
+                    }
+                    if (!allInDecendants) {
+                      rs.unknownFound = true;
+                    }
+                    // TODO: Add info to allHierarchies / nonAllHierarchies for later processing
                 } else {
                     LOGGER.debug("BooleanCountSqlCompiler: Unknown Function Name: " + call.getFunName());
                     rs.unknownFound = true; 
