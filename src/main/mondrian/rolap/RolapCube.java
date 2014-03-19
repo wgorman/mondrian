@@ -2624,6 +2624,23 @@ public class RolapCube extends CubeBase {
         String levelDimName = level.getDimension().getName();
         String levelHierName = level.getHierarchy().getName();
 
+        // Many to Many Bridge Levels are not part of the regular dimension set
+        // and must be resolved independently.
+
+        if (levelDimName.indexOf("$M2M$") >= 0) {
+            RolapHierarchy hierarchy =
+                findBaseCubeHierarchy(level.getHierarchy());
+            if (hierarchy != null) {
+                for (int i = 0; i < hierarchy.getLevels().length; i++) {
+                    if (hierarchy.getLevels()[i].getName()
+                        .equals(level.getName()))
+                    {
+                      return (RolapCubeLevel)hierarchy.getLevels()[i];
+                    }
+                }
+            }
+        }
+
         // Closures are not in the dimension list so we need special logic for
         // locating the level.
         //

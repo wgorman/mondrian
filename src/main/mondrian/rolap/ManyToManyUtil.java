@@ -112,35 +112,19 @@ public class ManyToManyUtil {
     }
 
     /**
-     * this method returns the correct hierarchy for m2m functions for both
+     * this method returns the hierarchy for m2m functions for both
      * regular and virtual cubes.
      *
      * @param evaluator the current evaluator to determine the cube
      * @param m the member to resolve the hierarchy for
      * @return the rolap cube hierarchy
      */
-    private static RolapCubeHierarchy getBaseCubeHierarchyForMember(
-        Evaluator evaluator,
+    private static RolapCubeHierarchy getCubeHierarchyForMember(
         Member m)
     {
-        RolapCube virtualCube = (RolapCube) evaluator.getCube();
-        RolapCube baseCube = (RolapCube) evaluator.getMeasureCube();
         RolapCubeHierarchy hier = null;
-        if (!virtualCube.isVirtual()) {
-            if (m.getHierarchy() instanceof RolapCubeHierarchy) {
-                hier = (RolapCubeHierarchy)m.getHierarchy();
-            }
-        } else {
-            // for virtual cubes, we need access to the base cube level
-            // this is dependent on the current measure at play.
-            if (m.getLevel() instanceof RolapCubeLevel) {
-                RolapCubeLevel baseCubeLevel =
-                    baseCube.findBaseCubeLevel(
-                        (RolapCubeLevel)m.getLevel());
-                if (baseCubeLevel != null) {
-                    hier = baseCubeLevel.getHierarchy();
-                }
-            }
+        if (m.getHierarchy() instanceof RolapCubeHierarchy) {
+            hier = (RolapCubeHierarchy)m.getHierarchy();
         }
         return hier;
     }
@@ -282,8 +266,7 @@ public class ManyToManyUtil {
         // processing
         for (int i = 0; i < firstTuple.size(); i++) {
             Member m = firstTuple.get(i);
-            RolapCubeHierarchy hier =
-                getBaseCubeHierarchyForMember(evaluator, m);
+            RolapCubeHierarchy hier = getCubeHierarchyForMember(m);
             if (hier != null && hier.getManyToManyHierarchies() != null) {
                 m2mIndexes.add(i);
                 m2mHierarchies.add(hier.getManyToManyHierarchies());
@@ -357,8 +340,7 @@ public class ManyToManyUtil {
         List<Member> newSlicer = new ArrayList<Member>();
         boolean manyToMany = false;
         for (Member m : slicer) {
-            RolapCubeHierarchy hier =
-                getBaseCubeHierarchyForMember(evaluator, m);
+            RolapCubeHierarchy hier = getCubeHierarchyForMember(m);
             if (!(m instanceof RolapCubeMember)
                 || hier.getManyToManyHierarchies() == null)
             {

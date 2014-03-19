@@ -343,13 +343,32 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "  </Cube>\n"
             + "  <Cube name=\"CategorySpending\">\n"
             + "    <Table name=\"m2m_spending_category_fact\"/>\n"
+            + "    <DimensionUsage name=\"Location\" source=\"Location\" foreignKey=\"id_location\"/>\n"
             + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_category\"/>\n"
             + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_category\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
             + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_category\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
-            + "    <DimensionUsage name=\"Location\" source=\"Location\" foreignKey=\"id_location\"/>\n"
             + "    <Measure name=\"Spending\" aggregator=\"sum\" column=\"spending\"/>\n"
             + "    <Measure name=\"Count\" aggregator=\"count\" column=\"spending\"/>\n"
             + "  </Cube>\n"
+            + "  <Cube name=\"GenderYearCount\">\n"
+            + "    <Table name=\"m2m_spending_genderyear_count_fact\"/>\n"
+            + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_gender\"/>\n"
+            + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_year\"/>\n"
+            + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_gender\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
+            + "    <Measure name=\"Total Count\" aggregator=\"sum\" column=\"amount_count\"/>\n"
+            + "  </Cube>\n"
+            + "  <VirtualCube name=\"GenderYearVirtual\" defaultMeasure=\"Amount\">\n"
+            + "    <CubeUsages>\n"
+            + "      <CubeUsage cubeName=\"GenderYearSpending\" ignoreUnrelatedDimensions=\"true\"/>\n"
+            + "      <CubeUsage cubeName=\"GenderYearCount\" ignoreUnrelatedDimensions=\"true\"/>\n"
+            + "    </CubeUsages>\n"
+            + "    <VirtualCubeDimension name=\"Gender\"/>\n"
+            + "    <VirtualCubeDimension name=\"Year\"/>\n"
+            + "    <VirtualCubeDimension name=\"Category\"/>\n"
+            + "    <VirtualCubeDimension name=\"Location\"/>\n"
+            + "    <VirtualCubeMeasure cubeName=\"GenderYearSpending\" name=\"[Measures].[Spending]\"/>\n"
+            + "    <VirtualCubeMeasure cubeName=\"GenderYearCount\" name=\"[Measures].[Total Count]\"/>\n"
+            + "  </VirtualCube>"
             + "</Schema>\n");
         return testContext;
     }
@@ -524,8 +543,25 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiJoinM2MScenariosWithView() {
-      testMultiJoinM2MScenarios(createMultiJoinManyToManyViewSchema());
-  }
+        testMultiJoinM2MScenarios(createMultiJoinManyToManyViewSchema());
+    }
+
+    public void testMultiJoinM2MTupleInVirtual() {
+        TestContext context = createMultiJoinManyToManySchema();
+        context.assertQueryReturns(
+            "select NonEmptyCrossJoin([Gender].[Gender].[Female], [Year].[Year].Members) on columns,\n"
+            + "{[Measures].[Spending]/*, [Measures].[Total Count]*/} on rows\n"
+            + "from [GenderYearVirtual] where {[Category].[Category 2014],[Category].[Category Year 2014 Female]}",
+            "Axis #0:\n"
+            + "{[Category].[Category 2014]}\n"
+            + "{[Category].[Category Year 2014 Female]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[Female], [Year].[2014]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Spending]}\n"
+            + "Row #0: 725\n"
+            );
+    }
 
     public void testMultiJoinM2MScenarios(TestContext context) {
         // the category spending cube demonstrates multiple many to many
@@ -1179,6 +1215,34 @@ public class ManyToManyTest  extends CsvDBTestCase {
         getTestContext().assertQueryReturns(
             "WITH MEMBER [Measures].[Avg Amount] AS '[Measures].[Amount] / [Measures].[Total Count]'\n"
             + "MEMBER [Customer].[Mark and Paul] AS 'AGGREGATE({[Customer].[All Customers].[Mark], [Customer].[All Customers].[Paul]})'\n"
+            + "SELECT {[Measures].[Avg Amount], [Measures].[Amount], [Measures].[Total Count]} ON COLUMNS,\n"
+            + "      {[Customer].[All Customers].[Mark], [Customer].[All Customers].[Paul], [Customer].[Mark and Paul]} ON ROWS\n"
+            + "FROM [M2MVirtual]\n"
+            + "WHERE {([Date].[All Dates].[Day 1],[Account].[Mark-Paul]),([Date].[All Dates].[Day 1],[Account].[Mark-Robert])}",
+            "Axis #0:\n"
+            + "{[Date].[Day 1], [Account].[Mark-Paul]}\n"
+            + "{[Date].[Day 1], [Account].[Mark-Robert]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Avg Amount]}\n"
+            + "{[Measures].[Amount]}\n"
+            + "{[Measures].[Total Count]}\n"
+            + "Axis #2:\n"
+            + "{[Customer].[Mark]}\n"
+            + "{[Customer].[Paul]}\n"
+            + "{[Customer].[Mark and Paul]}\n"
+            + "Row #0: 100\n"
+            + "Row #0: 200\n"
+            + "Row #0: 2\n"
+            + "Row #1: 100\n"
+            + "Row #1: 100\n"
+            + "Row #1: 1\n"
+            + "Row #2: 100\n"
+            + "Row #2: 200\n"
+            + "Row #2: 2\n");
+
+        getTestContext().assertQueryReturns(
+            "WITH MEMBER [Measures].[Avg Amount] AS '[Measures].[Amount] / [Measures].[Total Count]'\n"
+            + "MEMBER [Customer].[Mark and Paul] AS 'AGGREGATE({[Customer].[All Customers].[Mark], [Customer].[All Customers].[Paul]})'\n"
             + "SELECT {[Measures].[Avg Amount]} ON COLUMNS,\n"
             + "      {[Customer].[All Customers].[Mark], [Customer].[All Customers].[Paul], [Customer].[Mark and Paul]} ON ROWS\n"
             + "FROM [M2MVirtual]\n"
@@ -1194,7 +1258,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "{[Customer].[Mark and Paul]}\n"
             + "Row #0: 100\n"
             + "Row #1: 100\n"
-            + "Row #2: 200\n");
+            + "Row #2: 100\n");
 
         // this query does not bring in unrelated dimension just tests
         // basic useage of virtual cube with unrelated dimensions
