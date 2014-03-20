@@ -286,17 +286,41 @@ public abstract class RolapAggregationManager {
                 if (needToReturnNull) {
                     // check to see if the current member is part of an ignored
                     // unrelated dimension
-                    if (evaluator == null
-                        || !evaluator.mightReturnNullForUnrelatedDimension()
-                        || evaluator.needToReturnNullForUnrelatedDimension(
-                            new Member[] {member})) {
-                        return null;
-                    }
-                }
-            }
-        }
-        return request;
-    }
+                  
+                  if (!mightReturnNullForUnrelatedDimension(level.getCube())
+                      || needToReturnNullForUnrelatedDimension(level.getCube(), measure.getCube(),
+                          
+                          new Member[] {member})) {
+                      return null;
+                  }
+              }
+          }
+      }
+      return request;
+  }
+  
+  public static boolean mightReturnNullForUnrelatedDimension(RolapCube virtualCube) {
+      if (!MondrianProperties.instance()
+          .IgnoreMeasureForNonJoiningDimension.get())
+      {
+          return false;
+      }
+      return virtualCube.isVirtual();
+  }
+
+  public static boolean needToReturnNullForUnrelatedDimension(RolapCube virtualCube, RolapCube baseCube, Member[] members) {
+      assert mightReturnNullForUnrelatedDimension(virtualCube)
+          : "Should not even call this method if nulls are impossible";
+      if (baseCube == null) {
+          return false;
+      }
+      if (virtualCube.shouldIgnoreUnrelatedDimensions(baseCube.getName())) {
+          return false;
+      }
+      Set<Dimension> nonJoiningDimensions =
+          baseCube.nonJoiningDimensions(members);
+      return !nonJoiningDimensions.isEmpty();
+  }
 
     /**
      * Adds the key columns as non-constraining columns. For
