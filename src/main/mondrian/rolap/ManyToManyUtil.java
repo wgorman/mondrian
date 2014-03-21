@@ -144,12 +144,13 @@ public class ManyToManyUtil {
     {
         TupleList newList;
         Evaluator neweval = evaluator.push();
-        // clear out the slicer
-        List<Member> slicer = ((RolapEvaluator)neweval).getSlicerMembers();
-        for (Member sm : slicer) {
-            Member dm = sm.getHierarchy().getDefaultMember();
+
+        // clear out the full context including the slicer
+        for (Member dm : ((RolapEvaluator)neweval).root.defaultMembers) {
             neweval.setContext(dm);
         }
+        
+        List<Member> slicer = ((RolapEvaluator)neweval).getSlicerMembers();
         slicer.clear();
         neweval.setContext(m);
 
