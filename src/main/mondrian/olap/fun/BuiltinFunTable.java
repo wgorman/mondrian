@@ -20,6 +20,7 @@ import mondrian.olap.fun.vba.Excel;
 import mondrian.olap.fun.vba.Vba;
 import mondrian.olap.type.LevelType;
 import mondrian.olap.type.Type;
+import mondrian.resource.MondrianResource;
 import mondrian.xmla.PropertyDefinition;
 
 import java.io.PrintWriter;
@@ -480,7 +481,19 @@ public class BuiltinFunTable extends FunTableImpl {
         {
             public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler)
             {
-                throw new UnsupportedOperationException();
+                final StringCalc memberNameCalc =
+                        compiler.compileString(call.getArg(0));
+                return new AbstractMemberCalc(call, new Calc[] {memberNameCalc}) {
+                    public Member evaluateMember(Evaluator evaluator) {
+                        String memberName =
+                                memberNameCalc.evaluateString(evaluator);
+                        if (memberName == null) {
+                            throw newEvalException(
+                                    MondrianResource.instance().NullValue.ex());
+                        }
+                        return parseMember(evaluator, memberName, null);
+                    }
+                };
             }
         });
 
