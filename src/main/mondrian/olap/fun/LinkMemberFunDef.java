@@ -16,12 +16,15 @@ import mondrian.calc.MemberCalc;
 import mondrian.calc.impl.AbstractMemberCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Evaluator;
+import mondrian.olap.Exp;
 import mondrian.olap.Id;
 import mondrian.olap.MatchType;
 import mondrian.olap.Member;
 import mondrian.olap.MondrianDef;
 import mondrian.olap.OlapElement;
 import mondrian.olap.SchemaReader;
+import mondrian.olap.Validator;
+import mondrian.olap.type.Type;
 import mondrian.rolap.RolapHierarchy;
 import mondrian.rolap.RolapLevel;
 import mondrian.rolap.RolapMember;
@@ -43,6 +46,13 @@ public class LinkMemberFunDef extends FunDefBase {
             "LinkMember",
             "Returns the member from the specified hierarchy that matches the key values at each level of the specified member in a related hierarchy.",
             "fmmh");
+    }
+
+    public Type getResultType(Validator validator, Exp[] args) {
+        if (args.length != 2) {
+            return null;
+        }
+        return castType(args[1].getType(), getReturnCategory());
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {

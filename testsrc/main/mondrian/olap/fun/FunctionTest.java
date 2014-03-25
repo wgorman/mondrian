@@ -12662,6 +12662,13 @@ Intel platforms):
             "[SecondTime].[1997].[Q1].[2]");
     }
 
+    public void testLinkMemberType() {
+        // ensure it declares the right hierarchy return type
+        assertAxisReturns(
+            "CrossJoin([Time].[1997], LinkMember([Time].[1997], " + TimeWeekly + "))",
+            "{[Time].[1997], [Time].[Weekly].[1997]}");
+    }
+
     public void testExisting() throws Exception {
         // basic test
         assertQueryReturns(
