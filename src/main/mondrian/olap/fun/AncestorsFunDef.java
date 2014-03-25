@@ -59,12 +59,17 @@ class AncestorsFunDef extends FunDefBase {
                     int distance =
                         member.getDepth() - level.getDepth();
                     List<Member> ancestors = new ArrayList<Member>();
-                    ancestors.add(ancestor(evaluator, member, distance, null));
-                    //This was commented to reproduce the microsoft ancestors
-                    /*for (int curDist = 0; curDist <= distance; curDist++) {
+                    if (!MondrianProperties.instance()
+                            .AncestorsOneMember.get())
+                    {
+                        for (int curDist = 1; curDist <= distance; curDist++) {
+                            ancestors.add(
+                                ancestor(evaluator, member, curDist, null));
+                        }
+                    } else {
                         ancestors.add(
-                            ancestor(evaluator, member, curDist, null));
-                    } */
+                                ancestor(evaluator, member, distance, null));
+                    }
                     return TupleCollections.asTupleList(ancestors);
                 }
             };
@@ -78,12 +83,16 @@ class AncestorsFunDef extends FunDefBase {
                     Member member = memberCalc.evaluateMember(evaluator);
                     int distance = distanceCalc.evaluateInteger(evaluator);
                     List<Member> ancestors = new ArrayList<Member>();
-                    ancestors.add(ancestor(evaluator, member, distance, null));
-                    //This was commented to reproduce the microsoft ancestors
-                    /*for (int curDist = 0; curDist <= distance; curDist++) {
-                        ancestors.add(
-                            ancestor(evaluator, member, curDist, null));
-                    } */
+                    if (!MondrianProperties.instance()
+                            .AncestorsOneMember.get())
+                    {
+                        for (int curDist = 1; curDist <= distance; curDist++) {
+                            ancestors.add(
+                                ancestor(evaluator, member, curDist, null));
+                        }
+                    } else {
+                        ancestors.add(ancestor(evaluator, member, distance, null));
+                    }
                     return TupleCollections.asTupleList(ancestors);
                 }
             };

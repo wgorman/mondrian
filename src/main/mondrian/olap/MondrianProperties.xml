@@ -1367,13 +1367,26 @@ value Mondrian throws a LimitExceededDuringCrossjoin error.</p>
         <Description>
 <p>Property that defines
 whether to enable new naming behavior.</p>
-
 <p>If true, hierarchies are named [Dimension].[Hierarchy]; if false,
 [Dimension.Hierarchy].</p>
         </Description>
         <Type>boolean</Type>
         <Default>false</Default>
     </PropertyDefinition>
+
+    <PropertyDefinition>
+        <Name>AncestorsOneMember</Name>
+        <Path>mondrian.olap.SsasCompatibleNaming</Path>
+        <Description>
+            <p>Property that defines
+                whether to return one ancestor member or set of ancestors.</p>
+            <p>If true, return a set with one ancestor member; if false,
+                return a set with all ancestors.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+
     <PropertyDefinition>
         <Name>SsasKeyLookup</Name>
         <Path>mondrian.olap.SsasKeyLookup</Path>

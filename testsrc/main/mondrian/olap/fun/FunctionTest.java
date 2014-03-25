@@ -1192,15 +1192,7 @@ public class FunctionTest extends FoodMartTestCase {
         assertQueryReturns(
             "with\n"
             + "set [*ancestors] as\n"
-            + "  '{"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 0),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 1),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 2),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 3),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 4),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 5),"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 6)"
-            + "}'\n"
+            + "  'Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], [Employees].[All Employees].Level)'\n"
             + "select\n"
             + "  [*ancestors] on columns\n"
             + "from [HR]\n",
@@ -1226,8 +1218,7 @@ public class FunctionTest extends FoodMartTestCase {
         assertQueryReturns(
             "with\n"
             + "set [*ancestors] as\n"
-            + "  '{Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store State]),\n"
-            + "  Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store Country])}'\n"
+            + "  'Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store Country])'\n"
             + "select\n"
             + "  [*ancestors] on columns\n"
             + "from [Sales]\n",
@@ -1243,9 +1234,7 @@ public class FunctionTest extends FoodMartTestCase {
         assertQueryReturns(
             "with\n"
             + "set [*ancestors] as\n"
-            + "  '{Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], 1), \n"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], 2), \n"
-            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], 3)}' \n"
+            + "  'Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], 3)'\n"
             + "select\n"
             + "  [*ancestors] on columns\n"
             + "from [HR]\n",
@@ -1263,6 +1252,104 @@ public class FunctionTest extends FoodMartTestCase {
         assertQueryReturns(
             "with\n"
             + "set [*ancestors] as\n"
+            + "  'Ancestors([Store].[USA].[CA].[Los Angeles], 2)'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [Sales]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 74,748\n"
+            + "Row #0: 266,773\n");
+        // Test that we can count the number of ancestors.
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  'Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], [Employees].[All Employees].Level)'\n"
+            + "member [Measures].[Depth] as\n"
+            + "  'Count([*ancestors])'\n"
+            + "select\n"
+            + "  [Measures].[Depth] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Depth]}\n"
+            + "Row #0: 7\n");
+        // test depth argument not a level
+        assertAxisThrows(
+            "Ancestors([Store].[USA].[CA].[Los Angeles],[Store])",
+            "Error while executing query");
+    }
+
+    public void testAncestorsOneMember() {
+        // Test that we can execute Ancestors with depth 0
+        // returns the same member
+        propSaver.set(MondrianProperties.instance().AncestorsOneMember, true);
+
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 0)"
+            + "}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff]}\n"
+            + "Row #0: $984.45\n");
+        // Test that we can execute Ancestors with diferent depths
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 1),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 3),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 5),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 6)"
+            + "}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds]}\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges]}\n"
+            + "{[Employees].[Sheri Nowmer]}\n"
+            + "{[Employees].[All Employees]}\n"
+            + "Row #0: $3,426.54\n"
+            + "Row #0: $17,099.20\n"
+            + "Row #0: $39,431.67\n"
+            + "Row #0: $39,431.67\n");
+
+        // Test that we can execute Ancestors by passing a level as
+        // the depth argument (non PC hierarchy)
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store State]),\n"
+            + "  Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store Country])}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [Sales]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 74,748\n"
+            + "Row #0: 266,773\n");
+        // Test that we can execute Ancestors by passing an integer as
+        // the depth argument (non PC hierarchy)
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
             + "  '{Ancestors([Store].[USA].[CA].[Los Angeles], 1), \n"
             + "Ancestors([Store].[USA].[CA].[Los Angeles], 2)}' \n"
             + "select\n"
@@ -1275,7 +1362,8 @@ public class FunctionTest extends FoodMartTestCase {
             + "{[Store].[USA]}\n"
             + "Row #0: 74,748\n"
             + "Row #0: 266,773\n");
-        // With the changes made to function always return 1
+        // With the changes made to Ancestors function always return 1 when using
+        // Mondrian property AncestorOneMember
         // Test that we can count the number of ancestors.
         assertQueryReturns(
             "with\n"
