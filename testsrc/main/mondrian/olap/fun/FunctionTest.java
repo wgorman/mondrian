@@ -1284,6 +1284,107 @@ public class FunctionTest extends FoodMartTestCase {
             "Error while executing query");
     }
 
+    public void testAncestorsOneMember() {
+        // Test that we can execute Ancestors with depth 0
+        // returns the same member
+        propSaver.set(MondrianProperties.instance().AncestorsOneMember, true);
+
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 0)"
+            + "}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff]}\n"
+            + "Row #0: $984.45\n");
+        // Test that we can execute Ancestors with diferent depths
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 1),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 3),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 5),"
+            + "Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff], 6)"
+            + "}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds]}\n"
+            + "{[Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges]}\n"
+            + "{[Employees].[Sheri Nowmer]}\n"
+            + "{[Employees].[All Employees]}\n"
+            + "Row #0: $3,426.54\n"
+            + "Row #0: $17,099.20\n"
+            + "Row #0: $39,431.67\n"
+            + "Row #0: $39,431.67\n");
+
+        // Test that we can execute Ancestors by passing a level as
+        // the depth argument (non PC hierarchy)
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store State]),\n"
+            + "  Ancestors([Store].[USA].[CA].[Los Angeles], [Store].[Store Country])}'\n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [Sales]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 74,748\n"
+            + "Row #0: 266,773\n");
+        // Test that we can execute Ancestors by passing an integer as
+        // the depth argument (non PC hierarchy)
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  '{Ancestors([Store].[USA].[CA].[Los Angeles], 1), \n"
+            + "Ancestors([Store].[USA].[CA].[Los Angeles], 2)}' \n"
+            + "select\n"
+            + "  [*ancestors] on columns\n"
+            + "from [Sales]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA]}\n"
+            + "Row #0: 74,748\n"
+            + "Row #0: 266,773\n");
+        // With the changes made to Ancestors function always return 1 when using
+        // Mondrian property AncestorOneMember
+        // Test that we can count the number of ancestors.
+        assertQueryReturns(
+            "with\n"
+            + "set [*ancestors] as\n"
+            + "  'Ancestors([Employees].[All Employees].[Sheri Nowmer].[Derrick Whelply].[Laurie Borges].[Eric Long].[Adam Reynolds].[Joshua Huff].[Teanna Cobb], [Employees].[All Employees].Level)'\n"
+            + "member [Measures].[Depth] as\n"
+            + "  'Count([*ancestors])'\n"
+            + "select\n"
+            + "  [Measures].[Depth] on columns\n"
+            + "from [HR]\n",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Depth]}\n"
+            + "Row #0: 1\n");
+        // test depth argument not a level
+        assertAxisThrows(
+            "Ancestors([Store].[USA].[CA].[Los Angeles],[Store])",
+            "Error while executing query");
+    }
+
     public void testOrdinal() {
         final TestContext testContext =
             getTestContext().withCube("Sales Ragged");
@@ -9119,6 +9220,30 @@ public class FunctionTest extends FoodMartTestCase {
             "1997");
     }
 
+    public void testMembersString()
+    {
+        assertExprReturns(
+            "Members(\"[Time].[Year].&[1997]\").Name",
+            "1997");
+
+        assertQueryReturns(
+            "select NON EMPTY {[Measures].[Unit Sales]} ON COLUMNS, \n"
+            + "NON EMPTY {Members('[Product].[All Products].[Food]')} ON ROWS \n"
+            + "from [Sales] ",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food]}\n"
+            + "Row #0: 191,940\n");
+    }
+
+    public void testMembersFromString2()
+    {
+
+    }
+
     public void testStrToMemberFullyQualifiedName() {
         assertExprReturns(
             "StrToMember(\"[Store].[All Stores].[USA].[CA]\").Name",
@@ -12660,6 +12785,13 @@ Intel platforms):
         testContext.withCube("SalesTime").assertAxisReturns(
             "LinkMember([Time].[1997].[Q1].[2], [SecondTime])",
             "[SecondTime].[1997].[Q1].[2]");
+    }
+
+    public void testLinkMemberType() {
+        // ensure it declares the right hierarchy return type
+        assertAxisReturns(
+            "CrossJoin([Time].[1997], LinkMember([Time].[1997], " + TimeWeekly + "))",
+            "{[Time].[1997], [Time].[Weekly].[1997]}");
     }
 
     public void testExisting() throws Exception {
