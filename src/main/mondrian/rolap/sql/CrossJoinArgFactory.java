@@ -111,6 +111,10 @@ public class CrossJoinArgFactory {
         if (cjArgs != null) {
             return Collections.singletonList(cjArgs);
         }
+        cjArgs = checkLevelAllMembers(role, evaluator, fun, args);
+        if (cjArgs != null) {
+            return Collections.singletonList(cjArgs);
+        }
         cjArgs = checkDescendants(role, fun, args);
         if (cjArgs != null) {
             return Collections.singletonList(cjArgs);
@@ -511,6 +515,63 @@ public class CrossJoinArgFactory {
         }
         return new CrossJoinArg[]{
             new DescendantsCrossJoinArg(level, member)
+        };
+    }
+
+    /**
+     * Checks for <code>&lt;Level&gt;.AllMembers</code>.
+     *
+     * @return an {@link mondrian.rolap.sql.CrossJoinArg} instance describing the Level.AllMembers
+     *         function, or null if <code>fun</code> represents something else.
+     */
+    private CrossJoinArg[] checkLevelAllMembers(
+        Role role,
+        RolapEvaluator evaluator,
+        FunDef fun,
+        Exp[] args)
+    {
+        if (!"AllMembers".equalsIgnoreCase(fun.getName())) {
+            return null;
+        }
+        if (args.length != 1) {
+            return null;
+        }
+        if (!(args[0] instanceof LevelExpr)) {
+            return null;
+        }
+        RolapLevel level = (RolapLevel) ((LevelExpr) args[0]).getLevel();
+        if (!level.isSimple()) {
+            return null;
+        }
+        // verify there are no calculated members of this hierarchy present.
+        List<Member> calcMemberList = evaluator.getSchemaReader().getCalculatedMembers(level);
+        if (calcMemberList.size() > 0) {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("unable to use native dimension filter due to presence of calculated members in level " + level);
+            }
+            return null;
+        }
+
+        // Members of a level in an access-controlled hierarchy cannot be
+        // converted to SQL when RollupPolicy=FULL. (We could be smarter; we
+        // don't currently notice when we don't look below the rolled up level
+        // therefore no access-control is needed.
+        final Access access = role.getAccess(level.getHierarchy());
+        switch (access) {
+        case ALL:
+            break;
+        case CUSTOM:
+            final RollupPolicy rollupPolicy =
+                role.getAccessDetails(level.getHierarchy()).getRollupPolicy();
+            if (rollupPolicy == RollupPolicy.FULL) {
+                return null;
+            }
+        break;
+        default:
+            return null;
+        }
+        return new CrossJoinArg[]{
+            new DescendantsCrossJoinArg(level, null)
         };
     }
 

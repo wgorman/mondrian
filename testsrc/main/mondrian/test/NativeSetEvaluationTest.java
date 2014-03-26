@@ -1230,15 +1230,9 @@ public class NativeSetEvaluationTest extends BatchTestCase {
         verifySameNativeAndNot(
             "select filter([Product].[Product Name].members, Measures.[Unit Sales] > 0) on 0 from sales",
             "Native native filter mismatch", ctx);
-       
         propSaver.reset();
     }
 
-    /**
-     * Test case for <a href="http://jira.pentaho.com/browse/MONDRIAN-1430">
-     * Mondrian-1430:</a> Native top count support for + and
-     * tuple (Parentheses) expressions in Calculated member slicer
-     */
     public void testNativeSubset() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
         final String mdx =
@@ -1249,7 +1243,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    TC ON 1 \n"
             + "  FROM [Sales] WHERE {([Time].[1997])}\n";
 
-        String mysqlQuery = 
+        String mysqlQuery =
             "select\n"
             + "    `product_class`.`product_family` as `c0`,\n"
             + "    `product_class`.`product_department` as `c1`\n"
@@ -1307,6 +1301,63 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #7: 1,714\n"
             + "Row #8: 37,792\n"
             + "Row #9: 1,764\n");
+    }
+
+    public void testNativeSubsetWithAllMembers() {
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+      final String mdx =
+          "SELECT SUBSET( [Product].[Product Name].ALLMEMBERS, 0, 3 ) DIMENSION PROPERTIES MEMBER_NAME, MEMBER_TYPE ON 0, {} ON 1 FROM [Sales]";
+
+      String mysqlQuery =
+          "select\n"
+          + "    `product_class`.`product_family` as `c0`,\n"
+          + "    `product_class`.`product_department` as `c1`,\n"
+          + "    `product_class`.`product_category` as `c2`,\n"
+          + "    `product_class`.`product_subcategory` as `c3`,\n"
+          + "    `product`.`brand_name` as `c4`,\n"
+          + "    `product`.`product_name` as `c5`\n"
+          + "from\n"
+          + "    `product` as `product`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`\n"
+          + "where\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "group by\n"
+          + "    `product_class`.`product_family`,\n"
+          + "    `product_class`.`product_department`,\n"
+          + "    `product_class`.`product_category`,\n"
+          + "    `product_class`.`product_subcategory`,\n"
+          + "    `product`.`brand_name`,\n"
+          + "    `product`.`product_name`\n"
+          + "order by\n"
+          + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+          + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+          + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+          + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+          + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+          + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC limit 3 offset 0";
+
+      if (MondrianProperties.instance().EnableNativeSubset.get()) {
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+      }
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Imported Beer]}\n"
+          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Light Beer]}\n"
+          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Pearl].[Pearl Imported Beer]}\n"
+          + "Axis #2:\n");
     }
 
     public void testNativeNonEmptyFunc() {
