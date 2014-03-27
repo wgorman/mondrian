@@ -279,6 +279,11 @@ public class RolapProfilingEvaluator extends RolapEvaluator {
 
         @Override
         public Type getType() {
+            // this method is called during init() before calc is set
+            // as part of an assert in a parent class.
+            if (calc == null) {
+              return super.getType();
+            }
             return calc.getType();
         }
 
@@ -317,7 +322,6 @@ public class RolapProfilingEvaluator extends RolapEvaluator {
             calc.accept(calcWriter);
         }
 
-        @Override
         public int evaluateInteger( Evaluator evaluator ) {
             ++callCount;
             long start = System.currentTimeMillis();
