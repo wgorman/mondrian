@@ -13202,6 +13202,27 @@ Intel platforms):
             + "Row #0: 565,238.13\n");
     }
 
+    public void testExpectedValueConversion() {
+        // note this failed before when log mondrian.profile=DEBUG
+        // due to instanceof checking in AbstractExpCompiler
+        // the count() function wouldn't be converted to boolean
+        // correctly.
+        assertQueryReturns(
+            "with set [myset] as 'filter([Store].[All Stores].Children, "
+            + "((Count(CrossJoin([Gender].ALLMEMBERS, [Store].CurrentMember))) AND "
+            +"([Store].CurrentMember.UniqueName <> \"[Store].[USA]\")))'\n"
+            + "member [Measures].[mymeasure] as '(Count(CrossJoin([Gender].ALLMEMBERS, [Store].CurrentMember)))'\n"
+            + "select {[myset]} on 0, {[Measures].[mymeasure]} on 1 from Sales", 
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[Canada]}\n"
+            + "{[Store].[Mexico]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[mymeasure]}\n"
+            + "Row #0: 3\n"
+            + "Row #0: 3\n");
+    }
 }
 
 // End FunctionTest.java

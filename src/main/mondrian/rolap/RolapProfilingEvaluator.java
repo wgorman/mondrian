@@ -98,6 +98,15 @@ public class RolapProfilingEvaluator extends RolapEvaluator {
                     exp,
                     calc);
             } else {
+                if (calc instanceof ProfilingScalarCalc) {
+                  // no need to profile multiple times.
+                  return calc;
+                }
+                if (calc instanceof AbstractIntegerCalc) {
+                  return new ProfilingIntegerCalc(
+                      exp,
+                      (AbstractIntegerCalc)calc);
+                }
                 return new ProfilingScalarCalc(
                     exp,
                     calc);
@@ -242,6 +251,80 @@ public class RolapProfilingEvaluator extends RolapEvaluator {
             // query plan, but the arguments we just created will appear as
             // arguments of the child calc.
             calc.accept(calcWriter);
+        }
+    }
+
+    /**
+     * Needed to implement due to the instanceof checks in AbstractExpCompiler
+     */
+    private static class ProfilingIntegerCalc extends AbstractIntegerCalc {
+        private final AbstractIntegerCalc calc;
+        private int callCount;
+        private long callMillis;
+
+        ProfilingIntegerCalc(Exp exp, AbstractIntegerCalc calc) {
+            super(exp, new Calc[] {calc});
+            this.calc = calc;
+        }
+
+        @Override
+        public boolean isWrapperFor(Class<?> iface) {
+            return calc.isWrapperFor(iface);
+        }
+
+        @Override
+        public <T> T unwrap(Class<T> iface) {
+            return calc.unwrap(iface);
+        }
+
+        @Override
+        public Type getType() {
+            return calc.getType();
+        }
+
+        @Override
+        public Calc[] getCalcs() {
+            return ((AbstractCalc) calc).getCalcs();
+        }
+
+        @Override
+        public boolean dependsOn(Hierarchy hierarchy) {
+            return calc.dependsOn(hierarchy);
+        }
+
+        public Object evaluate(Evaluator evaluator) {
+            ++callCount;
+            long start = System.currentTimeMillis();
+            final Object o = calc.evaluate(evaluator);
+            long end = System.currentTimeMillis();
+            callMillis += (end - start);
+            return o;
+        }
+
+        @Override
+        public void accept(CalcWriter calcWriter) {
+            final Map<String, Object> argumentMap =
+                new LinkedHashMap<String, Object>();
+            if (calcWriter.enableProfiling()) {
+                argumentMap.put("callCount", callCount);
+                argumentMap.put("callMillis", callMillis);
+            }
+            calcWriter.setParentArgs(calc, argumentMap);
+
+            // Invoke writer on our child calc. This node won't appear in the
+            // query plan, but the arguments we just created will appear as
+            // arguments of the child calc.
+            calc.accept(calcWriter);
+        }
+
+        @Override
+        public int evaluateInteger( Evaluator evaluator ) {
+            ++callCount;
+            long start = System.currentTimeMillis();
+            final Integer o = calc.evaluateInteger(evaluator);
+            long end = System.currentTimeMillis();
+            callMillis += (end - start);
+            return o;
         }
     }
 }
