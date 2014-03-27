@@ -15,6 +15,7 @@ import mondrian.calc.ResultStyle;
 import mondrian.calc.TupleList;
 import mondrian.calc.impl.*;
 import mondrian.olap.*;
+import mondrian.rolap.RolapNativeCount.CountConstraint;
 import mondrian.rolap.TupleReader.MemberBuilder;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.cache.*;
@@ -278,60 +279,62 @@ public abstract class RolapNativeSet extends RolapNative {
             }
             return filterInaccessibleTuples(result);
         }
-        
+
         protected int executeCount(final SqlTupleReader tr) {
-          tr.setMaxRows(maxRows);
-          for (CrossJoinArg arg : args) {
-              addLevel(tr, arg);
-          }
+            tr.setMaxRows(maxRows);
+            for (CrossJoinArg arg : args) {
+                addLevel(tr, arg);
+            }
 
-          // Look up the result in cache; we can't return the cached
-          // result if the tuple reader contains a target with calculated
-          // members because the cached result does not include those
-          // members; so we still need to cross join the cached result
-          // with those enumerated members.
-          //
-          // The key needs to include the arguments (projection) as well as
-          // the constraint, because it's possible (see bug MONDRIAN-902)
-          // that independent axes have identical constraints but different
-          // args (i.e. projections). REVIEW: In this case, should we use the
-          // same cached result and project different columns?
-          List<Object> key = new ArrayList<Object>();
-          key.add(tr.getCacheKey());
-          key.addAll(Arrays.asList(args));
-          key.add(maxRows);
+            // Look up the result in cache; we can't return the cached
+            // result if the tuple reader contains a target with calculated
+            // members because the cached result does not include those
+            // members; so we still need to cross join the cached result
+            // with those enumerated members.
+            //
+            // The key needs to include the arguments (projection) as well as
+            // the constraint, because it's possible (see bug MONDRIAN-902)
+            // that independent axes have identical constraints but different
+            // args (i.e. projections). REVIEW: In this case, should we use the
+            // same cached result and project different columns?
+            List<Object> key = new ArrayList<Object>();
+            key.add(tr.getCacheKey());
+            key.addAll(Arrays.asList(args));
+            key.add(maxRows);
 
-          Integer result = countCache.get(key);
-          if (result != null) {
-            // TODO: Add Listener Interface?  Is this for testing only?
-//              if (listener != null) {
-//                  TupleEvent e = new TupleEvent(this, tr);
-//                  listener.foundInCache(e);
-//              }
-              return result;
-          }
+            Integer result = countCache.get(key);
+            if (result != null) {
+              // TODO: Add Listener Interface?  Is this for testing only?
+  //              if (listener != null) {
+  //                  TupleEvent e = new TupleEvent(this, tr);
+  //                  listener.foundInCache(e);
+  //              }
+                return result;
+            }
 
-          // execute sql and store the result
-//          if (result == null && listener != null) {
-//              TupleEvent e = new TupleEvent(this, tr);
-//              listener.executingSql(e);
-//          }
-          
-          DataSource dataSource = schemaReader.getDataSource();
-          int count = ((SqlTupleReader)tr).countTuples(dataSource);
+            // execute sql and store the result
+  //          if (result == null && listener != null) {
+  //              TupleEvent e = new TupleEvent(this, tr);
+  //              listener.executingSql(e);
+  //          }
 
-          // TODO: Support Count Cache
-          
-          if (!MondrianProperties.instance().DisableCaching.get()) {
-              countCache.put(key, new Integer(count));
-          }
-          
-          // TODO: Note, this method won't work against secured tuples, we 
-          // should have already detected this eariler in the process.
-          // filterInaccessibleTuples(result)
-          return  count;
-      }
+            DataSource dataSource = schemaReader.getDataSource();
+            int count = ((SqlTupleReader)tr).countTuples(dataSource);
 
+            if (tr.constraint instanceof CountConstraint) {
+                // adds calc and all members to the overall count.
+                count += ((CountConstraint)tr.constraint).addlCount;
+            }
+
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                countCache.put(key, new Integer(count));
+            }
+
+            // TODO: Note, this method won't work against secured tuples, we 
+            // should have already detected this eariler in the process.
+            // filterInaccessibleTuples(result)
+            return  count;
+        }
 
         /**
          * Checks access rights on the members in each tuple in tupleList.

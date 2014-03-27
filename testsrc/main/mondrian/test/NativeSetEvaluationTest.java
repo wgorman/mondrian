@@ -1472,5 +1472,167 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #11: 4,705.97\n"
             + "Row #12: 24,329.23\n");
     }
+
+    public void testNativeCountWithChildren() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        TestContext testContext = TestContext.instance()
+            .createSubstitutingCube(
+                "Sales",
+                "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+                + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>");
+
+        String mdx =
+            "with member [Measures].[Cust Count] as 'Count(AddCalculatedMembers([Customer IDs].[All Customer IDs].Children))'\n"
+            + "select {[Measures].[Cust Count]} on 0 from [Sales]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Cust Count]}\n"
+            + "Row #0: 10,281\n");
+    }
+
+    public void testNativeCountWithAllMembers() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        TestContext testContext = TestContext.instance()
+            .createSubstitutingCube(
+                "Sales",
+                "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+                + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>");
+
+        String mdx =
+            "with member [Measures].[Cust Count] as 'Count([Customer IDs].AllMembers)'\n"
+            + "select {[Measures].[Cust Count]} on 0 from [Sales]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Cust Count]}\n"
+            + "Row #0: 10,282\n");
+
+        // Test Level, the same SQL above should apply.
+        mdx = "with member [Measures].[Cust ID Count] as 'Count([Customer IDs].[ID].AllMembers)'\n"
+            + "select {[Measures].[Cust ID Count]} on 0 from [Sales]";
+
+        testContext.flushSchemaCache();
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Cust ID Count]}\n"
+            + "Row #0: 10,281\n");
+
+        // Test EXCLUDEEMPTY
+        mdx = "with member [Measures].[Cust ID Count] as 'Count([Customer IDs].[ID].AllMembers, EXCLUDEEMPTY)'\n"
+            + "select {[Measures].[Cust ID Count]} on 0 from [Sales]";
+
+        mysqlQuery =
+            "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+
+        testContext.flushSchemaCache();
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Cust ID Count]}\n"
+            + "Row #0: 5,581\n");
+    }
+
+    /**
+     * Found an issue with Native Filter NonEmpty behavior... Need to log a JIRA
+     */
+    public void _testFilterNonEmptyCrossJoin() {
+        // UNCOMMENT TO SEE PASSING: MondrianProperties.instance().EnableNativeFilter.set( false );
+        String mdx =
+            "select Filter(NonEmptyCrossJoin([Time].[Year].Members, [Product].[All Products].Children), 1=1) on 0 from [Sales]";
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997], [Product].[Drink]}\n"
+            + "{[Time].[1997], [Product].[Food]}\n"
+            + "{[Time].[1997], [Product].[Non-Consumable]}\n"
+            + "Row #0: 24,597\n"
+            + "Row #0: 191,940\n"
+            + "Row #0: 50,236\n");
+    }
 }
 // End NativeSetEvaluationTest.java

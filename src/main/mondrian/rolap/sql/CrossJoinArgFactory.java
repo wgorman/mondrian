@@ -46,7 +46,7 @@ public class CrossJoinArgFactory {
             new LinkedHashSet<CrossJoinArg>();
         for (QueryAxis ax : evaluator.getQuery().getAxes()) {
             List<CrossJoinArg[]> axesArgs =
-                checkCrossJoinArg(evaluator, ax.getSet(), true);
+                checkCrossJoinArg(evaluator, ax.getSet(), true, true);
             if (axesArgs != null) {
                 for (CrossJoinArg[] axesArg : axesArgs) {
                     joinArgs.addAll(Arrays.asList(axesArg));
@@ -63,7 +63,7 @@ public class CrossJoinArgFactory {
         RolapEvaluator evaluator,
         Exp exp)
     {
-        return checkCrossJoinArg(evaluator, exp, false);
+        return checkCrossJoinArg(evaluator, exp, false, true);
     }
 
     /**
@@ -84,10 +84,11 @@ public class CrossJoinArgFactory {
      *         CJ CrossJoinArg and the second array represent the additional
      *         constraints.
      */
-    List<CrossJoinArg[]> checkCrossJoinArg(
+    public List<CrossJoinArg[]> checkCrossJoinArg(
         RolapEvaluator evaluator,
         Exp exp,
-        final boolean returnAny)
+        final boolean returnAny,
+        final boolean levelOnly)
     {
         if (exp instanceof NamedSetExpr) {
             NamedSet namedSet = ((NamedSetExpr) exp).getNamedSet();
@@ -111,7 +112,7 @@ public class CrossJoinArgFactory {
         if (cjArgs != null) {
             return Collections.singletonList(cjArgs);
         }
-        cjArgs = checkLevelAllMembers(role, evaluator, fun, args);
+        cjArgs = checkLevelAllMembers(role, evaluator, fun, args, levelOnly);
         if (cjArgs != null) {
             return Collections.singletonList(cjArgs);
         }
@@ -140,13 +141,13 @@ public class CrossJoinArgFactory {
         // strip off redundant set braces, for example
         // { Gender.Gender.members }, or {{{ Gender.M }}}
         if ("{}".equalsIgnoreCase(fun.getName()) && args.length == 1) {
-            return checkCrossJoinArg(evaluator, args[0], returnAny);
+            return checkCrossJoinArg(evaluator, args[0], returnAny, true);
         }
         if ("NativizeSet".equalsIgnoreCase(fun.getName()) && args.length == 1) {
-            return checkCrossJoinArg(evaluator, args[0], returnAny);
+            return checkCrossJoinArg(evaluator, args[0], returnAny, true);
         }
         if ("AddCalculatedMembers".equalsIgnoreCase(fun.getName()) && args.length == 1) {
-           allArgs = checkCrossJoinArg(evaluator, args[0], returnAny);
+           allArgs = checkCrossJoinArg(evaluator, args[0], returnAny, true);
            // Now check to see if any of the "All Args" list contain calculated members.
            // If so, we can't natively evaluate this crossjoin at this time.
            if (allArgs != null) {
@@ -356,7 +357,7 @@ public class CrossJoinArgFactory {
             new CrossJoinArg[2][];
 
         for (int i = 0; i < 2; i++) {
-            allArgsOneInput = checkCrossJoinArg(evaluator, args[i], returnAny);
+            allArgsOneInput = checkCrossJoinArg(evaluator, args[i], returnAny, true);
 
             if (allArgsOneInput == null
                 || allArgsOneInput.isEmpty()
@@ -528,7 +529,8 @@ public class CrossJoinArgFactory {
         Role role,
         RolapEvaluator evaluator,
         FunDef fun,
-        Exp[] args)
+        Exp[] args,
+        boolean levelOnly)
     {
         if (!"AllMembers".equalsIgnoreCase(fun.getName())) {
             return null;
@@ -536,10 +538,33 @@ public class CrossJoinArgFactory {
         if (args.length != 1) {
             return null;
         }
-        if (!(args[0] instanceof LevelExpr)) {
+        RolapLevel level = null;
+        if (args[0] instanceof LevelExpr) {
+            level = (RolapLevel) ((LevelExpr) args[0]).getLevel();
+        } else if (!levelOnly) {
+            if (args[0] instanceof HierarchyExpr) {
+                Hierarchy h = ((HierarchyExpr)args[0]).getHierarchy();
+                if (h.hasAll() && h.getLevels().length == 2) {
+                    level = (RolapLevel)h.getLevels()[1];
+                } else if (!h.hasAll() && h.getLevels().length == 1) {
+                    level = (RolapLevel)h.getLevels()[0];
+                }
+            } else if (args[0] instanceof DimensionExpr) {
+                Dimension d = ((DimensionExpr)args[0]).getDimension();
+                if (d.getHierarchies().length == 1) {
+                    Hierarchy h = d.getHierarchies()[0];
+                    if (h.hasAll() && h.getLevels().length == 2) {
+                        level = (RolapLevel)h.getLevels()[1];
+                    } else if (!h.hasAll() && h.getLevels().length == 1) {
+                        level = (RolapLevel)h.getLevels()[0];
+                    }
+                }
+            }
+        }
+        if (level == null) {
             return null;
         }
-        RolapLevel level = (RolapLevel) ((LevelExpr) args[0]).getLevel();
+
         if (!level.isSimple()) {
             return null;
         }

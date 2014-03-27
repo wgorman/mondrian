@@ -9,11 +9,24 @@
 */
 package mondrian.rolap;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import mondrian.mdx.DimensionExpr;
+import mondrian.mdx.HierarchyExpr;
+import mondrian.mdx.MdxVisitorImpl;
 import mondrian.mdx.ResolvedFunCall;
+import mondrian.olap.Dimension;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
+import mondrian.olap.Hierarchy;
+import mondrian.olap.Literal;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
+import mondrian.rolap.sql.CrossJoinArg;
+import mondrian.rolap.sql.DescendantsCrossJoinArg;
+import mondrian.rolap.sql.MemberListCrossJoinArg;
 
 /**
  * Computes a Count(set) in SQL.
@@ -49,8 +62,18 @@ public class RolapNativeCount extends RolapNativeSet {
         if (!"Count".equalsIgnoreCase(funName)) {
             return null;
         }
-        
+
         if (!(args[0] instanceof ResolvedFunCall)) {
+            return null;
+        }
+
+        // Check to see if evaluator contains a calculated member that can't be
+        // expanded.  This is necessary due to the SqlConstraintsUtils.
+        // addContextConstraint()
+        // method which gets called when generating the native SQL.
+        if (SqlConstraintUtils.containsCalculatedMember(
+                evaluator.getNonAllMembers(), true))
+        {
             return null;
         }
 
@@ -68,16 +91,133 @@ public class RolapNativeCount extends RolapNativeSet {
         // security, because the security is usually applied after native evaluation.
         // Before this can be considered valid we need to test in that usecase and 
         // either push down the security into SQL or not natively evaluate.
-        
+
+        // TODO: Check to see if addRoleAccessConstraints() natively evaluates roles, if that is
+        // always applicable or not.  See why there was a cleansing step at the end of native tuple
+        // evaluation.
+
         // TODO: Need to support empty and non-empty second parameter in the correct manner here
-        
+
         NativeEvaluator eval = evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
             evaluator, call.getFunDef(), call.getArgs());
-        
+
+        if (eval == null) {
+            List<CrossJoinArg[]> allArgs =
+                crossJoinArgFactory().checkCrossJoinArg(evaluator, call, false, false);
+            if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
+                return null;
+            }
+
+            // We need to determine if the "All" member should be counted,
+            // and inform the count constraint.
+
+            int addlCount = 0;
+
+            if (call.getFunDef().getName().equals("AllMembers")) {
+                if (call.getArg(0) instanceof HierarchyExpr) {
+                    Hierarchy h = ((HierarchyExpr)call.getArg(0)).getHierarchy();
+                    if (h.hasAll()) {
+                        addlCount++;
+                    }
+                } else if (call.getArg(0) instanceof DimensionExpr) {
+                    Dimension d = ((DimensionExpr)call.getArg(0)).getDimension();
+                    if (d.getHierarchies()[0].hasAll()) {
+                        addlCount++;
+                    }
+                }
+            }
+
+            // determine if a join against the current context is necessary
+            // TODO: a similar approach will need to be made for other usecases
+            // with Count(CrossJoin()) etc
+            final AtomicBoolean mustJoin = new AtomicBoolean(false);
+
+            if (args.length == 2) {
+                if (!(args[1] instanceof Literal)) {
+                    return null;
+                }
+                if (((Literal)args[1]).getValue().toString().equalsIgnoreCase("EXCLUDEEMPTY")) {
+                  mustJoin.set(true);
+                }
+            }
+            // Check for nonempty functions
+            call.accept(
+                new MdxVisitorImpl() {
+                    public Object visit(ResolvedFunCall call) {
+                      if (call.getFunName().equalsIgnoreCase("NonEmpty") || call.getFunName().equalsIgnoreCase("NonEmptyCrossJoin")) {
+                        mustJoin.set(true);
+                      }
+                      return super.visit(call);
+                    }
+                });
+            final int savepoint = evaluator.savepoint();
+            try {
+                overrideContext(evaluator, allArgs.get(0), null);
+                eval = new SetEvaluator(allArgs.get(0), evaluator.getSchemaReader(), new CountConstraint(allArgs.get( 0 ), evaluator, false, addlCount, mustJoin.get()));
+            } finally {
+                evaluator.restore(savepoint);
+            }
+        }
+
         if (eval != null) {
             LOGGER.debug("using native count");  
         }
         return eval;
+    }
+
+    static class CountConstraint extends SetConstraint {
+
+        int addlCount = 0;
+        boolean joinRequired = false;
+        CountConstraint(
+            CrossJoinArg[] args, RolapEvaluator evaluator, boolean restrict, int addlCount, boolean joinRequired)
+        {
+            super(args, evaluator, restrict);
+            this.addlCount = addlCount;
+            this.joinRequired = joinRequired;
+        }
+
+        @Override
+        public void constrainExtraLevels(
+            RolapCube baseCube,
+            BitKey levelBitKey)
+        {
+            super.constrainExtraLevels(baseCube, levelBitKey);
+            for (CrossJoinArg arg : args) {
+                if (arg instanceof DescendantsCrossJoinArg
+                    || arg instanceof MemberListCrossJoinArg)
+                {
+                    final RolapLevel level = arg.getLevel();
+                    if (level != null && !level.isAll()) {
+                        RolapStar.Column column =
+                            ((RolapCubeLevel)level)
+                                .getBaseStarKeyColumn(baseCube);
+                        levelBitKey.set(column.getBitPosition());
+                    }
+                }
+            }
+        }
+
+        protected boolean isJoinRequired() {
+            // Depends on empty / nonempty state of the count.
+            return joinRequired || (getEvaluator().isNonEmpty() && super.isJoinRequired());
+        }
+
+        @Override
+        public Object getCacheKey() {
+            List<Object> key = new ArrayList<Object>();
+            //  // we're "special"
+            //  key.add(this.getClass());
+            key.add(super.getCacheKey());
+            if (this.getEvaluator() instanceof RolapEvaluator) {
+                key.add(
+                    ((RolapEvaluator)this.getEvaluator())
+                    .getSlicerMembers());
+            }
+            key.add(addlCount);
+            key.add(joinRequired);
+            return key;
+        }
     }
 }
 
