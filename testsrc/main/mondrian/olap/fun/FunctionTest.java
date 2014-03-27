@@ -9265,6 +9265,64 @@ public class FunctionTest extends FoodMartTestCase {
     }
 
     /**
+     * Test for MONDRIAN-1962
+     */
+    public void testStrToMemberWithCalcMembers() {
+      TestContext testContext = TestContext.instance().createSubstitutingCube(
+          "Sales",
+          null,
+          "<CalculatedMember\n"
+          + "      name=\"Desert\"\n"
+          + "      hierarchy=\"Product\" parent=\"[Product].[All Products]\" >\n"
+          + "    <Formula>NULL</Formula>\n"
+          + "    <CalculatedMemberProperty name=\"FORMAT_STRING\" value=\"$#,##0.00\"/>\n"
+          + "  </CalculatedMember>");
+
+      // this works when referencing the member directly
+      testContext.assertQueryReturns(
+          "select"
+          + "  {[Product].[All Products].[Desert]} on columns,\n"
+          + "  {[Measures].[Unit Sales]} on rows\n"
+          + "from [Sales]",
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Product].[All Products].[Desert]}\n"
+          + "Axis #2:\n"
+          + "{[Measures].[Unit Sales]}\n"
+          + "Row #0: \n");
+
+      // strtomember wasn't working when calc member is defined in the cube
+      testContext.assertQueryReturns(
+          "select"
+          + "  {StrToMember(\"[Product].[All Products].[Desert]\")} on columns,\n"
+          + "  {[Measures].[Unit Sales]} on rows\n"
+          + "from [Sales]",
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Product].[All Products].[Desert]}\n"
+          + "Axis #2:\n"
+          + "{[Measures].[Unit Sales]}\n"
+          + "Row #0: \n");
+
+      // this works when calc member is defined in the query
+      assertQueryReturns(
+          "with member [Product].[All Products].[Desert] as NULL \n"
+          + "select"
+          + "  {StrToMember(\"[Product].[All Products].[Desert]\")} on columns,\n"
+          + "  {[Measures].[Unit Sales]} on rows\n"
+          + "from [Warehouse and Sales]",
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Product].[All Products].[Desert]}\n"
+          + "Axis #2:\n"
+          + "{[Measures].[Unit Sales]}\n"
+          + "Row #0: \n");
+    }
+
+    /**
      * Testcase for
      * <a href="http://jira.pentaho.com/browse/MONDRIAN-560">
      * bug MONDRIAN-560, "StrToMember function doesn't use IgnoreInvalidMembers
