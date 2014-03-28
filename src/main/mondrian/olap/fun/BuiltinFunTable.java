@@ -247,6 +247,7 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(IsLeafFunDef.Resolver);
         builder.define(IsFunDef.Resolver);
         builder.define(AsFunDef.RESOLVER);
+        builder.define(IsErrorFunDef.FunctionResolver);
 
         //
         // MEMBER FUNCTIONS
@@ -483,13 +484,15 @@ public class BuiltinFunTable extends FunTableImpl {
             {
                 final StringCalc memberNameCalc =
                         compiler.compileString(call.getArg(0));
-                return new AbstractMemberCalc(call, new Calc[] {memberNameCalc}) {
+                return new AbstractMemberCalc(
+                    call, new Calc[] {memberNameCalc})
+                {
                     public Member evaluateMember(Evaluator evaluator) {
                         String memberName =
                                 memberNameCalc.evaluateString(evaluator);
                         if (memberName == null) {
                             throw newEvalException(
-                                    MondrianResource.instance().NullValue.ex());
+                                MondrianResource.instance().NullValue.ex());
                         }
                         return parseMember(evaluator, memberName, null);
                     }
