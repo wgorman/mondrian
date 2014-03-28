@@ -500,6 +500,11 @@ public class SqlConstraintUtils {
       if (expression instanceof MemberExpr) {
           return true;
       }
+      
+      // TODO: This may require a member property check vs. Literal
+      if (expression instanceof Literal) {
+        return true;
+      }
 
       return false;
     }
