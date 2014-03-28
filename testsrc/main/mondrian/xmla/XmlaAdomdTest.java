@@ -11,6 +11,7 @@ package mondrian.xmla;
 
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.Result;
+import mondrian.olap.Role;
 import mondrian.test.DiffRepository;
 import mondrian.test.TestContext;
 
@@ -53,12 +54,31 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             "10.0.1600.22");
         // default hierarchy key lookup work the same as name lookups, like ssas
         propSaver.set(MondrianProperties.instance().SsasKeyLookup, true);
+        // include hierarchy name when = dimension name
+        propSaver.set(
+            MondrianProperties.instance().XmlaFullHierarchyNames,
+            true);
     }
 
     protected void tearDown() throws Exception {
         super.tearDown();
         // avoid side effects from ssas naming
         getTestContext().flushSchemaCache();
+    }
+
+    @Override
+    public void doTest(
+        String requestType,
+        Properties props,
+        TestContext testContext,
+        Role role) throws Exception
+    {
+        // we're explicitly setting SsasCompatibleNaming=true and we don't want
+        // upgradeQuery making replacements, so that step is disabled
+        String requestText = fileToString("request");
+        doTestInline(
+            requestType, requestText, "response",
+            props, testContext, role);
     }
 
     /**
@@ -70,6 +90,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             getDefaultRequestProperties("EXECUTE"),
             getTestContext());
     }
+
 
     /**
      * Issue where a shared dimension hierarchy would cause two HierarchyInfo
@@ -103,6 +124,30 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         String requestType = "EXECUTE";
         Properties props = getDefaultRequestProperties(requestType);
         doTest(requestType, props, testContext);
+    }
+
+    /**
+     * Member restrictions and results include hierarchy name when same as
+     * dimension.
+     */
+    public void testMDMembersIncludeHierarchy() throws Exception {
+        String requestType = "MDSCHEMA_MEMBERS";
+        Properties props = getDefaultRequestProperties(requestType);
+        // for <Discover> requests
+        props.setProperty(FORMAT_PROP, "Tabular");
+        doTest(requestType, props, TestContext.instance());
+    }
+
+    /**
+     * Members lookup with level restriction.
+     */
+    public void testMDMembersIncludeHierarchyLevelRestriction() throws Exception
+    {
+        String requestType = "MDSCHEMA_MEMBERS";
+        Properties props = getDefaultRequestProperties(requestType);
+        // for <Discover> requests
+        props.setProperty(FORMAT_PROP, "Tabular");
+        doTest(requestType, props, TestContext.instance());
     }
 
     /**
