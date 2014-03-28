@@ -14,7 +14,6 @@ import mondrian.olap.MondrianProperties;
 import mondrian.olap.Parameter;
 import mondrian.olap.Util;
 import mondrian.olap4j.MondrianOlap4jConnection;
-import mondrian.rolap.RolapConnection;
 import mondrian.util.CompositeList;
 import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 import mondrian.xmla.impl.DefaultSaxWriter;
@@ -72,6 +71,9 @@ public class XmlaHandler {
     private final String prefix;
 
     private final XmlaSessionConnectionManager connectionMgr;
+
+    // always include dimension
+    private final boolean fullUniqueNames;
 
     public static XmlaExtra getExtra(OlapConnection connection) {
         try {
@@ -683,6 +685,9 @@ public class XmlaHandler {
         this.connectionFactory = connectionFactory;
         this.prefix = prefix;
         this.connectionMgr = new XmlaSessionConnectionManager(this);
+        this.fullUniqueNames =
+            MondrianProperties.instance().SsasCompatibleNaming.get()
+            && MondrianProperties.instance().XmlaFullHierarchyNames.get();
     }
 
     /**
@@ -1770,7 +1775,8 @@ public class XmlaHandler {
                             !alwaysIncludeSlicer
                             && (content != Content.DataIncludeDefaultSlicer),
                             responseMimeType
-                            == Enumeration.ResponseMimeType.JSON);
+                            == Enumeration.ResponseMimeType.JSON,
+                            fullUniqueNames);
                 } else {
                     dataSet =
                         new MDDataSet_Tabular(cellSet);
@@ -1941,17 +1947,20 @@ public class XmlaHandler {
         private XmlaUtil.ElementNameEncoder encoder =
             XmlaUtil.ElementNameEncoder.INSTANCE;
         private XmlaExtra extra;
+        private final boolean fullUniqueNames;
 
         protected MDDataSet_Multidimensional(
             CellSet cellSet,
             boolean omitDefaultSlicerInfo,
-            boolean json)
+            boolean json,
+            boolean fullUniqueNames)
             throws SQLException
         {
             super(cellSet);
             this.omitDefaultSlicerInfo = omitDefaultSlicerInfo;
             this.json = json;
             this.extra = getExtra(cellSet.getStatement().getConnection());
+            this.fullUniqueNames = fullUniqueNames;
         }
 
         public void unparse(SaxWriter writer)
@@ -2102,7 +2111,8 @@ public class XmlaHandler {
                 for (final Property prop : props) {
                     final String encodedProp =
                         encoder.encode(prop.getName());
-                    final Object[] attributes = getAttributes(prop, hierarchy);
+                    final Object[] attributes =
+                        getAttributes(prop, hierarchy);
                     writer.element(encodedProp, attributes);
                 }
                 writer.endElement(); // HierarchyInfo
@@ -2110,7 +2120,10 @@ public class XmlaHandler {
             writer.endSequence(); // "HierarchyInfo"
         }
 
-        private Object[] getAttributes(Property prop, Hierarchy hierarchy) {
+        private Object[] getAttributes(
+            Property prop,
+            Hierarchy hierarchy)
+        {
             Property longProp = longProps.get(prop.getName());
             if (longProp == null) {
                 longProp = prop;
@@ -2118,7 +2131,7 @@ public class XmlaHandler {
             List<Object> values = new ArrayList<Object>();
             values.add("name");
             values.add(
-                hierarchy.getUniqueName()
+                getFullUniqueName(fullUniqueNames, hierarchy, hierarchy)
                 + "."
                 + Util.quoteMdxIdentifier(longProp.getName()));
             if (longProp == prop) {
@@ -2210,13 +2223,13 @@ public class XmlaHandler {
                             break;
                         }
                     }
-
                     if (member != null) {
                         if (positionMember != null) {
                             writeMember(
                                 writer, positionMember, null,
                                 slicerPositions.get(0), indexPosition,
-                                getProps(slicerAxis.getAxisMetaData()));
+                                getProps(slicerAxis.getAxisMetaData()),
+                                fullUniqueNames);
                         } else {
                             slicerAxis(
                                 writer, member,
@@ -2270,7 +2283,13 @@ public class XmlaHandler {
                 int k = 0;
                 for (Member member : position.getMembers()) {
                     writeMember(
-                        writer, member, prevPosition, nextPosition, k++, props);
+                        writer,
+                        member,
+                        prevPosition,
+                        nextPosition,
+                        k++,
+                        props,
+                        fullUniqueNames);
                 }
                 writer.endSequence(); // Tuple
                 prevPosition = position;
@@ -2287,7 +2306,8 @@ public class XmlaHandler {
             Position prevPosition,
             Position nextPosition,
             int k,
-            List<Property> props)
+            List<Property> props,
+            boolean fullUniqueNames)
             throws OlapException
         {
             writer.startElement(
@@ -2309,6 +2329,20 @@ public class XmlaHandler {
                         member, k, childrenCard);
                 } else if (longProp == StandardMemberProperty.DEPTH) {
                     value = member.getDepth();
+                } else if (longProp ==
+                    StandardMemberProperty.MEMBER_UNIQUE_NAME)
+                {
+                    value = getFullUniqueName(
+                        fullUniqueNames,
+                        member.getHierarchy(),
+                        member);
+                } else if (longProp ==
+                    StandardMemberProperty.LEVEL_UNIQUE_NAME)
+                {
+                    value = getFullUniqueName(
+                        fullUniqueNames,
+                        member.getHierarchy(),
+                        member.getLevel());
                 } else {
                     value = member.getPropertyValue(longProp);
                 }
@@ -2350,6 +2384,20 @@ public class XmlaHandler {
                     value = displayInfo;
                 } else if (longProp == StandardMemberProperty.DEPTH) {
                     value = member.getDepth();
+                } else if (longProp ==
+                    StandardMemberProperty.MEMBER_UNIQUE_NAME)
+                {
+                    value = getFullUniqueName(
+                        fullUniqueNames,
+                        member.getHierarchy(),
+                        member);
+                } else if (longProp ==
+                    StandardMemberProperty.LEVEL_UNIQUE_NAME)
+                {
+                    value = getFullUniqueName(
+                        fullUniqueNames,
+                        member.getHierarchy(),
+                        member.getLevel());
                 } else {
                     value = member.getPropertyValue(longProp);
                 }
@@ -2371,7 +2419,11 @@ public class XmlaHandler {
             int displayInfo = 0xffff & childrenCount;
 
             if (nextPosition != null) {
-                String currentUName = currentMember.getUniqueName();
+                String currentUName =
+                    getFullUniqueName(
+                        fullUniqueNames,
+                        currentMember.getHierarchy(),
+                        currentMember);
                 Member nextMember =
                     nextPosition.getMembers().get(memberOrdinal);
                 String nextParentUName = parentUniqueName(nextMember);
@@ -2398,7 +2450,10 @@ public class XmlaHandler {
             if (parent == null) {
                 return null;
             }
-            return parent.getUniqueName();
+            return getFullUniqueName(
+                fullUniqueNames,
+                parent.getHierarchy(),
+                parent);
         }
 
         private void cellData(SaxWriter writer) {
@@ -2566,10 +2621,14 @@ public class XmlaHandler {
         private final int memberOrdinal;
 
         public MemberColumnHandler(
-            Property property, Level level, int memberOrdinal)
+            Property property,
+            Level level,
+            int memberOrdinal,
+            boolean fullUniqueNames)
         {
             super(
-                level.getUniqueName() + "."
+                getFullUniqueName(fullUniqueNames, level.getHierarchy(), level)
+                + "."
                 + Util.quoteMdxIdentifier(property.getName()));
             this.property = property;
             this.level = level;
@@ -2651,6 +2710,9 @@ public class XmlaHandler {
             List<ColumnHandler> columnHandlerList =
                 new ArrayList<ColumnHandler>();
             int memberOrdinal = 0;
+            final boolean fullUniqueNames =
+                MondrianProperties.instance().SsasCompatibleNaming.get()
+                && MondrianProperties.instance().XmlaFullHierarchyNames.get();
             if (!empty) {
                 for (int i = axes.size() - 1; i > 0; i--) {
                     final CellSetAxis axis = axes.get(i);
@@ -2689,7 +2751,7 @@ public class XmlaHandler {
                             for (Property dimProp : dimProps) {
                                 columnHandlerList.add(
                                     new MemberColumnHandler(
-                                        dimProp, level2, j));
+                                        dimProp, level2, j, fullUniqueNames));
                             }
                         }
                     }
@@ -2705,7 +2767,11 @@ public class XmlaHandler {
                     int j = 0;
                     for (Member member : position.getMembers()) {
                         if (j == 0) {
-                            name = member.getUniqueName();
+                            name = getFullUniqueName(
+                                fullUniqueNames,
+                                member.getHierarchy(),
+                                member);
+                                //member.getUniqueName();//TODO:
                         } else {
                             name = name + "." + member.getUniqueName();
                         }
@@ -3371,9 +3437,13 @@ public class XmlaHandler {
     }
 
     private static String getHierarchyName(Hierarchy hierarchy) {
-        return MondrianProperties.instance().SsasCompatibleNaming.get()
-            ? hierarchy.getUniqueName()
-            : hierarchy.getName();
+        if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
+            return getFullUniqueName(
+                MondrianProperties.instance().XmlaFullHierarchyNames.get(),
+                hierarchy,
+                hierarchy);
+        }
+        else return hierarchy.getName();
     }
 
     public void close() {
@@ -3442,6 +3512,46 @@ public class XmlaHandler {
      */
     public void releaseConnection(SessionConnection sc) {
         connectionMgr.releaseConnection(sc);
+    }
+
+    /**
+     * Get unique name for hierarchy or lower element, always including the
+     * hierarchy name when in SsasCompatibleNaming
+     * @param hierarchy element's hierarchy
+     * @param element Hierarchy, level or member
+     * @return unique name, including dimension when dimension=hierarchy
+     */
+    String getFullUniqueName(
+        Hierarchy hierarchy,
+        MetadataElement element)
+    {
+        return getFullUniqueName(fullUniqueNames, hierarchy, element);
+    }
+
+    public static String getFullUniqueName(
+        boolean enabled,
+        Hierarchy hierarchy,
+        MetadataElement element)
+    {
+        Dimension dimension = hierarchy.getDimension();
+        try {
+            if (enabled
+                && !dimension.getDimensionType()
+                    .equals(Dimension.Type.MEASURE)
+                && dimension.getUniqueName().equals(hierarchy.getUniqueName()))
+            {
+                // also include dimension name when it matches hierarchy name,
+                // except for measures
+                StringBuilder buf = new StringBuilder();
+                buf.append(dimension.getUniqueName());
+                buf.append('.');
+                buf.append(element.getUniqueName());
+                return buf.toString();
+            }
+        } catch (OlapException e) {
+            // ignored
+        }
+        return element.getUniqueName();
     }
 }
 
