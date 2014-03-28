@@ -1386,7 +1386,6 @@ whether to enable new naming behavior.</p>
         <Type>boolean</Type>
         <Default>false</Default>
     </PropertyDefinition>
-
     <PropertyDefinition>
         <Name>SsasKeyLookup</Name>
         <Path>mondrian.olap.SsasKeyLookup</Path>
@@ -1396,6 +1395,15 @@ how member key segments are looked up by default (when no level specified).</p>
 
 <p>If true, using a key on a hierarchy look into the top level,
 otherwise looks at the bottom level.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>XmlaFullHierarchyNames</Name>
+        <Path>mondrian.xmla.FullHierarchyNames</Path>
+        <Description>
+<p>If true and SSasCompatibleNaming=true, hierarchy names will include dimension even if names are equal.</p>
         </Description>
         <Type>boolean</Type>
         <Default>false</Default>

@@ -4925,7 +4925,10 @@ TODO: see above
             row.set(HierarchyName.name, hierarchy.getName());
             row.set(
                 HierarchyUniqueName.name,
-                getUnambiguousHierarchyUniqueName(hierarchy));
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    hierarchy));
 
             //row.set(HierarchyGuid.name, "");
 
@@ -4942,11 +4945,17 @@ TODO: see above
 
             row.set(
                 DefaultMember.name,
-                hierarchy.getDefaultMember().getUniqueName());
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    hierarchy.getDefaultMember()));
             if (hierarchy.hasAll()) {
                 row.set(
                     AllMember.name,
-                    hierarchy.getRootMembers().get(0).getUniqueName());
+                    XmlaHandler.getFullUniqueName(
+                        fullUniqueNames,
+                        hierarchy,
+                        hierarchy.getRootMembers().get(0)));
             }
             row.set(Description.name, desc);
 
@@ -5000,7 +5009,10 @@ TODO: see above
                                 MdschemaLevelsRowset.DimensionUniqueName,
                                 dimension.getUniqueName(),
                                 MdschemaLevelsRowset.HierarchyUniqueName,
-                                hierarchy.getUniqueName())),
+                                XmlaHandler.getFullUniqueName(
+                                    fullUniqueNames,
+                                    hierarchy,
+                                    hierarchy))),
                         handler));
             }
             addRow(row, rows);
@@ -5321,9 +5333,16 @@ TODO: see above
                 hierarchy.getDimension().getUniqueName());
             row.set(
                 HierarchyUniqueName.name,
-                getUnambiguousHierarchyUniqueName(hierarchy));
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    hierarchy));
             row.set(LevelName.name, level.getName());
-            row.set(LevelUniqueName.name, level.getUniqueName());
+            row.set(LevelUniqueName.name,
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    level));
             //row.set(LevelGuid.name, "");
             row.set(LevelCaption.name, level.getCaption());
             // see notes on this #getDepth()
@@ -6362,13 +6381,27 @@ TODO: see above
             row.set(DimensionUniqueName.name, dimension.getUniqueName());
             row.set(
                 HierarchyUniqueName.name,
-                getUnambiguousHierarchyUniqueName(hierarchy));
-            row.set(LevelUniqueName.name, level.getUniqueName());
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    hierarchy));
+            row.set(
+                LevelUniqueName.name,
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    level));
             row.set(LevelNumber.name, adjustedLevelDepth);
 
             row.set(MemberOrdinal.name, memberOrdinal);
             row.set(MemberName.name, member.getName());
-            row.set(MemberUniqueName.name, member.getUniqueName());
+
+            row.set(
+                MemberUniqueName.name,
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    member));
             row.set(MemberKey.name, member.getPropertyValue(
                 Property.StandardMemberProperty.MEMBER_KEY));
             // expression
@@ -6390,7 +6423,8 @@ TODO: see above
                 final Member parentMember = member.getParentMember();
                 if (parentMember != null) {
                     row.set(
-                        ParentUniqueName.name, parentMember.getUniqueName());
+                        ParentUniqueName.name,
+                        getFullUniqueName(hierarchy, parentMember));
                 }
             }
 
@@ -6738,8 +6772,8 @@ TODO: see above
             SessionConnection sc = null;
             // try {
                 sc = handler.getConnectionGrant(
-                         request,
-                         Collections.<String, String>emptyMap());
+                    request,
+                    Collections.<String, String>emptyMap());
                 for (Catalog catalog
                     : catIter(sc.getConnection(), catNameCond(), catalogCond))
                 {
@@ -6863,8 +6897,16 @@ TODO: see above
             row.set(DimensionUniqueName.name, dimension.getUniqueName());
             row.set(
                 HierarchyUniqueName.name,
-                getUnambiguousHierarchyUniqueName(hierarchy));
-            row.set(LevelUniqueName.name, level.getUniqueName());
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    hierarchy));
+            row.set(
+                LevelUniqueName.name,
+                XmlaHandler.getFullUniqueName(
+                    fullUniqueNames,
+                    hierarchy,
+                    level));
             //TODO: what is the correct value here
             //row.set(MemberUniqueName.name, "");
 
@@ -6960,10 +7002,18 @@ TODO: see above
     }
 
     private static Level lookupLevel(Cube cube, String levelUniqueName) {
+        boolean fullUniqueNames =
+            MondrianProperties.instance().SsasCompatibleNaming.get()
+            && MondrianProperties.instance().XmlaFullHierarchyNames.get();
         for (Dimension dimension : cube.getDimensions()) {
             for (Hierarchy hierarchy : dimension.getHierarchies()) {
                 for (Level level : hierarchy.getLevels()) {
-                    if (level.getUniqueName().equals(levelUniqueName)) {
+                    if (XmlaHandler.getFullUniqueName(
+                            fullUniqueNames,
+                            hierarchy,
+                            level)
+                        .equals(levelUniqueName))
+                    {
                         return level;
                     }
                 }
@@ -6999,18 +7049,36 @@ TODO: see above
             iterable);
     }
 
-    protected static String getUnambiguousHierarchyUniqueName(
-        Hierarchy hierarchy)
+    /**
+     * Get unique name for hierarchy or lower element, always including the
+     * hierarchy name when in SsasCompatibleNaming
+     * @param hierarchy element's hierarchy
+     * @param element Hierarchy, level or member
+     * @return unique name, including dimension when dimension=hierarchy
+     */
+    private static String getFullUniqueName(
+        Hierarchy hierarchy,
+        MetadataElement element)
     {
-        if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
-            return hierarchy.getDimension().getName().equals(
-                hierarchy.getName())
-                ? Util.makeFqName(
-                    hierarchy.getDimension().getUniqueName(),
-                    hierarchy.getName())
-                : hierarchy.getUniqueName();
+        Dimension dimension = hierarchy.getDimension();
+        try {
+            if (MondrianProperties.instance().SsasCompatibleNaming.get()
+                && !dimension.getDimensionType()
+                    .equals(Dimension.Type.MEASURE)
+                && dimension.getUniqueName().equals(hierarchy.getUniqueName()))
+            {
+                // also include dimension name when it matches hierarchy name,
+                // except for measures
+                StringBuilder buf = new StringBuilder();
+                buf.append(dimension.getUniqueName());
+                buf.append('.');
+                buf.append(element.getUniqueName());
+                return buf.toString();
+            }
+        } catch (OlapException e) {
+            // ignored
         }
-        return hierarchy.getUniqueName();
+        return element.getUniqueName();
     }
 
     private static String getHierarchyName(Hierarchy hierarchy) {
