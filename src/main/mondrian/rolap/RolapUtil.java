@@ -700,6 +700,55 @@ public class RolapUtil {
             }
         }
     }
+
+    /**
+     * Get the fact count measure for a cube referenced as a CubeUsage of the
+     * current virtual cube.
+     * @param evaluator current query evaluator
+     * @param cubeName name of the cube
+     * @param throwOnFail whether to throw if not found or current cube not
+     * virtual
+     * @return
+     */
+    public static Member getFactCountMeasure(
+        final Evaluator evaluator,
+        final String cubeName,
+        final boolean throwOnFail)
+    {
+        RolapEvaluator eval = (RolapEvaluator) evaluator;
+        if (Util.equalName(eval.getCube().getName(), cubeName))
+        {
+            return eval.getCube().getFactCountMeasure();
+        }
+        if (eval.getMeasureCube() != null
+            && Util.equalName(eval.getMeasureCube().getName(), cubeName))
+        {
+            return eval.getMeasureCube().getFactCountMeasure();
+        }
+        // otherwise must have explicit CubeUsages
+        RolapCube vCube = eval.getCube();
+        if (!vCube.isVirtual()) {
+            if (throwOnFail) {
+               Util.newError(vCube.getName() + " is not a virtual cube.");
+            }
+            return null;
+        }
+        RolapCubeUsages cubes = vCube.getCubeUsages();
+        for (String name : cubes.getCubeNames()) {
+            // need to find within current vc
+            if (Util.equalName(cubeName, name)) {
+                RolapCube cube =
+                    eval.getSchemaReader().getSchema().lookupCube(cubeName);
+                return cube.getFactCountMeasure();
+            }
+        }
+        if (throwOnFail) {
+            Util.newError(
+                "No CubeUsage of '" + cubeName + "' found in '"
+                + vCube.getName() +"'.");
+        }
+        return null;
+    }
 }
 
 // End RolapUtil.java
