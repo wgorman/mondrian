@@ -1362,7 +1362,7 @@ public class FunctionTest extends FoodMartTestCase {
             + "{[Store].[USA]}\n"
             + "Row #0: 74,748\n"
             + "Row #0: 266,773\n");
-        // With the changes made to Ancestors function always return 1 when using
+        // Changes made to Ancestors function always return 1 when using
         // Mondrian property AncestorOneMember
         // Test that we can count the number of ancestors.
         assertQueryReturns(
@@ -5551,6 +5551,32 @@ public class FunctionTest extends FoodMartTestCase {
             "foo");
     }
 
+    public void testIsError()
+    {
+        // Test for null
+        assertExprReturns(
+            "iif (iserror(null), \"is error\", \"not is error\")",
+            "is error");
+        // Test division by zero
+        assertExprReturns(
+            "iif (iserror(25/0), \"is error\", \"not is error\")",
+            "is error");
+        // Test operation
+        assertExprReturns(
+            "iif (iserror(25 + 10), 0, 25 + 10)",
+            "35");
+        // Test operation
+        assertExprReturns(
+            "iif (iserror(Sum([Measures].[Unit Sales])/0)"
+            + ", \"is error\", \"not is error\")",
+            "is error");
+        // Test operations
+        assertExprReturns(
+            "iif (iserror(Sum([Measures].[Unit Sales])/Sum([Measures].[Unit Sales]) - 1)"
+            + ", \"is error\", \"not is error\")",
+            "not is error");
+    }
+
     public void testIsEmptyWithNull()
     {
         assertExprReturns(
@@ -9241,7 +9267,6 @@ public class FunctionTest extends FoodMartTestCase {
 
     public void testMembersFromString2()
     {
-
     }
 
     public void testStrToMemberFullyQualifiedName() {
@@ -12924,7 +12949,8 @@ Intel platforms):
     public void testLinkMemberType() {
         // ensure it declares the right hierarchy return type
         assertAxisReturns(
-            "CrossJoin([Time].[1997], LinkMember([Time].[1997], " + TimeWeekly + "))",
+            "CrossJoin([Time].[1997], LinkMember([Time].[1997], "
+            + TimeWeekly + "))",
             "{[Time].[1997], [Time].[Weekly].[1997]}");
     }
 
@@ -13286,9 +13312,10 @@ Intel platforms):
         assertQueryReturns(
             "with set [myset] as 'filter([Store].[All Stores].Children, "
             + "((Count(CrossJoin([Gender].ALLMEMBERS, [Store].CurrentMember))) AND "
-            +"([Store].CurrentMember.UniqueName <> \"[Store].[USA]\")))'\n"
+            + "([Store].CurrentMember.UniqueName <> \"[Store].[USA]\")))'\n"
             + "member [Measures].[mymeasure] as '(Count(CrossJoin([Gender].ALLMEMBERS, [Store].CurrentMember)))'\n"
-            + "select {[myset]} on 0, {[Measures].[mymeasure]} on 1 from Sales", 
+            + "select {[myset]} on 0, {[Measures].[mymeasure]} "
+            + "on 1 from Sales",
             "Axis #0:\n"
             + "{}\n"
             + "Axis #1:\n"

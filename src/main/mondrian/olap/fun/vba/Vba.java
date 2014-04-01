@@ -1206,15 +1206,16 @@ public class Vba {
 
     // use mondrian's implementation of IsEmpty
     // public boolean isEmpty(Object expression)
-
-    @FunctionName("IsError")
-    @Signature("IsError(varname)")
-    @Description(
-        "Returns a Boolean value indicating whether an expression is an error "
-        + "value.")
-    public boolean isError(Object expression) {
-        return expression instanceof Throwable;
-    }
+    // Is Error added to builtin functions
+    //@FunctionName("IsError")
+    //@Signature("IsError(varname)")
+    //@Description(
+    //    "Returns a Boolean value indicating whether an"
+    //    + "expression is an error "
+    //    + "value.")
+    //public boolean isError(Object expression) {
+    //    return expression instanceof Throwable;
+    //}
 
     @FunctionName("IsMissing")
     @Signature("IsMissing(varname)")
