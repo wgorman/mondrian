@@ -2570,38 +2570,59 @@ public class XmlaHandler {
      */
     static class CellColumnHandler extends ColumnHandler {
 
-        CellColumnHandler(String name) {
+        List<Property> cellProps;
+
+        CellColumnHandler(String name, List<Property> property) {
             super(name);
+            this.cellProps = property;
         }
 
         public void metadata(SaxWriter writer) {
-            writer.element(
-                "xsd:element",
-                "minOccurs", 0,
-                "name", encodedName,
-                "sql:field", name);
+            for (Property prop : cellProps) {
+                writer.element(
+                    "xsd:element",
+                    "minOccurs", 0,
+                    "name", encodedName + "." + prop.getName(),
+                    "sql:field", name + "." + prop.getName());
+            }
         }
 
         public void write(
             SaxWriter writer, Cell cell, Member[] members)
         {
+            for (Property cellProp : cellProps) {
+                writeProp(writer, cell, members, cellProp);
+            }
+        }
+
+        public void writeProp(
+            SaxWriter writer, Cell cell, Member[] members, Property cellProp)
+        {
             if (cell.isNull()) {
                 return;
             }
-            Object value = cell.getValue();
+            Object value = cell.getPropertyValue(cellProp);
+            if (value == null) {
+                return;
+            }
+
             final String dataType = (String)
                 cell.getPropertyValue(StandardCellProperty.DATATYPE);
 
             final ValueInfo vi = new ValueInfo(dataType, value);
             final String valueType = vi.valueType;
+            if (cellProp == StandardCellProperty.VALUE) {
+              writer.startElement(
+                  encodedName + "." + cellProp.getName(),
+                  "xsi:type", valueType);
+            } else {
+              writer.startElement(encodedName + "." + cellProp.getName());
+            }
             value = vi.value;
             boolean isDecimal = vi.isDecimal;
 
             String valueString = value.toString();
 
-            writer.startElement(
-                encodedName,
-                "xsi:type", valueType);
             if (isDecimal) {
                 valueString = XmlaUtil.normalizeNumericString(valueString);
             }
@@ -2674,6 +2695,7 @@ public class XmlaHandler {
         private final List<Integer> posList;
         private final int axisCount;
         private int cellOrdinal;
+        private XmlaExtra extra;
 
         private static final List<Property> MemberCaptionIdArray =
             Collections.<Property>singletonList(
@@ -2682,12 +2704,13 @@ public class XmlaHandler {
         private final Member[] members;
         private final ColumnHandler[] columnHandlers;
 
-        public MDDataSet_Tabular(CellSet cellSet) {
+        public MDDataSet_Tabular(CellSet cellSet) throws SQLException {
             super(cellSet);
             final List<CellSetAxis> axes = cellSet.getAxes();
             axisCount = axes.size();
             pos = new int[axisCount];
             posList = new IntList(pos);
+            this.extra = getExtra(cellSet.getStatement().getConnection());
 
             // Count dimensions, and deduce list of levels which appear on
             // non-COLUMNS axes.
@@ -2777,8 +2800,18 @@ public class XmlaHandler {
                         }
                         j++;
                     }
+                    List<Property> props = new ArrayList<Property>();
+                    for (int i = 0; i < cellProps.size(); i++) {
+                        Property cellPropLong = cellPropLongs.get(i);
+                        if (!extra.shouldReturnCellProperty(
+                                cellSet, cellPropLong, true))
+                        {
+                            continue;
+                        }
+                        props.add(cellPropLong);
+                    }
                     columnHandlerList.add(
-                        new CellColumnHandler(name));
+                        new CellColumnHandler(name, props));
                 }
             }
 

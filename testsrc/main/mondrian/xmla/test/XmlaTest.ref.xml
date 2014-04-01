@@ -193,11 +193,10 @@
 ]]>
         </Resource>
         <Resource name="response">
-            <![CDATA[<?xml version="1.0" encoding="UTF-8"?>
-<ExecuteResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+            <![CDATA[<?xml version="1.0" encoding="UTF-8"?><ExecuteResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
   <return>
     <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-      <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <xsd:schema xmlns:sql="urn:schemas-microsoft-com:xml-sql" elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
         <xsd:element name="root">
           <xsd:complexType>
             <xsd:sequence>
@@ -213,16 +212,24 @@
         <xsd:complexType name="row">
           <xsd:sequence>
             <xsd:element minOccurs="0" name="_x005b_Employees_x005d_._x005b_Employee_x0020_Id_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Employees].[Employee Id].[MEMBER_CAPTION]" type="xsd:string"/>
-            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_" sql:field="[Measures].[Org Salary]"/>
+            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.VALUE" sql:field="[Measures].[Org Salary].VALUE"/>
+            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Org Salary].FORMATTED_VALUE"/>
+            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMAT_STRING" sql:field="[Measures].[Org Salary].FORMAT_STRING"/>
+            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORE_COLOR" sql:field="[Measures].[Org Salary].FORE_COLOR"/>
+            <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.BACK_COLOR" sql:field="[Measures].[Org Salary].BACK_COLOR"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:schema>
       <row>
-        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_ xsi:type="xsd:double">39431.6712</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.VALUE xsi:type="xsd:double">39431.6712</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.VALUE>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMATTED_VALUE>$39,431.67</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMATTED_VALUE>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMAT_STRING>Currency</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMAT_STRING>
       </row>
       <row>
         <_x005b_Employees_x005d_._x005b_Employee_x0020_Id_x005d_._x005b_MEMBER_CAPTION_x005d_>Sheri Nowmer</_x005b_Employees_x005d_._x005b_Employee_x0020_Id_x005d_._x005b_MEMBER_CAPTION_x005d_>
-        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_ xsi:type="xsd:double">39431.6712</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.VALUE xsi:type="xsd:double">39431.6712</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.VALUE>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMATTED_VALUE>$39,431.67</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMATTED_VALUE>
+        <_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMAT_STRING>Currency</_x005b_Measures_x005d_._x005b_Org_x0020_Salary_x005d_.FORMAT_STRING>
       </row>
     </root>
   </return>
