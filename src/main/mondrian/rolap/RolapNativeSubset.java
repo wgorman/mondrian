@@ -105,7 +105,7 @@ public class RolapNativeSubset extends RolapNativeSet {
             return null;
         }
         if (!SubsetConstraint.isValidContext(
-                evaluator, restrictMemberTypes()))
+                evaluator, false, null, restrictMemberTypes()))
         {
             return null;
         }
