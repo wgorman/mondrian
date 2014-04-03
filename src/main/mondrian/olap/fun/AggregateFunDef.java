@@ -531,7 +531,29 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
             if (childrenCountFromCache != -1) {
                 return childrenCountFromCache;
             }
+
+            // getMemberChildren() is a very expensive operation for large dimensions,
+            // use the min threshold for large dims, probably need to define a separate property
+            // if this works
+
+            Level childLevel = parentMember.getLevel().getChildLevel();
+            final int minThreshold = MondrianProperties.instance()
+                .NativizeMinThreshold.get();
+            if (getLevelCardinality(reader.getSchema().getSchemaReader(), childLevel) > minThreshold) {
+                return -1;
+            }
             return reader.getMemberChildren(parentMember).size();
+        }
+
+        private static long getLevelCardinality(SchemaReader schema, Level level) {
+            if (cardinalityIsKnown(level)) {
+                return level.getApproxRowCount();
+            }
+            return schema.getLevelCardinality(level, false, true);
+        }
+
+        private static boolean cardinalityIsKnown(Level level) {
+            return level.getApproxRowCount() > 0;
         }
     }
 }
