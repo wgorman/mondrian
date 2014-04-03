@@ -16,6 +16,7 @@ import javax.sql.DataSource;
 
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
+import mondrian.olap.Level;
 import mondrian.olap.Literal;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
@@ -105,7 +106,7 @@ public class RolapNativeSubset extends RolapNativeSet {
             return null;
         }
         if (!SubsetConstraint.isValidContext(
-                evaluator, false, null, restrictMemberTypes()))
+                evaluator, false, new Level[]{}, restrictMemberTypes()))
         {
             return null;
         }

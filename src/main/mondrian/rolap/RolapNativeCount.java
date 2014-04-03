@@ -21,6 +21,7 @@ import mondrian.olap.Dimension;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Hierarchy;
+import mondrian.olap.Level;
 import mondrian.olap.Literal;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
@@ -53,7 +54,7 @@ public class RolapNativeCount extends RolapNativeSet {
             return null;
         }
         if (!SqlContextConstraint.isValidContext(
-                evaluator, restrictMemberTypes()))
+                evaluator, false, new Level[]{}, restrictMemberTypes()))
         {
             return null;
         }

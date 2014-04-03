@@ -684,16 +684,16 @@ public class RolapNativeSql {
             } else if (exp instanceof MemberExpr) {
                 // Note that we cannot assume that calculated measures are directly tied to a member.  There could be logic in the 
                 // calculated member that sometimes evaluates to empty and other times where it will not.
-                if (( (MemberExpr) exp ).getMember().isMeasure() && !((MemberExpr) exp).getMember().isCalculated()) {
-                    rs.measureFound = true;
+                Member m = ((MemberExpr) exp).getMember();
+                if (m.isMeasure()) {
+                    if (!m.isCalculated() || SqlConstraintUtils.isSupportedCalculatedMember(m)) {
+                          rs.measureFound = true;
+                    }
                 } else {
-                    Member m = ((MemberExpr)exp).getMember();
-                    if (!m.isMeasure()) {
-                        if (m.isAll()) {
-                            rs.allHierarchies.add(m.getHierarchy());
-                        } else {
-                            rs.nonAllHierarchies.add(m.getHierarchy());
-                        }
+                    if (m.isAll()) {
+                        rs.allHierarchies.add(m.getHierarchy());
+                    } else {
+                        rs.nonAllHierarchies.add(m.getHierarchy());
                     }
                 }
             } else if (exp instanceof NamedSetExpr) {
