@@ -61,6 +61,10 @@ public class DescendantsCrossJoinArg implements CrossJoinArg {
     }
 
     public boolean isPreferInterpreter(boolean joinArg) {
+        // if this is the all level ([(All)].Members) prefer the interpreter.
+        if (level != null && level.isAll() && member == null) {
+            return true;
+        }
         return false;
     }
 

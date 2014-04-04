@@ -1634,5 +1634,73 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 191,940\n"
             + "Row #0: 50,236\n");
     }
+
+    /**
+     * Validation for MONDRIAN-1972, this MDX was generating an empty SQL request
+     */
+    public void testNativeAllLevel() {
+        assertQueryReturns(
+            "SELECT NON EMPTY CrossJoin([Gender].[(All)].Members, [Product].[(All)].Members) on 0 from [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[All Gender], [Product].[All Products]}\n"
+            + "Row #0: 266,773\n");
+    }
+
+    /**
+     * Validation for MONDRIAN-1972, the first two MDX statements were generating an empty SQL request
+     */
+    public void testNativeAllLevelSubset() {
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+      assertQueryReturns(
+          "SELECT Subset([Gender].[(All)].Members, 0, 1) on 0 from [Sales]",
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Gender].[All Gender]}\n"
+          + "Row #0: 266,773\n");
+      assertQueryReturns(
+          "SELECT Subset({[Gender].[All Gender]}, 0, 1) on 0 from [Sales]",
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Gender].[All Gender]}\n"
+          + "Row #0: 266,773\n");
+      // Verify this still executes natively
+      String mdx = "SELECT Subset({[Gender].[All Gender].Children}, 0, 1) on 0 from [Sales]";
+      String mysqlQuery =
+          "select\n"
+          + "    `customer`.`gender` as `c0`\n"
+          + "from\n"
+          + "    `customer` as `customer`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "group by\n"
+          + "    `customer`.`gender`\n"
+          + "order by\n"
+          + "    ISNULL(`customer`.`gender`) ASC, `customer`.`gender` ASC limit 1 offset 0";
+
+      getTestContext().flushSchemaCache();
+
+      if (MondrianProperties.instance().EnableNativeCount.get()) {
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(getTestContext(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Gender].[F]}\n"
+          + "Row #0: 131,558\n");
+    }
 }
 // End NativeSetEvaluationTest.java
