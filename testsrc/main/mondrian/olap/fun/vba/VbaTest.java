@@ -43,6 +43,14 @@ public class VbaTest extends TestCase {
 
     // Conversion functions
 
+    public void testIsError() {
+        assertEquals(false, Vba.isError(1950.0));
+        assertEquals(false, Vba.isError("test"));
+        assertEquals(false, Vba.isError("1870.0"));
+        assertEquals(false, Vba.isError(1950.0/10));
+        assertEquals(true, Vba.isError(1950.0/0));
+        assertEquals(false, Vba.isError(24));
+    }
 
     public void testCStr() {
         assertEquals("1950", Vba.cstr(1950.0));
