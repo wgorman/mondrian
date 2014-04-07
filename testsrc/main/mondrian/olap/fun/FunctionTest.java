@@ -12563,6 +12563,82 @@ Intel platforms):
             + "Row #0: 11,389\n");
     }
 
+    /**
+     * Exists with CubeName argument. 
+     * <a href="http://jira.pentaho.com/browse/MONDRIAN-1968">MONDRIAN-1968</a>
+     */
+    public void testExistsCubeName() {
+        // Argument only applies to explicit cube usages
+        TestContext context = getTestContext().create(
+            null,
+            null,
+            "<VirtualCube name=\"Sales and Warehouse\" defaultMeasure=\"Store Sales\">\n"
+            + "  <CubeUsages>\n"
+            + "    <CubeUsage cubeName=\"Sales\" />\n"
+            + "    <CubeUsage cubeName=\"Warehouse\"/>\n"
+            + "  </CubeUsages>\n"
+            + "  <VirtualCubeDimension name=\"Product\"/>\n"
+            + "  <VirtualCubeMeasure cubeName=\"Sales\" name=\"[Measures].[Store Sales]\"/>\n"
+            + "  <VirtualCubeMeasure cubeName=\"Warehouse\" name=\"[Measures].[Warehouse Sales]\"/>\n"
+            + "</VirtualCube>",
+            null, null, null);
+        // [Club Head Cheese] doesn't appear in Warehouse's fact table
+        context.assertQueryReturns(
+            "SELECT \n"
+            + "  { Measures.[Store Sales] } ON 0,\n"
+            + "  { Exists( \n"
+            + "    { [Product].[Product Name].[Club Head Cheese],\n"
+            + "      [Product].[Product Name].[Washington Cola],\n"
+            + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
+            + "    { [Product].[Food].[Dairy].[Dairy].[Cheese].[Club].Children },\n"
+            + "    'Warehouse') } ON 1\n"
+            + "FROM [Sales and Warehouse]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+            + "Row #0: 647.80\n");
+        // for Sales
+        context.assertQueryReturns(
+            "SELECT \n"
+            + "  { Measures.[Warehouse Sales] } ON 0,\n"
+            + "  { Exists( \n"
+            + "    { [Product].[Product Name].[Club Head Cheese],\n"
+            + "      [Product].[Product Name].[Washington Cola],\n"
+            + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
+            + "    { [Product].[Food].[Dairy].[Dairy].[Cheese].[Club].Children },\n"
+            + "    'Sales') } ON 1\n"
+            + "FROM [Sales and Warehouse]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Warehouse Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Head Cheese]}\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+            + "Row #0: \n"
+            + "Row #1: 184.188\n");
+        // empty set2 arg
+        context.assertQueryReturns(
+            "SELECT \n"
+            + "  { Measures.[Warehouse Sales] } ON 0,\n"
+            + "  { Exists( \n"
+            + "    { [Product].[Product Name].[Club Head Cheese],\n"
+            + "      [Product].[Product Name].[Washington Cola],\n"
+            + "      [Product].[Product Name].[Club Havarti Cheese] },,'Warehouse') } ON 1\n"
+            + "FROM [Sales and Warehouse]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Warehouse Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink].[Beverages].[Carbonated Beverages].[Soda].[Washington].[Washington Cola]}\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+            + "Row #0: 177.916\n"
+            + "Row #1: 184.188\n");
+    }
 
 
     /**

@@ -376,11 +376,16 @@ public class RolapCubeLevel extends RolapLevel {
 
             final StarColumnPredicate predicate;
             if (isMemberCalculated && !member.isParentChildLeaf()) {
-                predicate = null;
+                // Check to see if this calculated member has a "predicate" defined
+                Object predVal = member.getPropertyValue("predicate");
+                if (predVal != null) {
+                    predicate = new ValueColumnPredicate(column, predVal);
+                } else {
+                    predicate = null;
+                }
             } else {
                 predicate = new ValueColumnPredicate(column, memberKey);
             }
-
             // use the member as constraint; this will give us some
             //  optimization potential
             request.addConstrainedColumn(column, predicate);

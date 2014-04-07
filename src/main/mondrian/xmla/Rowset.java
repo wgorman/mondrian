@@ -11,6 +11,7 @@
 
 package mondrian.xmla;
 
+import mondrian.olap.MondrianProperties;
 import mondrian.olap.Util;
 import mondrian.xmla.XmlaSessionConnectionManager.SessionConnection;
 
@@ -45,6 +46,7 @@ abstract class Rowset implements XmlaConstants {
     protected final XmlaHandler handler;
     private final RowsetDefinition.Column[] restrictedColumns;
     protected final boolean deep;
+    protected final boolean fullUniqueNames;
 
     /**
      * Creates a Rowset.
@@ -125,6 +127,9 @@ abstract class Rowset implements XmlaConstants {
             }
         }
         this.deep = deep;
+        this.fullUniqueNames =
+            MondrianProperties.instance().SsasCompatibleNaming.get()
+            && MondrianProperties.instance().XmlaFullHierarchyNames.get();
     }
 
     protected ArrayList<RowsetDefinition.Column> pruneRestrictions(

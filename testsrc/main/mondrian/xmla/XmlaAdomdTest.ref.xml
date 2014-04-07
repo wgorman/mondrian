@@ -191,12 +191,12 @@
                                 </HierarchyInfo>
                             </AxisInfo>
                             <AxisInfo name="Axis1">
-                                <HierarchyInfo name="[Warehouse]">
-                                    <UName name="[Warehouse].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Warehouse].[MEMBER_CAPTION]"/>
-                                    <LName name="[Warehouse].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Warehouse].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Warehouse].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Warehouse].[Warehouse]">
+                                    <UName name="[Warehouse].[Warehouse].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Warehouse].[Warehouse].[MEMBER_CAPTION]"/>
+                                    <LName name="[Warehouse].[Warehouse].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Warehouse].[Warehouse].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Warehouse].[Warehouse].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
                             </AxisInfo>
                             <AxisInfo name="SlicerAxis">
@@ -239,10 +239,10 @@
                         <Axis name="Axis1">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="[Warehouse]">
-                                        <UName>[Warehouse].[All Warehouses]</UName>
+                                    <Member Hierarchy="[Warehouse].[Warehouse]">
+                                        <UName>[Warehouse].[Warehouse].[All Warehouses]</UName>
                                         <Caption>All Warehouses</Caption>
-                                        <LName>[Warehouse].[(All)]</LName>
+                                        <LName>[Warehouse].[Warehouse].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
@@ -253,16 +253,16 @@
                             <Tuples>
                                 <Tuple>
                                     <Member Hierarchy="[A Store].[SharedStore]">
-                                        <UName>[SharedStore].[All]</UName>
+                                        <UName>[A Store].[SharedStore].[All]</UName>
                                         <Caption>All</Caption>
-                                        <LName>[SharedStore].[(All)]</LName>
+                                        <LName>[A Store].[SharedStore].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
                                     <Member Hierarchy="[AnotherStore].[SharedStore]">
-                                        <UName>[SharedStore].[All]</UName>
+                                        <UName>[AnotherStore].[SharedStore].[All]</UName>
                                         <Caption>All</Caption>
-                                        <LName>[SharedStore].[(All)]</LName>
+                                        <LName>[AnotherStore].[SharedStore].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
@@ -539,42 +539,42 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
                                 </HierarchyInfo>
                             </AxisInfo>
                             <AxisInfo name="Axis1">
-                                <HierarchyInfo name="[Product]">
-                                    <UName name="[Product].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Product].[MEMBER_CAPTION]"/>
-                                    <LName name="[Product].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Product].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Product].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Product].[Product]">
+                                    <UName name="[Product].[Product].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Product].[Product].[MEMBER_CAPTION]"/>
+                                    <LName name="[Product].[Product].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Product].[Product].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Product].[Product].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
                             </AxisInfo>
                             <AxisInfo name="SlicerAxis">
-                                <HierarchyInfo name="[Store]">
-                                    <UName name="[Store].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Store].[MEMBER_CAPTION]"/>
-                                    <LName name="[Store].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Store].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Store].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Store].[Store]">
+                                    <UName name="[Store].[Store].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Store].[Store].[MEMBER_CAPTION]"/>
+                                    <LName name="[Store].[Store].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Store].[Store].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Store].[Store].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Store Size in SQFT]">
-                                    <UName name="[Store Size in SQFT].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Store Size in SQFT].[MEMBER_CAPTION]"/>
-                                    <LName name="[Store Size in SQFT].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Store Size in SQFT].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Store Size in SQFT].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Store Size in SQFT].[Store Size in SQFT]">
+                                    <UName name="[Store Size in SQFT].[Store Size in SQFT].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Store Size in SQFT].[Store Size in SQFT].[MEMBER_CAPTION]"/>
+                                    <LName name="[Store Size in SQFT].[Store Size in SQFT].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Store Size in SQFT].[Store Size in SQFT].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Store Size in SQFT].[Store Size in SQFT].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Store Type]">
-                                    <UName name="[Store Type].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Store Type].[MEMBER_CAPTION]"/>
-                                    <LName name="[Store Type].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Store Type].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Store Type].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Store Type].[Store Type]">
+                                    <UName name="[Store Type].[Store Type].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Store Type].[Store Type].[MEMBER_CAPTION]"/>
+                                    <LName name="[Store Type].[Store Type].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Store Type].[Store Type].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Store Type].[Store Type].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Time]">
-                                    <UName name="[Time].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Time].[MEMBER_CAPTION]"/>
-                                    <LName name="[Time].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Time].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Time].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Time].[Time]">
+                                    <UName name="[Time].[Time].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Time].[Time].[MEMBER_CAPTION]"/>
+                                    <LName name="[Time].[Time].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Time].[Time].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Time].[Time].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
                                 <HierarchyInfo name="[Time].[Weekly]">
                                     <UName name="[Time].[Weekly].[MEMBER_UNIQUE_NAME]"/>
@@ -583,54 +583,54 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
                                     <LNum name="[Time].[Weekly].[LEVEL_NUMBER]"/>
                                     <DisplayInfo name="[Time].[Weekly].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Promotion Media]">
-                                    <UName name="[Promotion Media].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Promotion Media].[MEMBER_CAPTION]"/>
-                                    <LName name="[Promotion Media].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Promotion Media].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Promotion Media].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Promotion Media].[Promotion Media]">
+                                    <UName name="[Promotion Media].[Promotion Media].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Promotion Media].[Promotion Media].[MEMBER_CAPTION]"/>
+                                    <LName name="[Promotion Media].[Promotion Media].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Promotion Media].[Promotion Media].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Promotion Media].[Promotion Media].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Promotions]">
-                                    <UName name="[Promotions].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Promotions].[MEMBER_CAPTION]"/>
-                                    <LName name="[Promotions].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Promotions].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Promotions].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Promotions].[Promotions]">
+                                    <UName name="[Promotions].[Promotions].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Promotions].[Promotions].[MEMBER_CAPTION]"/>
+                                    <LName name="[Promotions].[Promotions].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Promotions].[Promotions].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Promotions].[Promotions].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Customers]">
-                                    <UName name="[Customers].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Customers].[MEMBER_CAPTION]"/>
-                                    <LName name="[Customers].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Customers].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Customers].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Customers].[Customers]">
+                                    <UName name="[Customers].[Customers].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Customers].[Customers].[MEMBER_CAPTION]"/>
+                                    <LName name="[Customers].[Customers].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Customers].[Customers].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Customers].[Customers].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Education Level]">
-                                    <UName name="[Education Level].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Education Level].[MEMBER_CAPTION]"/>
-                                    <LName name="[Education Level].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Education Level].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Education Level].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Education Level].[Education Level]">
+                                    <UName name="[Education Level].[Education Level].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Education Level].[Education Level].[MEMBER_CAPTION]"/>
+                                    <LName name="[Education Level].[Education Level].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Education Level].[Education Level].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Education Level].[Education Level].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Gender]">
-                                    <UName name="[Gender].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Gender].[MEMBER_CAPTION]"/>
-                                    <LName name="[Gender].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Gender].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Gender].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Gender].[Gender]">
+                                    <UName name="[Gender].[Gender].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Gender].[Gender].[MEMBER_CAPTION]"/>
+                                    <LName name="[Gender].[Gender].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Gender].[Gender].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Gender].[Gender].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Marital Status]">
-                                    <UName name="[Marital Status].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Marital Status].[MEMBER_CAPTION]"/>
-                                    <LName name="[Marital Status].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Marital Status].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Marital Status].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Marital Status].[Marital Status]">
+                                    <UName name="[Marital Status].[Marital Status].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Marital Status].[Marital Status].[MEMBER_CAPTION]"/>
+                                    <LName name="[Marital Status].[Marital Status].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Marital Status].[Marital Status].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Marital Status].[Marital Status].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
-                                <HierarchyInfo name="[Yearly Income]">
-                                    <UName name="[Yearly Income].[MEMBER_UNIQUE_NAME]"/>
-                                    <Caption name="[Yearly Income].[MEMBER_CAPTION]"/>
-                                    <LName name="[Yearly Income].[LEVEL_UNIQUE_NAME]"/>
-                                    <LNum name="[Yearly Income].[LEVEL_NUMBER]"/>
-                                    <DisplayInfo name="[Yearly Income].[DISPLAY_INFO]"/>
+                                <HierarchyInfo name="[Yearly Income].[Yearly Income]">
+                                    <UName name="[Yearly Income].[Yearly Income].[MEMBER_UNIQUE_NAME]"/>
+                                    <Caption name="[Yearly Income].[Yearly Income].[MEMBER_CAPTION]"/>
+                                    <LName name="[Yearly Income].[Yearly Income].[LEVEL_UNIQUE_NAME]"/>
+                                    <LNum name="[Yearly Income].[Yearly Income].[LEVEL_NUMBER]"/>
+                                    <DisplayInfo name="[Yearly Income].[Yearly Income].[DISPLAY_INFO]"/>
                                 </HierarchyInfo>
                             </AxisInfo>
                         </AxesInfo>
@@ -657,10 +657,10 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
                         <Axis name="Axis1">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="[Product]">
-                                        <UName>[Product].[Food].[Frozen Foods]</UName>
+                                    <Member Hierarchy="[Product].[Product]">
+                                        <UName>[Product].[Product].[Food].[Frozen Foods]</UName>
                                         <Caption>Frozen Foods</Caption>
-                                        <LName>[Product].[Product Department]</LName>
+                                        <LName>[Product].[Product].[Product Department]</LName>
                                         <LNum>2</LNum>
                                         <DisplayInfo>6</DisplayInfo>
                                     </Member>
@@ -670,31 +670,31 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
                         <Axis name="SlicerAxis">
                             <Tuples>
                                 <Tuple>
-                                    <Member Hierarchy="[Store]">
-                                        <UName>[Store].[All Stores]</UName>
+                                    <Member Hierarchy="[Store].[Store]">
+                                        <UName>[Store].[Store].[All Stores]</UName>
                                         <Caption>All Stores</Caption>
-                                        <LName>[Store].[(All)]</LName>
+                                        <LName>[Store].[Store].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Store Size in SQFT]">
-                                        <UName>[Store Size in SQFT].[All Store Size in SQFTs]</UName>
+                                    <Member Hierarchy="[Store Size in SQFT].[Store Size in SQFT]">
+                                        <UName>[Store Size in SQFT].[Store Size in SQFT].[All Store Size in SQFTs]</UName>
                                         <Caption>All Store Size in SQFTs</Caption>
-                                        <LName>[Store Size in SQFT].[(All)]</LName>
+                                        <LName>[Store Size in SQFT].[Store Size in SQFT].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>21</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Store Type]">
-                                        <UName>[Store Type].[All Store Types]</UName>
+                                    <Member Hierarchy="[Store Type].[Store Type]">
+                                        <UName>[Store Type].[Store Type].[All Store Types]</UName>
                                         <Caption>All Store Types</Caption>
-                                        <LName>[Store Type].[(All)]</LName>
+                                        <LName>[Store Type].[Store Type].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>6</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Time]">
-                                        <UName>[Time].[1997]</UName>
+                                    <Member Hierarchy="[Time].[Time]">
+                                        <UName>[Time].[Time].[1997]</UName>
                                         <Caption>1997</Caption>
-                                        <LName>[Time].[Year]</LName>
+                                        <LName>[Time].[Time].[Year]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>4</DisplayInfo>
                                     </Member>
@@ -705,52 +705,52 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
                                         <LNum>0</LNum>
                                         <DisplayInfo>2</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Promotion Media]">
-                                        <UName>[Promotion Media].[All Media]</UName>
+                                    <Member Hierarchy="[Promotion Media].[Promotion Media]">
+                                        <UName>[Promotion Media].[Promotion Media].[All Media]</UName>
                                         <Caption>All Media</Caption>
-                                        <LName>[Promotion Media].[(All)]</LName>
+                                        <LName>[Promotion Media].[Promotion Media].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>14</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Promotions]">
-                                        <UName>[Promotions].[All Promotions]</UName>
+                                    <Member Hierarchy="[Promotions].[Promotions]">
+                                        <UName>[Promotions].[Promotions].[All Promotions]</UName>
                                         <Caption>All Promotions</Caption>
-                                        <LName>[Promotions].[(All)]</LName>
+                                        <LName>[Promotions].[Promotions].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>51</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Customers]">
-                                        <UName>[Customers].[All Customers]</UName>
+                                    <Member Hierarchy="[Customers].[Customers]">
+                                        <UName>[Customers].[Customers].[All Customers]</UName>
                                         <Caption>All Customers</Caption>
-                                        <LName>[Customers].[(All)]</LName>
+                                        <LName>[Customers].[Customers].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>3</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Education Level]">
-                                        <UName>[Education Level].[All Education Levels]</UName>
+                                    <Member Hierarchy="[Education Level].[Education Level]">
+                                        <UName>[Education Level].[Education Level].[All Education Levels]</UName>
                                         <Caption>All Education Levels</Caption>
-                                        <LName>[Education Level].[(All)]</LName>
+                                        <LName>[Education Level].[Education Level].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>5</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Gender]">
-                                        <UName>[Gender].[All Gender]</UName>
+                                    <Member Hierarchy="[Gender].[Gender]">
+                                        <UName>[Gender].[Gender].[All Gender]</UName>
                                         <Caption>All Gender</Caption>
-                                        <LName>[Gender].[(All)]</LName>
+                                        <LName>[Gender].[Gender].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>2</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Marital Status]">
-                                        <UName>[Marital Status].[All Marital Status]</UName>
+                                    <Member Hierarchy="[Marital Status].[Marital Status]">
+                                        <UName>[Marital Status].[Marital Status].[All Marital Status]</UName>
                                         <Caption>All Marital Status</Caption>
-                                        <LName>[Marital Status].[(All)]</LName>
+                                        <LName>[Marital Status].[Marital Status].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>111</DisplayInfo>
                                     </Member>
-                                    <Member Hierarchy="[Yearly Income]">
-                                        <UName>[Yearly Income].[All Yearly Incomes]</UName>
+                                    <Member Hierarchy="[Yearly Income].[Yearly Income]">
+                                        <UName>[Yearly Income].[Yearly Income].[All Yearly Incomes]</UName>
                                         <Caption>All Yearly Incomes</Caption>
-                                        <LName>[Yearly Income].[(All)]</LName>
+                                        <LName>[Yearly Income].[Yearly Income].[(All)]</LName>
                                         <LNum>0</LNum>
                                         <DisplayInfo>8</DisplayInfo>
                                     </Member>
@@ -769,6 +769,246 @@ select {[Warehouse].[All Warehouses]} ON ROWS,
             </return>
         </ExecuteResponse>
     </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testMDMembersIncludeHierarchy">
+        <Resource name="response">
+            <![CDATA[<?xml version="1.0"?>
+<SOAP-ENV:Envelope SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header/>
+    <SOAP-ENV:Body>
+        <DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+            <return>
+                <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <xsd:element name="root">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="row" type="row"/>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                        <xsd:simpleType name="uuid">
+                            <xsd:restriction base="xsd:string">
+                                <xsd:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+                            </xsd:restriction>
+                        </xsd:simpleType>
+                        <xsd:complexType name="row">
+                            <xsd:sequence>
+                                <xsd:element minOccurs="0" name="CATALOG_NAME" sql:field="CATALOG_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="SCHEMA_NAME" sql:field="SCHEMA_NAME" type="xsd:string"/>
+                                <xsd:element name="CUBE_NAME" sql:field="CUBE_NAME" type="xsd:string"/>
+                                <xsd:element name="DIMENSION_UNIQUE_NAME" sql:field="DIMENSION_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="HIERARCHY_UNIQUE_NAME" sql:field="HIERARCHY_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="LEVEL_UNIQUE_NAME" sql:field="LEVEL_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="LEVEL_NUMBER" sql:field="LEVEL_NUMBER" type="xsd:unsignedInt"/>
+                                <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
+                                <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
+                                <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
+                                <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
+                                <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
+                                <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="MEMBER_GUID" sql:field="MEMBER_GUID" type="uuid"/>
+                                <xsd:element name="MEMBER_CAPTION" sql:field="MEMBER_CAPTION" type="xsd:string"/>
+                                <xsd:element name="CHILDREN_CARDINALITY" sql:field="CHILDREN_CARDINALITY" type="xsd:unsignedInt"/>
+                                <xsd:element name="PARENT_LEVEL" sql:field="PARENT_LEVEL" type="xsd:unsignedInt"/>
+                                <xsd:element minOccurs="0" name="PARENT_UNIQUE_NAME" sql:field="PARENT_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="PARENT_COUNT" sql:field="PARENT_COUNT" type="xsd:unsignedInt"/>
+                                <xsd:element minOccurs="0" name="TREE_OP" sql:field="TREE_OP" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DEPTH" sql:field="DEPTH" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:schema>
+                    <row>
+                        <CATALOG_NAME>FoodMart</CATALOG_NAME>
+                        <SCHEMA_NAME>FoodMart</SCHEMA_NAME>
+                        <CUBE_NAME>Sales</CUBE_NAME>
+                        <DIMENSION_UNIQUE_NAME>[Customers]</DIMENSION_UNIQUE_NAME>
+                        <HIERARCHY_UNIQUE_NAME>[Customers].[Customers]</HIERARCHY_UNIQUE_NAME>
+                        <LEVEL_UNIQUE_NAME>[Customers].[Customers].[City]</LEVEL_UNIQUE_NAME>
+                        <LEVEL_NUMBER>3</LEVEL_NUMBER>
+                        <MEMBER_ORDINAL>7930</MEMBER_ORDINAL>
+                        <MEMBER_NAME>Portland</MEMBER_NAME>
+                        <MEMBER_UNIQUE_NAME>[Customers].[Customers].[USA].[OR].[Portland]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
+                        <EXPRESSION/>
+                        <MEMBER_KEY>Portland</MEMBER_KEY>
+                        <MEMBER_TYPE>1</MEMBER_TYPE>
+                        <MEMBER_CAPTION>Portland</MEMBER_CAPTION>
+                        <CHILDREN_CARDINALITY>90</CHILDREN_CARDINALITY>
+                        <PARENT_LEVEL>2</PARENT_LEVEL>
+                        <PARENT_UNIQUE_NAME>[Customers].[Customers].[USA].[OR]</PARENT_UNIQUE_NAME>
+                        <PARENT_COUNT>1</PARENT_COUNT>
+                        <DEPTH>3</DEPTH>
+                    </row>
+                </root>
+            </return>
+        </DiscoverResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]>
+        </Resource>
+        <Resource name="request">
+            <![CDATA[
+<SOAP-ENV:Envelope
+xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+  <SOAP-ENV:Body>
+    <Discover xmlns="urn:schemas-microsoft-com:xml-analysis"
+        SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <RequestType>${request.type}</RequestType>
+    <Restrictions>
+      <RestrictionList>
+        <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
+        <CUBE_NAME>${cube.name}</CUBE_NAME>
+        <MEMBER_UNIQUE_NAME>[Customers].[Customers].[USA].[OR].[Portland]</MEMBER_UNIQUE_NAME>
+      </RestrictionList>
+    </Restrictions>
+    <Properties>
+      <PropertyList>
+        <DataSourceInfo>${data.source.info}</DataSourceInfo>
+        <Catalog>${catalog}</Catalog>
+        <Format>${format}</Format>
+        <Content>${content}</Content>
+      </PropertyList>
+    </Properties>
+    </Discover>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]>
+        </Resource>
+    </TestCase>
+    <TestCase name="testMDMembersIncludeHierarchyLevelRestriction">
+        <Resource name="response">
+            <![CDATA[<?xml version="1.0"?>
+<SOAP-ENV:Envelope SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header/>
+    <SOAP-ENV:Body>
+        <DiscoverResponse xmlns="urn:schemas-microsoft-com:xml-analysis">
+            <return>
+                <root xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:EX="urn:schemas-microsoft-com:xml-analysis:exception" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                    <xsd:schema elementFormDefault="qualified" targetNamespace="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns="urn:schemas-microsoft-com:xml-analysis:rowset" xmlns:sql="urn:schemas-microsoft-com:xml-sql" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+                        <xsd:element name="root">
+                            <xsd:complexType>
+                                <xsd:sequence>
+                                    <xsd:element maxOccurs="unbounded" minOccurs="0" name="row" type="row"/>
+                                </xsd:sequence>
+                            </xsd:complexType>
+                        </xsd:element>
+                        <xsd:simpleType name="uuid">
+                            <xsd:restriction base="xsd:string">
+                                <xsd:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+                            </xsd:restriction>
+                        </xsd:simpleType>
+                        <xsd:complexType name="row">
+                            <xsd:sequence>
+                                <xsd:element minOccurs="0" name="CATALOG_NAME" sql:field="CATALOG_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="SCHEMA_NAME" sql:field="SCHEMA_NAME" type="xsd:string"/>
+                                <xsd:element name="CUBE_NAME" sql:field="CUBE_NAME" type="xsd:string"/>
+                                <xsd:element name="DIMENSION_UNIQUE_NAME" sql:field="DIMENSION_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="HIERARCHY_UNIQUE_NAME" sql:field="HIERARCHY_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="LEVEL_UNIQUE_NAME" sql:field="LEVEL_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="LEVEL_NUMBER" sql:field="LEVEL_NUMBER" type="xsd:unsignedInt"/>
+                                <xsd:element name="MEMBER_ORDINAL" sql:field="MEMBER_ORDINAL" type="xsd:unsignedInt"/>
+                                <xsd:element name="MEMBER_NAME" sql:field="MEMBER_NAME" type="xsd:string"/>
+                                <xsd:element name="MEMBER_UNIQUE_NAME" sql:field="MEMBER_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DESCRIPTION" sql:field="DESCRIPTION" type="xsd:string"/>
+                                <xsd:element name="EXPRESSION" sql:field="EXPRESSION" type="xsd:string"/>
+                                <xsd:element name="MEMBER_KEY" sql:field="MEMBER_KEY" type="xsd:string"/>
+                                <xsd:element name="MEMBER_TYPE" sql:field="MEMBER_TYPE" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="MEMBER_GUID" sql:field="MEMBER_GUID" type="uuid"/>
+                                <xsd:element name="MEMBER_CAPTION" sql:field="MEMBER_CAPTION" type="xsd:string"/>
+                                <xsd:element name="CHILDREN_CARDINALITY" sql:field="CHILDREN_CARDINALITY" type="xsd:unsignedInt"/>
+                                <xsd:element name="PARENT_LEVEL" sql:field="PARENT_LEVEL" type="xsd:unsignedInt"/>
+                                <xsd:element minOccurs="0" name="PARENT_UNIQUE_NAME" sql:field="PARENT_UNIQUE_NAME" type="xsd:string"/>
+                                <xsd:element name="PARENT_COUNT" sql:field="PARENT_COUNT" type="xsd:unsignedInt"/>
+                                <xsd:element minOccurs="0" name="TREE_OP" sql:field="TREE_OP" type="xsd:string"/>
+                                <xsd:element minOccurs="0" name="DEPTH" sql:field="DEPTH" type="xsd:int"/>
+                                <xsd:element minOccurs="0" name="CUBE_SOURCE" sql:field="CUBE_SOURCE" type="xsd:int"/>
+                            </xsd:sequence>
+                        </xsd:complexType>
+                    </xsd:schema>
+                    <row>
+                        <CATALOG_NAME>FoodMart</CATALOG_NAME>
+                        <SCHEMA_NAME>FoodMart</SCHEMA_NAME>
+                        <CUBE_NAME>Sales</CUBE_NAME>
+                        <DIMENSION_UNIQUE_NAME>[Gender]</DIMENSION_UNIQUE_NAME>
+                        <HIERARCHY_UNIQUE_NAME>[Gender].[Gender]</HIERARCHY_UNIQUE_NAME>
+                        <LEVEL_UNIQUE_NAME>[Gender].[Gender].[Gender]</LEVEL_UNIQUE_NAME>
+                        <LEVEL_NUMBER>1</LEVEL_NUMBER>
+                        <MEMBER_ORDINAL>1</MEMBER_ORDINAL>
+                        <MEMBER_NAME>F</MEMBER_NAME>
+                        <MEMBER_UNIQUE_NAME>[Gender].[Gender].[F]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
+                        <EXPRESSION/>
+                        <MEMBER_KEY>F</MEMBER_KEY>
+                        <MEMBER_TYPE>1</MEMBER_TYPE>
+                        <MEMBER_CAPTION>F</MEMBER_CAPTION>
+                        <CHILDREN_CARDINALITY>0</CHILDREN_CARDINALITY>
+                        <PARENT_LEVEL>0</PARENT_LEVEL>
+                        <PARENT_UNIQUE_NAME>[Gender].[Gender].[All Gender]</PARENT_UNIQUE_NAME>
+                        <PARENT_COUNT>1</PARENT_COUNT>
+                        <DEPTH>1</DEPTH>
+                    </row>
+                    <row>
+                        <CATALOG_NAME>FoodMart</CATALOG_NAME>
+                        <SCHEMA_NAME>FoodMart</SCHEMA_NAME>
+                        <CUBE_NAME>Sales</CUBE_NAME>
+                        <DIMENSION_UNIQUE_NAME>[Gender]</DIMENSION_UNIQUE_NAME>
+                        <HIERARCHY_UNIQUE_NAME>[Gender].[Gender]</HIERARCHY_UNIQUE_NAME>
+                        <LEVEL_UNIQUE_NAME>[Gender].[Gender].[Gender]</LEVEL_UNIQUE_NAME>
+                        <LEVEL_NUMBER>1</LEVEL_NUMBER>
+                        <MEMBER_ORDINAL>2</MEMBER_ORDINAL>
+                        <MEMBER_NAME>M</MEMBER_NAME>
+                        <MEMBER_UNIQUE_NAME>[Gender].[Gender].[M]</MEMBER_UNIQUE_NAME>
+                        <DESCRIPTION/>
+                        <EXPRESSION/>
+                        <MEMBER_KEY>M</MEMBER_KEY>
+                        <MEMBER_TYPE>1</MEMBER_TYPE>
+                        <MEMBER_CAPTION>M</MEMBER_CAPTION>
+                        <CHILDREN_CARDINALITY>0</CHILDREN_CARDINALITY>
+                        <PARENT_LEVEL>0</PARENT_LEVEL>
+                        <PARENT_UNIQUE_NAME>[Gender].[Gender].[All Gender]</PARENT_UNIQUE_NAME>
+                        <PARENT_COUNT>1</PARENT_COUNT>
+                        <DEPTH>1</DEPTH>
+                    </row>
+                </root>
+            </return>
+        </DiscoverResponse>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>
+]]>
+        </Resource>
+        <Resource name="request">
+            <![CDATA[
+<SOAP-ENV:Envelope
+xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
+  SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+  <SOAP-ENV:Body>
+    <Discover xmlns="urn:schemas-microsoft-com:xml-analysis"
+        SOAP-ENV:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">
+    <RequestType>${request.type}</RequestType>
+    <Restrictions>
+      <RestrictionList>
+        <CATALOG_NAME>${catalog.name}</CATALOG_NAME>
+        <CUBE_NAME>${cube.name}</CUBE_NAME>
+        <LEVEL_UNIQUE_NAME>[Gender].[Gender].[Gender]</LEVEL_UNIQUE_NAME>
+      </RestrictionList>
+    </Restrictions>
+    <Properties>
+      <PropertyList>
+        <DataSourceInfo>${data.source.info}</DataSourceInfo>
+        <Catalog>${catalog}</Catalog>
+        <Format>${format}</Format>
+        <Content>${content}</Content>
+      </PropertyList>
+    </Properties>
+    </Discover>
+  </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
 ]]>
         </Resource>

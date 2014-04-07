@@ -463,12 +463,18 @@ public class SqlConstraintUtils {
      */
     public static boolean isSupportedCalculatedMember(final Member member) {
         // Is it a supported function?
+      
+        if (member.getPropertyValue("predicate") != null) {
+            return true;
+        }
+      
         return isSupportedExpressionForCalculatedMember(member.getExpression());
     }
 
     public static boolean isSupportedExpressionForCalculatedMember(
         final Exp expression)
     {
+
       if (expression instanceof ResolvedFunCall) {
           ResolvedFunCall fun = (ResolvedFunCall) expression;
 
@@ -498,7 +504,17 @@ public class SqlConstraintUtils {
       }
 
       if (expression instanceof MemberExpr) {
+          Member m = ((MemberExpr)expression).getMember();
+          if (m.isCalculated()) {
+            // could this cause an infinite loop?
+            return isSupportedExpressionForCalculatedMember(m.getExpression());
+          }
           return true;
+      }
+      
+      // TODO: This may require a member property check vs. Literal
+      if (expression instanceof Literal) {
+        return true;
       }
 
       return false;

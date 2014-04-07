@@ -52,24 +52,34 @@
                             <xsd:sequence>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store Country].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store State].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_" sql:field="[Measures].[Sales Count]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE" sql:field="[Measures].[Sales Count].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Sales Count].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING" sql:field="[Measures].[Sales Count].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORE_COLOR" sql:field="[Measures].[Sales Count].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.BACK_COLOR" sql:field="[Measures].[Sales Count].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">24442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">24442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>24,442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">21611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">21611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>21,611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">40784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">40784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>40,784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                 </root>
             </return>
@@ -134,28 +144,48 @@ from [Sales]
                             <xsd:sequence>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store Country].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store State].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_" sql:field="[Measures].[Sales Count]"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_" sql:field="[Measures].[Store Sales]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE" sql:field="[Measures].[Sales Count].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Sales Count].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING" sql:field="[Measures].[Sales Count].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORE_COLOR" sql:field="[Measures].[Sales Count].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.BACK_COLOR" sql:field="[Measures].[Sales Count].BACK_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE" sql:field="[Measures].[Store Sales].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Store Sales].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING" sql:field="[Measures].[Store Sales].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORE_COLOR" sql:field="[Measures].[Store Sales].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.BACK_COLOR" sql:field="[Measures].[Store Sales].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">24442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">159167.84</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">24442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>24,442</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">159167.84</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>159,167.84</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">21611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">142277.07</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">21611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>21,611</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">142277.07</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>142,277.07</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">40784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">263793.22</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">40784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>40,784</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">263793.22</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>263,793.22</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                 </root>
             </return>
@@ -220,8 +250,12 @@ from [Sales]
                             <xsd:sequence>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store Country].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store State].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Product].[Product Family].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_" sql:field="[Measures].[Sales Count]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Product].[Product Family].[MEMBER_CAPTION]" type="xsd:string"/>                                
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE" sql:field="[Measures].[Sales Count].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Sales Count].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING" sql:field="[Measures].[Sales Count].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORE_COLOR" sql:field="[Measures].[Sales Count].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.BACK_COLOR" sql:field="[Measures].[Sales Count].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -229,55 +263,73 @@ from [Sales]
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">2291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">2291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>2,291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">17556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">17556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>17,556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">4595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">4595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>4,595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">1953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">1953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>1,953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">15516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">15516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>15,516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">4142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">4142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>4,142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">3734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">3734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>3,734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">29373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">29373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>29,373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">7677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">7677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>7,677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
                     </row>
                 </root>
             </return>
@@ -343,8 +395,16 @@ from [Sales]
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store Country].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store State].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Product].[Product Family].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_" sql:field="[Measures].[Sales Count]"/>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_" sql:field="[Measures].[Store Sales]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE" sql:field="[Measures].[Sales Count].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Sales Count].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING" sql:field="[Measures].[Sales Count].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORE_COLOR" sql:field="[Measures].[Sales Count].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.BACK_COLOR" sql:field="[Measures].[Sales Count].BACK_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE" sql:field="[Measures].[Store Sales].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Store Sales].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING" sql:field="[Measures].[Store Sales].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORE_COLOR" sql:field="[Measures].[Store Sales].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.BACK_COLOR" sql:field="[Measures].[Store Sales].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -352,64 +412,100 @@ from [Sales]
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">2291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">14203.24</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">2291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>2,291</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">14203.24</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>14,203.24</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">17556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">115193.17</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">17556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>17,556</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">115193.17</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>115,193.17</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">4595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">29771.43</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">4595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>4,595</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">29771.43</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>29,771.43</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">1953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">12137.29</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">1953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>1,953</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">12137.29</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>12,137.29</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">15516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">102564.67</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">15516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>15,516</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">102564.67</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>102,564.67</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">4142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">27575.11</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">4142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>4,142</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">27575.11</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>27,575.11</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Drink</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">3734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">22495.68</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">3734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>3,734</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">22495.68</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>22,495.68</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Food</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">29373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">191277.75</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">29373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>29,373</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">191277.75</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>191,277.75</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>Non-Consumable</_x005b_Product_x005d_._x005b_Product_x0020_Family_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_ xsi:type="xsd:int">7677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_>
-                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_ xsi:type="xsd:double">50019.79</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE xsi:type="xsd:int">7677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>7,677</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE xsi:type="xsd:double">50019.79</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>50,019.79</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMATTED_VALUE>
+                        <_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>#,###</_x005b_Measures_x005d_._x005b_Store_x0020_Sales_x005d_.FORMAT_STRING>
                     </row>
                 </root>
             </return>
@@ -535,7 +631,11 @@ from [Sales]
                         </xsd:simpleType>
                         <xsd:complexType name="row">
                             <xsd:sequence>
-                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_" sql:field="[Measures].[Sales Count]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.VALUE" sql:field="[Measures].[Sales Count].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMATTED_VALUE" sql:field="[Measures].[Sales Count].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORMAT_STRING" sql:field="[Measures].[Sales Count].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.FORE_COLOR" sql:field="[Measures].[Sales Count].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Measures_x005d_._x005b_Sales_x0020_Count_x005d_.BACK_COLOR" sql:field="[Measures].[Sales Count].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
@@ -600,80 +700,146 @@ from [Sales]
                                 <xsd:element minOccurs="0" name="_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Gender].[Gender].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store Country].[MEMBER_CAPTION]" type="xsd:string"/>
                                 <xsd:element minOccurs="0" name="_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_" sql:field="[Store].[Store State].[MEMBER_CAPTION]" type="xsd:string"/>
-                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_" sql:field="[Product].[Drink]"/>
-                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_" sql:field="[Product].[Food]"/>
-                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_" sql:field="[Product].[Non-Consumable]"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE" sql:field="[Product].[Drink].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE" sql:field="[Product].[Drink].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING" sql:field="[Product].[Drink].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_.FORE_COLOR" sql:field="[Product].[Drink].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Drink_x005d_.BACK_COLOR" sql:field="[Product].[Drink].BACK_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_.VALUE" sql:field="[Product].[Food].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE" sql:field="[Product].[Food].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING" sql:field="[Product].[Food].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_.FORE_COLOR" sql:field="[Product].[Food].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Food_x005d_.BACK_COLOR" sql:field="[Product].[Food].BACK_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE" sql:field="[Product].[Non-Consumable].VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE" sql:field="[Product].[Non-Consumable].FORMATTED_VALUE"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING" sql:field="[Product].[Non-Consumable].FORMAT_STRING"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORE_COLOR" sql:field="[Product].[Non-Consumable].FORE_COLOR"/>
+                                <xsd:element minOccurs="0" name="_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.BACK_COLOR" sql:field="[Product].[Non-Consumable].BACK_COLOR"/>
                             </xsd:sequence>
                         </xsd:complexType>
                     </xsd:schema>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>7,102</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>53,656</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>6,106</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>48,537</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>11,389</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>89,747</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>23,230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>F</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>7,102</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>53,656</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>F</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>6,106</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>48,537</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>F</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>11,389</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>89,747</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>23,230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>M</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>CA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">7102</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>7,102</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">53656</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>53,656</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,990</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>M</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>OR</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">6106</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>6,106</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">48537</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>48,537</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">13016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>13,016</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                     <row>
                         <_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>M</_x005b_Gender_x005d_._x005b_Gender_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>USA</_x005b_Store_x005d_._x005b_Store_x0020_Country_x005d_._x005b_MEMBER_CAPTION_x005d_>
                         <_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>WA</_x005b_Store_x005d_._x005b_Store_x0020_State_x005d_._x005b_MEMBER_CAPTION_x005d_>
-                        <_x005b_Product_x005d_._x005b_Drink_x005d_ xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_>
-                        <_x005b_Product_x005d_._x005b_Food_x005d_ xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_>
-                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_ xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE xsi:type="xsd:double">11389</_x005b_Product_x005d_._x005b_Drink_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>11,389</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Drink_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.VALUE xsi:type="xsd:double">89747</_x005b_Product_x005d_._x005b_Food_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>89,747</_x005b_Product_x005d_._x005b_Food_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Food_x005d_.FORMAT_STRING>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE xsi:type="xsd:double">23230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>23,230</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMATTED_VALUE>
+                        <_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>Standard</_x005b_Product_x005d_._x005b_Non-Consumable_x005d_.FORMAT_STRING>
                     </row>
                 </root>
             </return>

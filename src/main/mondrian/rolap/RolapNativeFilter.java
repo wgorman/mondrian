@@ -133,7 +133,7 @@ public class RolapNativeFilter extends RolapNativeSet {
             return null;
         }
         if (!FilterConstraint.isValidContext(
-                evaluator, restrictMemberTypes()))
+                evaluator, false, new Level[]{}, restrictMemberTypes()))
         {
             return null;
         }
