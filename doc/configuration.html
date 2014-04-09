@@ -299,6 +299,19 @@ OLE DB connect string syntax specification</a>.</p>
         <td><p>A unique identifier for the connection. If this is set, Mondrian will look at this property and no other to determine whether two 
 data sources should be considered the same. You must ensure that connections will only share a JdbcConnectionUuid if they point to the same database.</p></td>
     </tr>
+    <tr>
+        <td>CustomData</td>
+        <td>No</td>
+        <td><p>The CustomData function can retrieve the CustomData connection string property and pass a configuration setting to be used by Multidimensional Expressions (MDX) functions and statements.</p>
+
+        <p>For example, this function can be used in a dynamic security expression to select the allowed/denied set members for the string value in the CustomData connection string property.</p></td>
+    </tr>
+    <tr>
+        <td>JdbcConnectionUuid</td>
+        <td>No</td>
+        <td><p>A unique identifier for the connection. If this is set, Mondrian will look at this property and no other to determine whether two 
+data sources should be considered the same. You must ensure that connections will only share a JdbcConnectionUuid if they point to the same database.</p></td>
+    </tr>
 </table>
 <p>Connect string properties are also documented in the
 <a href="api/mondrian/rolap/RolapConnectionProperties.html">
