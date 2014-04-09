@@ -172,7 +172,8 @@ public class RolapCube extends CubeBase {
                 null,
                 DimensionType.MeasuresDimension,
                 false,
-                Collections.<String, Annotation>emptyMap());
+                Collections.<String, Annotation>emptyMap(),
+                false);
 
         this.dimensions[0] = measuresDimension;
 

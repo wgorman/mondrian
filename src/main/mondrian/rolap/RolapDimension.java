@@ -59,6 +59,7 @@ class RolapDimension extends DimensionBase {
 
     private final Schema schema;
     private final Map<String, Annotation> annotationMap;
+    final boolean hanger;
 
     RolapDimension(
         Schema schema,
@@ -68,7 +69,8 @@ class RolapDimension extends DimensionBase {
         String description,
         DimensionType dimensionType,
         final boolean highCardinality,
-        Map<String, Annotation> annotationMap)
+        Map<String, Annotation> annotationMap,
+        final boolean hanger)
     {
         // todo: recognition of a time dimension should be improved
         // allow multiple time dimensions
@@ -83,6 +85,7 @@ class RolapDimension extends DimensionBase {
         this.schema = schema;
         this.annotationMap = annotationMap;
         this.hierarchies = new RolapHierarchy[0];
+        this.hanger = hanger;
     }
 
     /**
@@ -104,7 +107,8 @@ class RolapDimension extends DimensionBase {
             xmlDimension.description,
             xmlDimension.getDimensionType(),
             xmlDimension.highCardinality,
-            RolapHierarchy.createAnnotationMap(xmlCubeDimension.annotations));
+            RolapHierarchy.createAnnotationMap(xmlCubeDimension.annotations),
+            xmlDimension.hanger);
 
         Util.assertPrecondition(schema != null);
 
@@ -122,7 +126,8 @@ class RolapDimension extends DimensionBase {
             // this should eventually be phased out completely
             if (xmlDimension.hierarchies[i].relation == null
                 && xmlDimension.hierarchies[i].memberReaderClass == null
-                && cube != null)
+                && cube != null
+                && !hanger)
             {
                 xmlDimension.hierarchies[i].relation = cube.fact;
             }

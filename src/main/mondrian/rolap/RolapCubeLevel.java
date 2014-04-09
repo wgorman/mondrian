@@ -82,6 +82,8 @@ public class RolapCubeLevel extends RolapLevel {
             this.levelReader = new AllLevelReaderImpl();
         } else if (getLevelType() == LevelType.Null) {
             this.levelReader = new NullLevelReader();
+        } else if (getDimension().hanger) {
+            this.levelReader = new HangerLevelReaderImpl();
         } else if (rolapLevel.xmlClosure != null) {
             RolapDimension dimension =
                 (RolapDimension)
@@ -575,6 +577,28 @@ public class RolapCubeLevel extends RolapLevel {
      * Level reader for the level which contains the 'all' member.
      */
     static final class AllLevelReaderImpl implements LevelReader {
+        public boolean constrainRequest(
+            RolapCubeMember member,
+            RolapCube baseCube,
+            CellRequest request)
+        {
+            // We don't need to apply any constraints.
+            return false;
+        }
+
+        public void constrainRegion(
+            StarColumnPredicate predicate,
+            RolapCube baseCube,
+            RolapCacheRegion cacheRegion)
+        {
+            // We don't need to apply any constraints.
+        }
+    }
+
+    /**
+     * Level reader for the level which is part of a Hanger Dimension.
+     */
+    static final class HangerLevelReaderImpl implements LevelReader {
         public boolean constrainRequest(
             RolapCubeMember member,
             RolapCube baseCube,
