@@ -1661,8 +1661,8 @@ public class RolapCube extends CubeBase {
             RolapHierarchy hierarchy = (RolapHierarchy) hierarchy1;
 
             MondrianDef.RelationOrJoin relation = hierarchy.getRelation();
-            if (relation == null) {
-                continue; // e.g. [Measures] hierarchy
+            if (relation == null || dimension.hanger) {
+                continue; // e.g. [Measures] hierarchy or hanger dimension
             }
             RolapCubeLevel[] levels = (RolapCubeLevel[]) hierarchy.getLevels();
 
