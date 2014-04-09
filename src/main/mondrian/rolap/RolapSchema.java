@@ -1246,6 +1246,16 @@ System.out.println("RolapSchema.createMemberReader: CONTAINS NAME");
             throw Util.newInternal(
                 e2,
                 "while instantiating member reader '" + memberReaderClass);
+        } else if (hierarchy.getDimension() instanceof RolapDimension
+            && ((RolapDimension)hierarchy.getDimension()).hanger
+            && hierarchy.relation == null)
+        {
+            final List<RolapMember> memberList = new ArrayList<RolapMember>();
+            if (hierarchy.hasAll()) {
+                memberList.add(hierarchy.getAllMember());
+            }
+            return new CacheMemberReader(
+                new HangerMemberSource(hierarchy, memberList));
         } else {
             SqlMemberSource source = new SqlMemberSource(hierarchy);
             if (hierarchy.getDimension().isHighCardinality()) {
@@ -1330,6 +1340,19 @@ System.out.println("RolapSchema.createMemberReader: CONTAINS NAME");
     private RolapStar makeRolapStar(final MondrianDef.Relation fact) {
         DataSource dataSource = getInternalConnection().getDataSource();
         return new RolapStar(this, dataSource, fact);
+    }
+
+    /** Source of members for a hanger dimension. Often a hanger dimension is
+     * empty, or only has an 'all' member; the other members are all calculated.
+     */
+    private static class HangerMemberSource extends ArrayMemberSource {
+        /** Creates a HangerMemberSource. */
+        public HangerMemberSource(
+            RolapHierarchy hierarchy,
+            List<RolapMember> memberList)
+        {
+            super(hierarchy, memberList);
+        }
     }
 
     /**

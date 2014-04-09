@@ -266,7 +266,8 @@ public class RolapHierarchy extends HierarchyBase {
             for (int i = 0; i < xmlHierarchy.levels.length; i++) {
                 final MondrianDef.Level xmlLevel = xmlHierarchy.levels[i];
                 if (xmlLevel.getKeyExp() == null
-                    && xmlHierarchy.memberReaderClass == null)
+                    && xmlHierarchy.memberReaderClass == null
+                    && !dimension.hanger)
                 {
                     throw MondrianResource.instance()
                         .LevelMustHaveNameExpression.ex(xmlLevel.name);
@@ -1109,7 +1110,8 @@ public class RolapHierarchy extends HierarchyBase {
             "Closure dimension for parent-child hierarchy " + getName(),
             DimensionType.StandardDimension,
             dimension.isHighCardinality(),
-            Collections.<String, Annotation>emptyMap());
+            Collections.<String, Annotation>emptyMap(),
+            false);
 
         // Create a peer hierarchy.
         RolapHierarchy peerHier = peerDimension.newHierarchy(null, true, this);

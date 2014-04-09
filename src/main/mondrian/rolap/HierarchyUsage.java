@@ -343,6 +343,14 @@ public class HierarchyUsage {
         RolapHierarchy hierarchy,
         MondrianDef.DimensionUsage cubeDim)
     {
+        // we're detailing with a hanger dimension, no joining
+        // to the fact table.
+        if (hierarchy.getDimension() instanceof RolapDimension
+            && ((RolapDimension)hierarchy.getDimension()).hanger)
+        {
+          return;
+        }
+
         // Three ways that a hierarchy can be joined to the fact table.
         if (cubeDim != null && cubeDim.level != null) {
             // 1. Specify an explicit 'level' attribute in a <DimensionUsage>.

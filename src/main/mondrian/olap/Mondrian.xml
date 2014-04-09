@@ -520,6 +520,20 @@ Revision is $Id$
                 This should only be set for private dimensions.
             </Doc>
         </Attribute>
+        <Attribute name="hanger" type="Boolean" required="false" default="false">
+            <Doc>
+                <p>Whether this is a hanger Dimension.</p>
+                <p>A hanger dimension does not have a direct relation to the
+                fact table; the only members that exist are calculated. The
+                purpose of a hanger dimension is to add options that can be
+                used in formulas.</p>
+                <p>A Dimension that is declared hanger dimension is not joined
+                against the fact table.</p>
+                <p>Note that in Mondrian 3.x, a hanger dimension must have an
+                All Member, or specify a dimension table that will source
+                a default member.</p>
+            </Doc>
+        </Attribute>
 
         <Array name="hierarchies" type="Hierarchy"><Doc></Doc></Array>
         <Code>

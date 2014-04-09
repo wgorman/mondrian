@@ -155,7 +155,7 @@ public class SqlStatement {
                 RolapUtil.SQL_LOGGER.debug(sqllog.toString());
                 
                 if (RolapUtil.SQL_LOGGER.isTraceEnabled()) {
-                  RolapUtil.SQL_LOGGER.trace(id +  " debug stacktrace", new Exception());
+                  RolapUtil.SQL_LOGGER.trace(id +  ": debug stacktrace", new Exception());
                 }
             }
 

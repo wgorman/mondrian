@@ -60,7 +60,8 @@ public class RolapCubeDimension extends RolapDimension {
                 : rolapDim.getDescription(),
             null,
             highCardinality,
-            RolapHierarchy.createAnnotationMap(cubeDim.annotations));
+            RolapHierarchy.createAnnotationMap(cubeDim.annotations),
+            rolapDim.hanger);
         this.xmlDimension = cubeDim;
         this.rolapDimension = rolapDim;
         this.cubeOrdinal = cubeOrdinal;
