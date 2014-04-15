@@ -463,11 +463,6 @@ public class SqlConstraintUtils {
      */
     public static boolean isSupportedCalculatedMember(final Member member) {
         // Is it a supported function?
-      
-        if (member.getPropertyValue("predicate") != null) {
-            return true;
-        }
-      
         return isSupportedExpressionForCalculatedMember(member.getExpression());
     }
 
@@ -512,7 +507,6 @@ public class SqlConstraintUtils {
           return true;
       }
       
-      // TODO: This may require a member property check vs. Literal
       if (expression instanceof Literal) {
         return true;
       }
