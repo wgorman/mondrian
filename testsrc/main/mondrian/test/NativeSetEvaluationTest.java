@@ -1704,24 +1704,93 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     /**
-     * This tests a scenario where a hanger dimension still allows nonempty native evaluation with a
-     * calculated member.  Note that if the dimension is changed to non-hanger, the following exception
-     * occurs:
-     *
-     * Caused by: java.lang.NullPointerException
-     *   at mondrian.rolap.agg.CellRequest.getSingleValues(CellRequest.java:337)
-     *   at mondrian.rolap.SqlConstraintUtils.addContextConstraint(SqlConstraintUtils.java:105)
-     *   at mondrian.rolap.SqlContextConstraint.addConstraint(SqlContextConstraint.java:309)
-     *   at mondrian.rolap.RolapNativeSet$SetConstraint.addConstraint(RolapNativeSet.java:100)
-     *   at mondrian.rolap.SqlTupleReader.generateSelectForLevels(SqlTupleReader.java:988)
-     *   at mondrian.rolap.SqlTupleReader.makeLevelMembersSql(SqlTupleReader.java:904)
-     *   at mondrian.rolap.SqlTupleReader.prepareTuples(SqlTupleReader.java:400)
-     *   at mondrian.rolap.SqlTupleReader.readMembers(SqlTupleReader.java:515)
-     *   at mondrian.rolap.RolapNativeSet$SetEvaluator.executeList(RolapNativeSet.java:259)
-     *   at mondrian.rolap.RolapNativeSet$SetEvaluator.execute(RolapNativeSet.java:200)
-     *   at mondrian.olap.fun.NonEmptyFunDef$2.evaluateList(NonEmptyFunDef.java:124)
+     * This tests a scenario where a calculated member still allows nonempty
+     * native evaluation with a literal.
      */
     public void testNonEmptyNativeWithLiteralCalcMember() {
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+      TestContext testContext = TestContext.instance().createSubstitutingCube(
+          "Sales",
+          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+          + "      <Table name=\"customer\"/>\n"
+          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+          + "    </Hierarchy>\n"
+          + "  </Dimension>\n",
+          "  <CalculatedMember visible=\"true\" name=\"20\" hierarchy=\"[Gender]\" parent=\"[Gender].[All Gender]\">\n"
+          + "    <Formula>NULL</Formula>\n"
+          + "  </CalculatedMember>\n"
+          + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc\">\n"
+          + "    <Formula>IIf(([Gender].[M], [Measures].[Unit Sales])>=val([Gender].currentMember.Name), ([Gender].[M], [Measures].[Unit Sales]), NULL)</Formula>\n"
+          + "  </CalculatedMember>\n"
+          + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc3\">\n"
+          + "    <Formula>Count(Filter(NonEmpty([Customer IDs].[All Customer IDs].Children), NOT(ISEMPTY([Measures].[Calc]))))</Formula>\n"
+          + "  </CalculatedMember>\n");
+
+      String mdx = "with member [Measures].[Calc2] as '([Gender].[All Gender].[20], [Measures].[Calc3]) ', solve_order = -1\n"
+          + "select {[Measures].[Calc2]} on 0,\n" +
+          "{[Product].[All Products].Children} on 1" +
+          "from [Sales] where (StrToMember(\"[Marital Status].[S]\"))";
+
+      String mysqlQuery =
+          "select\n"
+          + "    `customer`.`customer_id` as `c0`\n"
+          + "from\n"
+          + "    `customer` as `customer`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+          + "and\n"
+          + "    `customer`.`marital_status` = 'S'\n"
+          + "group by\n"
+          + "    `customer`.`customer_id`\n"
+          + "order by\n"
+          + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+
+      getTestContext().flushSchemaCache();
+
+      if (MondrianProperties.instance().EnableNativeCount.get()) {
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      testContext.assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{[Marital Status].[S]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[Calc2]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Drink]}\n"
+          + "{[Product].[Food]}\n"
+          + "{[Product].[Non-Consumable]}\n"
+          + "Row #0: 40\n"
+          + "Row #1: 820\n"
+          + "Row #2: 169\n");
+    }
+    
+    /**
+     * This tests a scenario where a hanger dimension still allows nonempty
+     * native evaluation with a calculated member.
+     *
+     * Note that the results are different from above because the gender
+     * member is never in context as a hanger dimension. 
+     */
+    public void testNonEmptyNativeWithLiteralCalcMemberAndHanger() {
       propSaver.set(propSaver.properties.GenerateFormattedSql, true);
       TestContext testContext = TestContext.instance().createSubstitutingCube(
           "Sales",

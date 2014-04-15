@@ -447,7 +447,14 @@ public class SqlConstraintUtils {
               }
           }
         } else if (expression instanceof MemberExpr) {
-            listOfMembers.add(((MemberExpr)expression).getMember());
+          Member m = ((MemberExpr)expression).getMember();
+          if (!m.isCalculated()) {
+            listOfMembers.add(m);
+          } else {
+            listOfMembers.addAll(expandExpressions(member, m.getExpression(), evaluator));
+          }
+        } else if (expression instanceof Literal) {
+          // do nothing, no member to track
         } else {
             listOfMembers.add(member);
         }
