@@ -251,6 +251,10 @@ public class TestMember implements Member {
         public Map<String, Annotation> getAnnotationMap() {
             throw new UnsupportedOperationException();
         }
+
+        public boolean isHanger() {
+          return false;
+        }
     }
 }
 
