@@ -345,9 +345,7 @@ public class HierarchyUsage {
     {
         // we're detailing with a hanger dimension, no joining
         // to the fact table.
-        if (hierarchy.getDimension() instanceof RolapDimension
-            && ((RolapDimension)hierarchy.getDimension()).hanger)
-        {
+        if (hierarchy.getDimension().isHanger()) {
           return;
         }
 

@@ -267,7 +267,7 @@ public class RolapHierarchy extends HierarchyBase {
                 final MondrianDef.Level xmlLevel = xmlHierarchy.levels[i];
                 if (xmlLevel.getKeyExp() == null
                     && xmlHierarchy.memberReaderClass == null
-                    && !dimension.hanger)
+                    && !dimension.isHanger())
                 {
                     throw MondrianResource.instance()
                         .LevelMustHaveNameExpression.ex(xmlLevel.name);

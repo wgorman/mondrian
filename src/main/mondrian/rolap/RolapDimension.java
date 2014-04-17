@@ -59,7 +59,6 @@ class RolapDimension extends DimensionBase {
 
     private final Schema schema;
     private final Map<String, Annotation> annotationMap;
-    final boolean hanger;
 
     RolapDimension(
         Schema schema,
@@ -80,12 +79,12 @@ class RolapDimension extends DimensionBase {
             visible,
             description,
             dimensionType,
-            highCardinality);
+            highCardinality,
+            hanger);
         assert annotationMap != null;
         this.schema = schema;
         this.annotationMap = annotationMap;
         this.hierarchies = new RolapHierarchy[0];
-        this.hanger = hanger;
     }
 
     /**

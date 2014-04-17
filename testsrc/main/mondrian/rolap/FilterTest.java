@@ -1211,6 +1211,9 @@ public class FilterTest extends BatchTestCase {
      * TODO: Add support for more than just related All members
      */
     public void testNativeCountFilter() {  
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
       TestContext testContext = TestContext.instance()
       .createSubstitutingCube(
           "Sales",
@@ -1253,13 +1256,15 @@ public class FilterTest extends BatchTestCase {
           + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales] )\n"
           + "CELL PROPERTIES\n"
           + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
-      
-      assertQuerySql(
-          testContext,
-          mdx,
-          new SqlPattern[] {
-              new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
-          });
+
+      if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+          assertQuerySql(
+              testContext,
+              mdx,
+              new SqlPattern[] {
+                  new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+              });
+      }
 
       testContext.assertQueryReturns(
           mdx,          

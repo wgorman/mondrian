@@ -111,7 +111,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
             (cubeDimension.getCube().getFact() == null
               || cubeDimension.getCube().getFact().equals(
                   rolapHierarchy.getRelation())
-              || cubeDimension.hanger);
+              || cubeDimension.isHanger());
 
         // re-alias names if necessary
         if (!usingCubeFact) {

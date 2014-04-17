@@ -1234,6 +1234,10 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     public void testNativeSubset() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
         final String mdx =
             "WITH\n"
@@ -1269,7 +1273,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
             + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 10 offset 2";
 
-        if (MondrianProperties.instance().EnableNativeSubset.get()) {
+        if (!useAgg && MondrianProperties.instance().EnableNativeSubset.get()) {
             SqlPattern mysqlPattern =
                 new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
             assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
@@ -1304,60 +1308,64 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     public void testNativeSubsetWithAllMembers() {
-      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
-      final String mdx =
-          "SELECT SUBSET( [Product].[Product Name].ALLMEMBERS, 0, 3 ) DIMENSION PROPERTIES MEMBER_NAME, MEMBER_TYPE ON 0, {} ON 1 FROM [Sales]";
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
 
-      String mysqlQuery =
-          "select\n"
-          + "    `product_class`.`product_family` as `c0`,\n"
-          + "    `product_class`.`product_department` as `c1`,\n"
-          + "    `product_class`.`product_category` as `c2`,\n"
-          + "    `product_class`.`product_subcategory` as `c3`,\n"
-          + "    `product`.`brand_name` as `c4`,\n"
-          + "    `product`.`product_name` as `c5`\n"
-          + "from\n"
-          + "    `product` as `product`,\n"
-          + "    `product_class` as `product_class`,\n"
-          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-          + "    `time_by_day` as `time_by_day`\n"
-          + "where\n"
-          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-          + "and\n"
-          + "    `time_by_day`.`the_year` = 1997\n"
-          + "group by\n"
-          + "    `product_class`.`product_family`,\n"
-          + "    `product_class`.`product_department`,\n"
-          + "    `product_class`.`product_category`,\n"
-          + "    `product_class`.`product_subcategory`,\n"
-          + "    `product`.`brand_name`,\n"
-          + "    `product`.`product_name`\n"
-          + "order by\n"
-          + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
-          + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
-          + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
-          + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
-          + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
-          + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC limit 3 offset 0";
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "SELECT SUBSET( [Product].[Product Name].ALLMEMBERS, 0, 3 ) DIMENSION PROPERTIES MEMBER_NAME, MEMBER_TYPE ON 0, {} ON 1 FROM [Sales]";
 
-      if (MondrianProperties.instance().EnableNativeSubset.get()) {
-          SqlPattern mysqlPattern =
-              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
-          assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
-      }
-      assertQueryReturns(
-          mdx,
-          "Axis #0:\n"
-          + "{}\n"
-          + "Axis #1:\n"
-          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Imported Beer]}\n"
-          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Light Beer]}\n"
-          + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Pearl].[Pearl Imported Beer]}\n"
-          + "Axis #2:\n");
+        String mysqlQuery =
+            "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`,\n"
+            + "    `product_class`.`product_category` as `c2`,\n"
+            + "    `product_class`.`product_subcategory` as `c3`,\n"
+            + "    `product`.`brand_name` as `c4`,\n"
+            + "    `product`.`product_name` as `c5`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`,\n"
+            + "    `product_class`.`product_category`,\n"
+            + "    `product_class`.`product_subcategory`,\n"
+            + "    `product`.`brand_name`,\n"
+            + "    `product`.`product_name`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC limit 3 offset 0";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeSubset.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Imported Beer]}\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Light Beer]}\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Pearl].[Pearl Imported Beer]}\n"
+            + "Axis #2:\n");
     }
 
     public void testNativeNonEmptyFunc() {
@@ -1520,6 +1528,10 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     public void testNativeCountWithAllMembers() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
         TestContext testContext = TestContext.instance()
             .createSubstitutingCube(
                 "Sales",
@@ -1547,7 +1559,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "order by\n"
             + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
 
-        if (MondrianProperties.instance().EnableNativeCount.get()) {
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
                 new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
             assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
@@ -1566,7 +1578,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         testContext.flushSchemaCache();
 
-        if (MondrianProperties.instance().EnableNativeCount.get()) {
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
                 new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
             assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
@@ -1601,7 +1613,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         testContext.flushSchemaCache();
 
-        if (MondrianProperties.instance().EnableNativeCount.get()) {
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
                 new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
             assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
@@ -1653,6 +1665,11 @@ public class NativeSetEvaluationTest extends BatchTestCase {
      */
     public void testNativeAllLevelSubset() {
       propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+
       assertQueryReturns(
           "SELECT Subset([Gender].[(All)].Members, 0, 1) on 0 from [Sales]",
           "Axis #0:\n"
@@ -1689,7 +1706,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
       getTestContext().flushSchemaCache();
 
-      if (MondrianProperties.instance().EnableNativeCount.get()) {
+      if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
           SqlPattern mysqlPattern =
               new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
           assertQuerySql(getTestContext(), mdx, new SqlPattern[]{mysqlPattern});
@@ -1708,79 +1725,84 @@ public class NativeSetEvaluationTest extends BatchTestCase {
      * native evaluation with a literal.
      */
     public void testNonEmptyNativeWithLiteralCalcMember() {
-      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
-      TestContext testContext = TestContext.instance().createSubstitutingCube(
-          "Sales",
-          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
-          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
-          + "      <Table name=\"customer\"/>\n"
-          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
-          + "    </Hierarchy>\n"
-          + "  </Dimension>\n",
-          "  <CalculatedMember visible=\"true\" name=\"20\" hierarchy=\"[Gender]\" parent=\"[Gender].[All Gender]\">\n"
-          + "    <Formula>NULL</Formula>\n"
-          + "  </CalculatedMember>\n"
-          + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc\">\n"
-          + "    <Formula>IIf(([Gender].[M], [Measures].[Unit Sales])>=val([Gender].currentMember.Name), ([Gender].[M], [Measures].[Unit Sales]), NULL)</Formula>\n"
-          + "  </CalculatedMember>\n"
-          + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc3\">\n"
-          + "    <Formula>Count(Filter(NonEmpty([Customer IDs].[All Customer IDs].Children), NOT(ISEMPTY([Measures].[Calc]))))</Formula>\n"
-          + "  </CalculatedMember>\n");
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
-      String mdx = "with member [Measures].[Calc2] as '([Gender].[All Gender].[20], [Measures].[Calc3]) ', solve_order = -1\n"
-          + "select {[Measures].[Calc2]} on 0,\n" +
-          "{[Product].[All Products].Children} on 1" +
-          "from [Sales] where (StrToMember(\"[Marital Status].[S]\"))";
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
 
-      String mysqlQuery =
-          "select\n"
-          + "    `customer`.`customer_id` as `c0`\n"
-          + "from\n"
-          + "    `customer` as `customer`,\n"
-          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-          + "    `time_by_day` as `time_by_day`,\n"
-          + "    `product_class` as `product_class`,\n"
-          + "    `product` as `product`\n"
-          + "where\n"
-          + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-          + "and\n"
-          + "    `time_by_day`.`the_year` = 1997\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-          + "and\n"
-          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-          + "and\n"
-          + "    `product_class`.`product_family` = 'Non-Consumable'\n"
-          + "and\n"
-          + "    `customer`.`marital_status` = 'S'\n"
-          + "group by\n"
-          + "    `customer`.`customer_id`\n"
-          + "order by\n"
-          + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+            + "      <Table name=\"customer\"/>\n"
+            + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n",
+            "  <CalculatedMember visible=\"true\" name=\"20\" hierarchy=\"[Gender]\" parent=\"[Gender].[All Gender]\">\n"
+            + "    <Formula>NULL</Formula>\n"
+            + "  </CalculatedMember>\n"
+            + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc\">\n"
+            + "    <Formula>IIf(([Gender].[M], [Measures].[Unit Sales])>=val([Gender].currentMember.Name), ([Gender].[M], [Measures].[Unit Sales]), NULL)</Formula>\n"
+            + "  </CalculatedMember>\n"
+            + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc3\">\n"
+            + "    <Formula>Count(Filter(NonEmpty([Customer IDs].[All Customer IDs].Children), NOT(ISEMPTY([Measures].[Calc]))))</Formula>\n"
+            + "  </CalculatedMember>\n");
 
-      getTestContext().flushSchemaCache();
+        String mdx = "with member [Measures].[Calc2] as '([Gender].[All Gender].[20], [Measures].[Calc3]) ', solve_order = -1\n"
+            + "select {[Measures].[Calc2]} on 0,\n" +
+            "{[Product].[All Products].Children} on 1" +
+            "from [Sales] where (StrToMember(\"[Marital Status].[S]\"))";
 
-      if (MondrianProperties.instance().EnableNativeCount.get()) {
-          SqlPattern mysqlPattern =
-              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
-          assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
-      }
+        String mysqlQuery =
+            "select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+            + "and\n"
+            + "    `customer`.`marital_status` = 'S'\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
 
-      testContext.assertQueryReturns(
-          mdx,
-          "Axis #0:\n"
-          + "{[Marital Status].[S]}\n"
-          + "Axis #1:\n"
-          + "{[Measures].[Calc2]}\n"
-          + "Axis #2:\n"
-          + "{[Product].[Drink]}\n"
-          + "{[Product].[Food]}\n"
-          + "{[Product].[Non-Consumable]}\n"
-          + "Row #0: 40\n"
-          + "Row #1: 820\n"
-          + "Row #2: 169\n");
+        getTestContext().flushSchemaCache();
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Marital Status].[S]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Calc2]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 40\n"
+            + "Row #1: 820\n"
+            + "Row #2: 169\n");
     }
     
     /**
@@ -1792,6 +1814,11 @@ public class NativeSetEvaluationTest extends BatchTestCase {
      */
     public void testNonEmptyNativeWithLiteralCalcMemberAndHanger() {
       propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+
       TestContext testContext = TestContext.instance().createSubstitutingCube(
           "Sales",
           "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
@@ -1851,7 +1878,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
       getTestContext().flushSchemaCache();
 
-      if (MondrianProperties.instance().EnableNativeCount.get()) {
+      if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
           SqlPattern mysqlPattern =
               new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
           assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});

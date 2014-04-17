@@ -53,6 +53,12 @@ public interface Dimension extends OlapElement, Annotated {
      * @return whether this dimension is high-cardinality
      */
     boolean isHighCardinality();
+
+    /**
+     * Returns whether this dimension is a hanger dimension, a hanger dimension
+     * does not have a physical star representation.
+     */
+    boolean isHanger();
 }
 
 // End Dimension.java

@@ -1246,8 +1246,7 @@ System.out.println("RolapSchema.createMemberReader: CONTAINS NAME");
             throw Util.newInternal(
                 e2,
                 "while instantiating member reader '" + memberReaderClass);
-        } else if (hierarchy.getDimension() instanceof RolapDimension
-            && ((RolapDimension)hierarchy.getDimension()).hanger
+        } else if (hierarchy.getDimension().isHanger()
             && hierarchy.relation == null)
         {
             final List<RolapMember> memberList = new ArrayList<RolapMember>();

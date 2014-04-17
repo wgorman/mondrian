@@ -458,7 +458,11 @@ abstract class Recognizer {
                 // to each "unassigned" column in the aggTable.
                 // Remember that the rule is if a level does appear,
                 // then all of the higher levels must also appear.
-                String dimName = dim.getName();
+
+                // hanger dimensions do not exist within the star schema
+                if (dim.isHanger()) {
+                  continue;
+                }
 
                 Hierarchy[] hierarchies = dim.getHierarchies();
                 for (Hierarchy hierarchy : hierarchies) {

@@ -31,6 +31,7 @@ public abstract class DimensionBase
     protected final boolean highCardinality;
     protected Hierarchy[] hierarchies;
     protected DimensionType dimensionType;
+    protected boolean hanger;
 
     /**
      * Creates a DimensionBase.
@@ -45,7 +46,8 @@ public abstract class DimensionBase
         boolean visible,
         String description,
         DimensionType dimensionType,
-        boolean highCardinality)
+        boolean highCardinality,
+        boolean hanger)
     {
         this.name = name;
         this.caption = caption;
@@ -54,6 +56,7 @@ public abstract class DimensionBase
         this.description = description;
         this.dimensionType = dimensionType;
         this.highCardinality = highCardinality;
+        this.hanger = hanger;
     }
 
     public String getUniqueName() {
@@ -91,6 +94,10 @@ public abstract class DimensionBase
 
     public boolean isMeasures() {
         return getUniqueName().equals(MEASURES_UNIQUE_NAME);
+    }
+
+    public boolean isHanger() {
+      return hanger;
     }
 
     public OlapElement lookupChild(

@@ -82,7 +82,7 @@ public class RolapCubeLevel extends RolapLevel {
             this.levelReader = new AllLevelReaderImpl();
         } else if (getLevelType() == LevelType.Null) {
             this.levelReader = new NullLevelReader();
-        } else if (getDimension().hanger) {
+        } else if (getDimension().isHanger()) {
             this.levelReader = new HangerLevelReaderImpl();
         } else if (rolapLevel.xmlClosure != null) {
             RolapDimension dimension =
