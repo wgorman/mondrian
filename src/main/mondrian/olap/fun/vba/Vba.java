@@ -2389,13 +2389,27 @@ public class Vba {
         ww("Week", Calendar.WEEK_OF_YEAR),
         h("Hour", Calendar.HOUR_OF_DAY),
         n("Minute", Calendar.MINUTE),
-        s("Second", Calendar.SECOND);
+        s("Second", Calendar.SECOND),
+        YYYY(yyyy),
+        Q(q),
+        M(m),
+        Y(y),
+        D(d),
+        W(w),
+        WW(ww),
+        H(h),
+        N(n),
+        S(s);
 
         private final int dateField;
 
         Interval(String desc, int dateField) {
             Util.discard(desc);
             this.dateField = dateField;
+        }
+
+        Interval(Interval other) {
+            this.dateField = other.dateField;
         }
 
         void add(Calendar calendar, int amount) {
@@ -2419,10 +2433,12 @@ public class Vba {
         private void floorInplace(Calendar calendar) {
             switch (this) {
             case yyyy:
+            case YYYY:
                 calendar.set(Calendar.DAY_OF_YEAR, 1);
                 d.floorInplace(calendar);
                 break;
             case q:
+            case Q:
                 int month = calendar.get(Calendar.MONTH);
                 month -= month % 3;
                 calendar.set(Calendar.MONTH, month);
@@ -2430,10 +2446,12 @@ public class Vba {
                 d.floorInplace(calendar);
                 break;
             case m:
+            case M:
                 calendar.set(Calendar.DAY_OF_MONTH, 1);
                 d.floorInplace(calendar);
                 break;
             case w:
+            case W:
                 final int dow = calendar.get(Calendar.DAY_OF_WEEK);
                 final int firstDayOfWeek = calendar.getFirstDayOfWeek();
                 if (dow == firstDayOfWeek) {
@@ -2450,22 +2468,27 @@ public class Vba {
                 d.floorInplace(calendar);
                 break;
             case y:
+            case Y:
             case d:
+            case D:
                 calendar.set(Calendar.HOUR_OF_DAY, 0);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case h:
+            case H:
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case n:
+            case N:
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case s:
+            case S:
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             }
@@ -2474,6 +2497,7 @@ public class Vba {
         int diff(Calendar calendar1, Calendar calendar2, int firstDayOfWeek) {
             switch (this) {
             case q:
+            case Q:
                 return m.diff(calendar1, calendar2, firstDayOfWeek) / 3;
             default:
                 return floor(calendar1).get(dateField)
@@ -2484,10 +2508,13 @@ public class Vba {
         int datePart(Calendar calendar) {
             switch (this) {
             case q:
+            case Q:
                 return (m.datePart(calendar) + 2) / 3;
             case m:
+            case M:
                 return calendar.get(dateField) + 1;
             case w:
+            case W:
                 int dayOfWeek = calendar.get(dateField);
                 dayOfWeek -= (calendar.getFirstDayOfWeek() - 1);
                 dayOfWeek = dayOfWeek % 7;

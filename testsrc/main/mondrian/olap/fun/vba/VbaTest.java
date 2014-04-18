@@ -346,6 +346,15 @@ public class VbaTest extends TestCase {
         assertEquals("2008/04/24 23:10:45", Vba.dateAdd("h", 4, SAMPLE_DATE));
         assertEquals("2008/04/24 20:00:45", Vba.dateAdd("n", 50, SAMPLE_DATE));
         assertEquals("2008/04/24 19:10:36", Vba.dateAdd("s", -9, SAMPLE_DATE));
+
+        // case insensitive
+        assertEquals(Vba.dateAdd("yyyy", 1, SAMPLE_DATE), Vba.dateAdd("YYYY", 1, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("q", 3, SAMPLE_DATE), Vba.dateAdd("Q", 3, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("y", 7, SAMPLE_DATE), Vba.dateAdd("Y", 7, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("m", 2, SAMPLE_DATE), Vba.dateAdd("M", 2, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("h", 4, SAMPLE_DATE), Vba.dateAdd("H", 4, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("n", 50, SAMPLE_DATE), Vba.dateAdd("N", 50, SAMPLE_DATE));
+        assertEquals(Vba.dateAdd("s", -9, SAMPLE_DATE), Vba.dateAdd("S", -9, SAMPLE_DATE));
     }
 
     public void testDateDiff() {
@@ -415,6 +424,18 @@ public class VbaTest extends TestCase {
         } catch (RuntimeException e) {
             assertMessage(e, "ArrayIndexOutOfBoundsException");
         }
+    }
+
+    public void testDatePartCaseInsensitive() {
+        assertEquals(Vba.datePart("yy", SAMPLE_DATE), Vba.datePart("YYYY", SAMPLE_DATE));
+        assertEquals(Vba.datePart("q", SAMPLE_DATE), Vba.datePart("Q", SAMPLE_DATE));
+        assertEquals(Vba.datePart("m", SAMPLE_DATE), Vba.datePart("M", SAMPLE_DATE));
+        assertEquals(Vba.datePart("w", SAMPLE_DATE), Vba.datePart("W", SAMPLE_DATE));
+        assertEquals(Vba.datePart("ww", SAMPLE_DATE), Vba.datePart("WW", SAMPLE_DATE));
+        assertEquals(Vba.datePart("y", SAMPLE_DATE), Vba.datePart("Y", SAMPLE_DATE));
+        assertEquals(Vba.datePart("h", SAMPLE_DATE), Vba.datePart("H", SAMPLE_DATE));
+        assertEquals(Vba.datePart("n", SAMPLE_DATE), Vba.datePart("N", SAMPLE_DATE));
+        assertEquals(Vba.datePart("s", SAMPLE_DATE), Vba.datePart("S", SAMPLE_DATE));
     }
 
     public void testDate() {
