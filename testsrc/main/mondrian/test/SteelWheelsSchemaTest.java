@@ -1563,7 +1563,11 @@ public class SteelWheelsSchemaTest extends SteelWheelsTestCase {
             + "{}\n"
             + "Axis #1:\n"
             + "{[Measures].[*ZERO]}\n"
-            + "Axis #2:\n");
+            + "Axis #2:\n"
+            + "{[Time].[2003].[QTR1]}\n"
+            + "{[Time].[2003].[QTR2]}\n"
+            + "Row #0: 0\n"
+            + "Row #1: 0\n");
         propSaver.reset();
     }
 

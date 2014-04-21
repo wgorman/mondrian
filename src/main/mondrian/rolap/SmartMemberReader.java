@@ -369,11 +369,23 @@ public class SmartMemberReader implements MemberReader {
         RolapMember endMember,
         List<RolapMember> list)
     {
-        assert startMember != null;
-        assert endMember != null;
-        assert startMember.getLevel() == endMember.getLevel();
-
-        if (compare(startMember, endMember, false) > 0) {
+        assert startMember != null || endMember != null;
+        assert startMember == null || endMember == null
+            || startMember.getLevel() == endMember.getLevel();
+        if (startMember != null
+            && endMember != null
+            && compare(startMember, endMember, false) > 0)
+        {
+            return;
+        }
+        if (startMember == null) {
+            //iterate backwards and insert in reverse order
+            SiblingIterator siblings = new SiblingIterator(this, endMember);
+            list.add(endMember);
+            while (siblings.hasPrevious()) {
+                final RolapMember member = siblings.previousMember();
+                list.add(0, member);
+            }
             return;
         }
         list.add(startMember);
@@ -384,13 +396,16 @@ public class SmartMemberReader implements MemberReader {
         while (siblings.hasNext()) {
             final RolapMember member = siblings.nextMember();
             list.add(member);
-            if (member.equals(endMember)) {
+            // keep going until end of level or we reach the endMember
+            if (endMember != null && member.equals(endMember)) {
                 return;
             }
         }
-        throw Util.newInternal(
-            "sibling iterator did not hit end point, start="
-            + startMember + ", end=" + endMember);
+        if (endMember != null) {
+            throw Util.newInternal(
+                "sibling iterator did not hit end point, start="
+                + startMember + ", end=" + endMember);
+        }
     }
 
     public int getMemberCount() {
