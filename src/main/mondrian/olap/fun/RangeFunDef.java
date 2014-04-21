@@ -16,6 +16,7 @@ import mondrian.calc.impl.*;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.olap.type.NullType;
+import mondrian.olap.type.Type;
 import mondrian.resource.MondrianResource;
 import mondrian.rolap.RolapMember;
 
@@ -37,6 +38,17 @@ class RangeFunDef extends FunDefBase {
             "ixmm");
     }
 
+    public Type getResultType(Validator validator, Exp[] args) {
+        for (Exp arg : args) {
+            Type argType = arg.getType();
+            Type type = castType(argType, getReturnCategory());
+            if (type != null) {
+                return type;
+            }
+        }
+        throw Util.newInternal(
+            "Cannot deduce type of call to function '" + getName() + "'");
+    };
 
     /**
      * Returns two membercalc objects, substituting nulls with the hierarchy
@@ -93,16 +105,19 @@ class RangeFunDef extends FunDefBase {
             public TupleList evaluateList(Evaluator evaluator) {
                 final Member member0 = memberCalcs[0].evaluateMember(evaluator);
                 final Member member1 = memberCalcs[1].evaluateMember(evaluator);
-                if (member0.isNull() || member1.isNull()) {
-                    return TupleCollections.emptyList(1);
-                }
-                if (member0.getLevel() != member1.getLevel()) {
+                if (!member0.isNull()
+                    && !member1.isNull()
+                    && member0.getLevel() != member1.getLevel())
+                {
                     throw evaluator.newEvalException(
                         call.getFunDef(),
                         "Members must belong to the same level");
                 }
                 return new UnaryTupleList(
-                    FunUtil.memberRange(evaluator, member0, member1));
+                    FunUtil.memberRange(
+                        evaluator,
+                        member0.isNull() ? null : member0,
+                        member1.isNull() ? null : member1));
             }
         };
     }

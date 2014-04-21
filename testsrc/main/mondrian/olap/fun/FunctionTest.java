@@ -5344,12 +5344,44 @@ public class FunctionTest extends FoodMartTestCase {
     }
 
     /**
-     * tests that a null passed in returns an empty set in range function
+     * single null argument acts as unbounded
      */
     public void testNullRange() {
         assertAxisReturns(
-            "[Time].[1997].[Q1].[2] : NULL", //[Time].[1997].[Q2].[5]
-            ""); // Empty Set
+            "[Time].[1997].[Q2].[5] : NULL",
+            "[Time].[1997].[Q2].[5]\n"
+            + "[Time].[1997].[Q2].[6]\n"
+            + "[Time].[1997].[Q3].[7]\n"
+            + "[Time].[1997].[Q3].[8]\n"
+            + "[Time].[1997].[Q3].[9]\n"
+            + "[Time].[1997].[Q4].[10]\n"
+            + "[Time].[1997].[Q4].[11]\n"
+            + "[Time].[1997].[Q4].[12]\n"
+            + "[Time].[1998].[Q1].[1]\n"
+            + "[Time].[1998].[Q1].[2]\n"
+            + "[Time].[1998].[Q1].[3]\n"
+            + "[Time].[1998].[Q2].[4]\n"
+            + "[Time].[1998].[Q2].[5]\n"
+            + "[Time].[1998].[Q2].[6]\n"
+            + "[Time].[1998].[Q3].[7]\n"
+            + "[Time].[1998].[Q3].[8]\n"
+            + "[Time].[1998].[Q3].[9]\n"
+            + "[Time].[1998].[Q4].[10]\n"
+            + "[Time].[1998].[Q4].[11]\n"
+            + "[Time].[1998].[Q4].[12]");
+    }
+
+    /**
+     * single null argument acts as unbounded
+     */
+    public void testNullRangeFirstArg() {
+        assertAxisReturns(
+            " NULL : [Time].[1997].[Q2].[5]",
+            "[Time].[1997].[Q1].[1]\n"
+            + "[Time].[1997].[Q1].[2]\n"
+            + "[Time].[1997].[Q1].[3]\n"
+            + "[Time].[1997].[Q2].[4]\n"
+            + "[Time].[1997].[Q2].[5]");
     }
 
     /**
@@ -5443,13 +5475,25 @@ public class FunctionTest extends FoodMartTestCase {
     public void testRangeBoundedByNull() {
         assertAxisReturns(
             "[Gender].[F] : [Gender].[M].NextMember",
-            "");
+            "[Gender].[F]\n"
+            + "[Gender].[M]");
     }
 
     public void testRangeBoundedByNullLarge() {
         assertAxisReturns(
             "[Customers].PrevMember : [Customers].[USA].[OR]",
-            "");
+            "[Customers].[Canada].[BC]\n"
+            + "[Customers].[Mexico].[DF]\n"
+            + "[Customers].[Mexico].[Guerrero]\n"
+            + "[Customers].[Mexico].[Jalisco]\n"
+            + "[Customers].[Mexico].[Mexico]\n"
+            + "[Customers].[Mexico].[Oaxaca]\n"
+            + "[Customers].[Mexico].[Sinaloa]\n"
+            + "[Customers].[Mexico].[Veracruz]\n"
+            + "[Customers].[Mexico].[Yucatan]\n"
+            + "[Customers].[Mexico].[Zacatecas]\n"
+            + "[Customers].[USA].[CA]\n"
+            + "[Customers].[USA].[OR]");
     }
 
     public void testSetContainingLevelFails() {
@@ -9263,10 +9307,6 @@ public class FunctionTest extends FoodMartTestCase {
             + "Axis #2:\n"
             + "{[Product].[Food]}\n"
             + "Row #0: 191,940\n");
-    }
-
-    public void testMembersFromString2()
-    {
     }
 
     public void testStrToMemberFullyQualifiedName() {
