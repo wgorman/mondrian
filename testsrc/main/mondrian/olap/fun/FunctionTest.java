@@ -5597,10 +5597,6 @@ public class FunctionTest extends FoodMartTestCase {
 
     public void testIsError()
     {
-        // Test for null
-        assertExprReturns(
-            "iif (iserror(null), \"is error\", \"not is error\")",
-            "is error");
         // Test division by zero
         assertExprReturns(
             "iif (iserror(25/0), \"is error\", \"not is error\")",

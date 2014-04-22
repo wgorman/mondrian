@@ -247,7 +247,6 @@ public class BuiltinFunTable extends FunTableImpl {
         builder.define(IsLeafFunDef.Resolver);
         builder.define(IsFunDef.Resolver);
         builder.define(AsFunDef.RESOLVER);
-        builder.define(IsErrorFunDef.FunctionResolver);
 
         //
         // MEMBER FUNCTIONS
