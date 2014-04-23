@@ -1409,6 +1409,15 @@ otherwise looks at the bottom level.</p>
         <Default>false</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>FullHierarchyNames</Name>
+        <Path>mondrian.olap.FullHierarchyNames</Path>
+        <Description>
+<p>If true and SSasCompatibleNaming=true, hierarchy names will include dimension even if names are equal.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>XmlaSchemaRefreshInterval</Name>
         <Path>mondrian.xmla.SchemaRefreshInterval</Path>
         <Description>

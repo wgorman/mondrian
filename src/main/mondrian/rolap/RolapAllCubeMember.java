@@ -57,7 +57,7 @@ class RolapAllCubeMember
         // called [Measures].[Foo] not [Measures].[Measures].[Foo]. We can
         // remove this code when we revisit the scheme to generate member unique
         // names.
-        if (getHierarchy().getName().equals(getDimension().getName())) {
+        if (getDimension().isMeasures()) {
             this.uniqueName = Util.makeFqName(getDimension(), name);
         } else {
             this.uniqueName = Util.makeFqName(getHierarchy(), name);
