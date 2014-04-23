@@ -77,10 +77,14 @@ public abstract class HierarchyBase
             this.name = subName;
             // e.g. "[Time].[Weekly]" for dimension "Time", hierarchy "Weekly";
             // "[Time]" for dimension "Time", hierarchy "Time".
-            this.uniqueName =
-                subName.equals(name)
-                    ? dimension.getUniqueName()
-                    : Util.makeFqName(dimension, this.name);
+            if (subName.equals(name)
+                && (dimension.isMeasures()
+                    || !MondrianProperties.instance().FullHierarchyNames.get()))
+            {
+                this.uniqueName = dimension.getUniqueName();
+            } else {
+                this.uniqueName = Util.makeFqName(dimension, this.name);
+            }
         } else {
             this.subName = subName;
             if (this.subName != null) {
