@@ -687,7 +687,8 @@ public class XmlaHandler {
         this.connectionMgr = new XmlaSessionConnectionManager(this);
         this.fullUniqueNames =
             MondrianProperties.instance().SsasCompatibleNaming.get()
-            && MondrianProperties.instance().XmlaFullHierarchyNames.get();
+            && MondrianProperties.instance().XmlaFullHierarchyNames.get()
+            && !MondrianProperties.instance().FullHierarchyNames.get();
     }
 
     /**
@@ -2735,7 +2736,8 @@ public class XmlaHandler {
             int memberOrdinal = 0;
             final boolean fullUniqueNames =
                 MondrianProperties.instance().SsasCompatibleNaming.get()
-                && MondrianProperties.instance().XmlaFullHierarchyNames.get();
+                && MondrianProperties.instance().XmlaFullHierarchyNames.get()
+                && !MondrianProperties.instance().FullHierarchyNames.get();
             if (!empty) {
                 for (int i = axes.size() - 1; i > 0; i--) {
                     final CellSetAxis axis = axes.get(i);
@@ -3472,11 +3474,13 @@ public class XmlaHandler {
     private static String getHierarchyName(Hierarchy hierarchy) {
         if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
             return getFullUniqueName(
-                MondrianProperties.instance().XmlaFullHierarchyNames.get(),
+                MondrianProperties.instance().XmlaFullHierarchyNames.get()
+                && !MondrianProperties.instance().FullHierarchyNames.get(),
                 hierarchy,
                 hierarchy);
+        } else {
+            return hierarchy.getName();
         }
-        else return hierarchy.getName();
     }
 
     public void close() {
