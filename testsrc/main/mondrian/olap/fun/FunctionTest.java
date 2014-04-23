@@ -13362,6 +13362,37 @@ Intel platforms):
             + "Row #0: 3\n"
             + "Row #0: 3\n");
     }
+
+    public void testCountDistinctAggregateFun() {
+        // ----------------------------------------------------
+        // Calc members in dimension based on level stripped
+        // Actual members in measures left alone
+        // ----------------------------------------------------
+        assertQueryReturns(
+            "WITH MEMBER [Measures].[My Distinct Count] AS \n"
+            + "'AGGREGATE([1997].Children, [Measures].[Customer Count])' \n"
+            + "SELECT {[Measures].[My Distinct Count], [Measures].[Customer Count]} ON COLUMNS,\n"
+            + "{[1997].Children} ON ROWS\n"
+            + "FROM Sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[My Distinct Count]}\n"
+            + "{[Measures].[Customer Count]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "{[Time].[1997].[Q3]}\n"
+            + "{[Time].[1997].[Q4]}\n"
+            + "Row #0: 5,581\n"
+            + "Row #0: 2,981\n"
+            + "Row #1: 5,581\n"
+            + "Row #1: 2,973\n"
+            + "Row #2: 5,581\n"
+            + "Row #2: 3,026\n"
+            + "Row #3: 5,581\n"
+            + "Row #3: 3,261\n");
+    }
 }
 
 // End FunctionTest.java

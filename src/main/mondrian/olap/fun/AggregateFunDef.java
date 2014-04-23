@@ -11,6 +11,7 @@ package mondrian.olap.fun;
 
 import mondrian.calc.*;
 import mondrian.calc.impl.*;
+import mondrian.mdx.MemberExpr;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.olap.Role.RollupPolicy;
@@ -49,18 +50,37 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
         super(dummyFunDef);
     }
 
+    private Member getMember(Exp exp ) {
+        if (exp instanceof MemberExpr) {
+            Member m = ((MemberExpr)exp).getMember();
+            if (m.isMeasure() && !m.isCalculated()) {
+                return m;
+            }
+        }
+        return null;
+    }
+
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
         final ListCalc listCalc = compiler.compileList(call.getArg(0));
         final Calc calc =
             call.getArgCount() > 1
             ? compiler.compileScalar(call.getArg(1), true)
             : new ValueCalc(call);
-        return new AggregateCalc(call, listCalc, calc);
+        final Member member = call.getArgCount() > 1 ? getMember(call.getArg(1)) : null;
+        return new AggregateCalc(call, listCalc, calc, member);
     }
 
     public static class AggregateCalc extends GenericCalc {
         private final ListCalc listCalc;
         private final Calc calc;
+        private Member member = null;
+
+        public AggregateCalc(Exp exp, ListCalc listCalc, Calc calc, Member member) {
+            super(exp, new Calc[]{listCalc, calc});
+            this.listCalc = listCalc;
+            this.calc = calc;
+            this.member = member;
+        }
 
         public AggregateCalc(Exp exp, ListCalc listCalc, Calc calc) {
             super(exp, new Calc[]{listCalc, calc});
@@ -72,6 +92,7 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
             evaluator.getTiming().markStart(TIMING_NAME);
             try {
                 TupleList list = evaluateCurrentList(listCalc, evaluator);
+                if (member != null) evaluator.setContext(member);
                 return aggregate(calc, evaluator, list);
             } finally {
                 evaluator.getTiming().markEnd(TIMING_NAME);
