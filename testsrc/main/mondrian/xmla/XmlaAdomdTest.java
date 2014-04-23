@@ -291,5 +291,23 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             "[Customers].[Customers].[USA].[CA].[Berkeley].[Judith Frazier]");
     }
 
+    public void testAxisInCalculatedMeasure() {
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            "<CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"AxisTest\">"
+            + "<Formula>Axis(0).Item(0).Item(0).Dimension.Name</Formula>"
+            + "</CalculatedMember>");
+        testContext.assertQueryReturns(
+            "select {[Gender].[M]} on 0, Measures.AxisTest on 1 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[Gender].[M]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[AxisTest]}\n"
+            + "Row #0: Gender\n");
+    }
+
 }
 // End XmlaAdomdTest.java
