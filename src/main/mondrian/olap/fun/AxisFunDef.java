@@ -24,6 +24,7 @@ import mondrian.olap.Literal;
 import mondrian.olap.Query;
 import mondrian.olap.QueryAxis;
 import mondrian.olap.Validator;
+import mondrian.olap.type.MemberType;
 import mondrian.olap.type.SetType;
 import mondrian.olap.type.TupleType;
 import mondrian.olap.type.Type;
@@ -45,40 +46,34 @@ public class AxisFunDef extends FunDefBase {
         }
         if (args[0] instanceof Literal) {
             int idx = ((Literal) args[0]).getIntValue();
-            validateAxis(idx, validator.getQuery());
-            QueryAxis axis = validator.getQuery().getAxes()[idx];
-            if (validator.isResolving(axis)) {
-                throw FunUtil.newEvalException(
-                    this,
-                    String.format(
-                        "Axis(%d) was referenced before being resolved", idx));
+            // failing validation at this point might just mean we're in
+            // a calculated member and don't have axes yet
+            if (validateAxis(idx, validator.getQuery())) {
+                QueryAxis axis = validator.getQuery().getAxes()[idx];
+                if (validator.isResolving(axis)) {
+                    // evaluation loop
+                    throw FunUtil.newEvalException(
+                        this,
+                        String.format(
+                            "Axis(%d) was referenced before being resolved",
+                            idx));
+                }
+                return getAxisType(axis, validator);
             }
-            return getAxisType(axis, validator);
         }
-        // TODO: no loop detection in this case, should we disallow it or
-        // evaluate the expression at this point?
-        return new SetType(new TupleType(new Type[] {}));
+        return new SetType(new TupleType(new Type[] {MemberType.Unknown}));
     }
 
     private static Type getAxisType(QueryAxis axis, Validator validator) {
-        //  Exp axisExp = axis.getSet().clone();
-        //  axisExp = validator.validate(axisExp, false);
-        //  return axisExp.getType();
         axis.resolve(validator);
         return axis.getSet().getType();
     }
-    private void validateAxis(int axisNbr, Query query) {
-        if (axisNbr < 0 || axisNbr >= query.getAxes().length) {
-            throw FunUtil.newEvalException(
-                this,
-               "Inavlid axis number " + axisNbr);
-        }
+    private boolean validateAxis(int axisNbr, Query query) {
+        return axisNbr >= 0 && axisNbr < query.getAxes().length;
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
         final IntegerCalc arg = compiler.compileInteger(call.getArg(0));
-        //  int axisIdx = arg.evaluateInteger(compiler.getEvaluator());
-        //  return compiler.getEvaluator().getQuery().axisCalcs[axisIdx];
         return new AbstractListCalc(
             call,
             new Calc[] {arg})
@@ -87,9 +82,12 @@ public class AxisFunDef extends FunDefBase {
                 int axisIdx = arg.evaluateInteger(evaluator);
                 Query query = evaluator.getQuery();
                 // throw if invalid
-                AxisFunDef.this.validateAxis(axisIdx, query);
+                if (!AxisFunDef.this.validateAxis(axisIdx, query)) {
+                    throw FunUtil.newEvalException(
+                        AxisFunDef.this,
+                       "Invalid axis number " + axisIdx);
+                }
                 if (axisIdx < query.axisCalcs.length) {
-                    // QueryAxis axis = axes[axisIdx];
                     Calc axisCalc = evaluator.getQuery().axisCalcs[axisIdx];
                     if (axisCalc instanceof ListCalc) {
                         return ((ListCalc) axisCalc).evaluateList(evaluator);
