@@ -22,6 +22,7 @@ import java.util.Properties;
  */
 public class XmlaAdomdTest extends XmlaBaseTestCase {
 
+
     protected DiffRepository getDiffRepos() {
         return DiffRepository.lookup(XmlaAdomdTest.class);
     }
@@ -34,11 +35,15 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         throw new UnsupportedOperationException();
     }
 
+    private TestContext testContext;
+
+    @Override
+    public TestContext getTestContext() {
+        return testContext;
+    }
+
     protected void setUp() throws Exception {
         super.setUp();
-        // flush schema to avoid problems with ssasCompatibility change
-        // running test suites
-        getTestContext().flushSchemaCache();
         propSaver.set(MondrianProperties.instance().SsasCompatibleNaming, true);
         // avoids parse errors on adomd when no slicer defined
         propSaver.set(
@@ -56,14 +61,12 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         propSaver.set(MondrianProperties.instance().SsasKeyLookup, true);
         // include hierarchy name when = dimension name
         propSaver.set(
-            MondrianProperties.instance().XmlaFullHierarchyNames,
+            MondrianProperties.instance().FullHierarchyNames,
             true);
-    }
-
-    protected void tearDown() throws Exception {
-        super.tearDown();
-        // avoid side effects from ssas naming
-        getTestContext().flushSchemaCache();
+        // flush schema to avoid problems with SsasCompatibleNaming and
+        // FullHierarchyNames with cached entities
+        testContext = TestContext.instance().withFreshConnection();
+        testContext.flushSchemaCache();
     }
 
     @Override
@@ -113,7 +116,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             + "<DimensionUsage name=\"Warehouse\" source=\"Warehouse\" foreignKey=\"warehouse_id\"/>"
             + "<Measure name=\"Store Invoice\" column=\"store_invoice\" aggregator=\"sum\"/>"
             + "</Cube>";
-        TestContext testContext = TestContext.instance().create(
+        TestContext testContext = getTestContext().create(
             storeStoreDim,
             duplicateHierarchyCube,
             null,
@@ -135,7 +138,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         Properties props = getDefaultRequestProperties(requestType);
         // for <Discover> requests
         props.setProperty(FORMAT_PROP, "Tabular");
-        doTest(requestType, props, TestContext.instance());
+        doTest(requestType, props, getTestContext());
     }
 
     /**
@@ -147,7 +150,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
         Properties props = getDefaultRequestProperties(requestType);
         // for <Discover> requests
         props.setProperty(FORMAT_PROP, "Tabular");
-        doTest(requestType, props, TestContext.instance());
+        doTest(requestType, props, getTestContext());
     }
 
     /**
@@ -180,7 +183,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Unit Sales]}\n"
             + "Axis #2:\n"
-            + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+            + "{[Customers].[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
             + "Row #0: \n";
 
         // test child by key, name != key
@@ -236,7 +239,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
                 + "Axis #1:\n"
                 + "{[Measures].[Unit Sales]}\n"
                 + "Axis #2:\n"
-                + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+                + "{[Customers].[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
                 + "Row #0: \n");
         } finally {
             propSaver.set(
@@ -256,7 +259,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Unit Sales]}\n"
             + "Axis #2:\n"
-            + "{[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
+            + "{[Customers].[Customers].[USA].[CA].[Berkeley].[Judith Frazier]}\n"
             + "Row #0: \n";
 
         // child by name after compound key
@@ -279,13 +282,13 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
     public void testKeyLookupStrToMember() {
         assertAxisReturns(
             "StrToMember('[Customers].[USA].[CA].&[Berkeley]')",
-            "[Customers].[USA].[CA].[Berkeley]");
+            "[Customers].[Customers].[USA].[CA].[Berkeley]");
         assertAxisReturns(
             "StrToMember('[Customers].&[USA].&[CA].&[Berkeley]')",
-            "[Customers].[USA].[CA].[Berkeley]");
+            "[Customers].[Customers].[USA].[CA].[Berkeley]");
         assertAxisReturns(
             "StrToMember('[Customers].[City].&[Berkeley]&[CA].&[371]')",
-            "[Customers].[USA].[CA].[Berkeley].[Judith Frazier]");
+            "[Customers].[Customers].[USA].[CA].[Berkeley].[Judith Frazier]");
     }
 
 }
