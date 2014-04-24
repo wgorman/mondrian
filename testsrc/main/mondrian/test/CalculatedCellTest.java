@@ -22,9 +22,19 @@ import mondrian.olap.Result;
  * - Additional tests for Calculated Cells in virtual cubes
  * - Calculated Cell Solve Order
  * - Calculated Cells with Native Evaluation
+ *
+ *  - we'll need to decide during native eval if a calculated cell is in possible scope,
+ *    and if it's relevant.
+ *
+ *    for instance, for non empty, a cell calc can transition a cell from non-empty to empty or empty to non-empty.
+ *
+ *    we can determine if each calculated cell is within scope by comparing the 
+ *    cross join args plus the current context with the calculated cell.  The crossjoin args
+ *    override the current context, otherwise the current context is appropriate. 
+ *
  * - Calculated Cells with Security
  * - Calculated Cells along side more complex calculated measures
- * 
+ *
  * @author Will Gorman <wgorman@pentaho.com>
  *
  */
@@ -369,6 +379,139 @@ public class CalculatedCellTest extends FoodMartTestCase {
             + "Row #0: 65,336\n"
             + "Row #0: 79,466\n" // Normally would be 66,222
             + "Row #0: 66,460\n"
+            + "Row #0: 68,755\n");
+    }
+
+    public void testCalculatedCellWithOrder() {
+      TestContext testContext = TestContext.instance()
+      .createSubstitutingCube(
+          "Sales",
+          null,
+          null,
+          null,
+          "  <CalculatedCell>\n"
+          + "    <SubCube>([Gender].[F], Descendants([Time].[1997].[Q1], [Time].[Month], SELF_AND_BEFORE))</SubCube>\n"
+          + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
+          + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+          + "  </CalculatedCell>"
+      );
+      testContext.assertQueryReturns(
+          "select Order([Time].[1997].[Q1].Children, [Measures].[Unit Sales], ASC) on 0 from [Sales] where [Gender].[F]",
+          "Axis #0:\n"
+          + "{[Gender].[F]}\n"
+          + "Axis #1:\n"
+          + "{[Time].[1997].[Q1].[2]}\n"
+          + "{[Time].[1997].[Q1].[1]}\n"
+          + "{[Time].[1997].[Q1].[3]}\n"
+          + "Row #0: 12,319\n"
+          + "Row #0: 13,118\n"
+          + "Row #0: 14,054\n");
+    }
+
+    public void _testFilterCellCalc() {
+        propSaver.set(propSaver.properties.EnableNativeFilter, false);
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F], [Marital Status].[S])</SubCube>\n"
+            + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>"
+        );
+
+        testContext.assertQueryReturns(
+            "select {Filter(CrossJoin([Gender].[All Gender].Children,[Marital Status].[All Marital Status].Children), [Measures].[Unit Sales] > 67000) } on 0, {[Measures].[Unit Sales]} on 1 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[S]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 79,466\n" // Normally would be 66,222
+            + "Row #0: 68,755\n");
+    }
+
+    public void _testNonEmptyCellCalc() {
+        propSaver.set(propSaver.properties.EnableNativeNonEmpty, false);
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Year].[1998])</SubCube>\n"
+            + "    <Formula>100</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>");
+
+        testContext.assertQueryReturns(
+            "select {[Year].Members} on 0 from [sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997]}\n"
+            + "{[Time].[1998]}\n"
+            + "Row #0: 266,773\n"
+            + "Row #0: 100\n" // normally null
+            );
+
+        // the following scenario fails with native evaluation enabled
+        testContext.assertQueryReturns(
+            "select NON EMPTY {[Year].Members} on 0 from [sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Time].[1997]}\n"
+            + "{[Time].[1998]}\n"
+            + "Row #0: 266,773\n"
+            + "Row #0: 100\n" // normally null
+            );
+    }
+
+    public void _testTopCountCellCalc() {
+        propSaver.set(propSaver.properties.EnableNativeTopCount, false);
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F], [Marital Status].[S])</SubCube>\n"
+            + "    <Formula>[Measures].CurrentMember * 1.2</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>");
+
+        // for native eval, the topcount returns the wrong order
+        testContext.assertQueryReturns(
+            "select {TopCount(CrossJoin([Gender].[All Gender].Children,[Marital Status].[All Marital Status].Children), 4, [Measures].[Unit Sales])} on 0, {[Measures].[Unit Sales]} on 1 from [sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[M]}\n"
+            + "{[Gender].[F], [Marital Status].[M]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 79,466\n" // Normally would be 66,222
+            + "Row #0: 68,755\n"
+            + "Row #0: 66,460\n"
+            + "Row #0: 65,336\n");
+
+        testContext.assertQueryReturns(
+            "select {TopCount(CrossJoin([Gender].[All Gender].Children,[Marital Status].[All Marital Status].Children), 2, [Measures].[Unit Sales]) } on 0, {[Measures].[Unit Sales]} on 1 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[F], [Marital Status].[S]}\n"
+            + "{[Gender].[M], [Marital Status].[S]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 79,466\n" // Normally would be 66,222
             + "Row #0: 68,755\n");
     }
 }
