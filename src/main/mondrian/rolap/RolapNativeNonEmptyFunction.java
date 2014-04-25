@@ -11,10 +11,12 @@ package mondrian.rolap;
 
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
+import mondrian.olap.Level;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
 import mondrian.olap.SchemaReader;
 import mondrian.olap.Util;
+import mondrian.rolap.RolapNativeFilter.FilterConstraint;
 import mondrian.rolap.sql.CrossJoinArg;
 import mondrian.rolap.sql.DescendantsCrossJoinArg;
 import mondrian.rolap.sql.MemberListCrossJoinArg;
@@ -40,6 +42,12 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         Exp[] args)
     {
         if (!isEnabled()) {
+            return null;
+        }
+        
+        if (!FilterConstraint.isValidContext(
+                evaluator, false, new Level[]{}, restrictMemberTypes()))
+        {
             return null;
         }
 
