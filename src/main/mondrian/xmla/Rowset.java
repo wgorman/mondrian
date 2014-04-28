@@ -155,6 +155,10 @@ abstract class Rowset implements XmlaConstants {
             break;
         case Catalog:
             break;
+        case Roles:
+            break;
+        case CustomData:
+            break;
         case LocaleIdentifier:
             if (value != null) {
                 try {
@@ -182,11 +186,7 @@ abstract class Rowset implements XmlaConstants {
                 }
                 return;
             }
-        case Roles:
-            break;
-        case CustomData:
-            break;
-            // fall through
+        // fall through
         default:
             LOGGER.warn(
                 "Warning: Rowset '" + rowsetDefinition.name()
@@ -229,8 +229,8 @@ abstract class Rowset implements XmlaConstants {
         try {
             if (needConnection() && connection == null) {
               sc = handler.getConnectionGrant(
-                       request,
-                       extraProperties);
+                  request,
+                  extraProperties);
                 connection = sc.getConnection();
                 ourConnection = true;
             }

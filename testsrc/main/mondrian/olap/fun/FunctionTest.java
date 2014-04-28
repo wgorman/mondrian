@@ -12,6 +12,7 @@ package mondrian.olap.fun;
 
 import mondrian.olap.*;
 import mondrian.resource.MondrianResource;
+import mondrian.rolap.RolapConnection;
 import mondrian.test.FoodMartTestCase;
 import mondrian.test.TestContext;
 import mondrian.udf.*;
@@ -172,15 +173,9 @@ public class FunctionTest extends FoodMartTestCase {
     }
 
     public void testCustomData() {
-        TestContext testContextCustomData = new TestContext() {
-            public mondrian.olap.Connection getConnection() {
-                Util.PropertyList properties =
-                    Util.parseConnectString(getConnectString());
-                properties.put(
-                    PropertyDefinition.CustomData.name(),
-                    "User1");
-                return DriverManager.getConnection(properties, null);
-            }};
+        TestContext testContextCustomData = new TestContext() {};
+        ((RolapConnection)testContextCustomData.getConnection())
+            .setCustomData("User1");
         // Should return User1 from CustomData
         testContextCustomData.assertQueryReturns(
             "WITH MEMBER [Measures].CustomData0 AS CustomData() "
@@ -12504,7 +12499,7 @@ Intel platforms):
     }
 
     /**
-     * Exists with CubeName argument. 
+     * Exists with CubeName argument.
      * <a href="http://jira.pentaho.com/browse/MONDRIAN-1968">MONDRIAN-1968</a>
      */
     public void testExistsCubeName() {
