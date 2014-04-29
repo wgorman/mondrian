@@ -676,11 +676,8 @@ public abstract class MondrianOlap4jConnection implements OlapConnection {
         return mondrianConnection.getLocale();
     }
 
-    public void setCustomData(String value) throws OlapException
-    {
-        final RolapConnection rConn = getMondrianConnection();
-
-        rConn.getConnectInfo().put(PropertyDefinition.CustomData.name(), value);
+    public void setCustomData(String value) throws OlapException {
+        mondrianConnection.setCustomData(value);
     }
 
     public void setRoleName(String roleName) throws OlapException {

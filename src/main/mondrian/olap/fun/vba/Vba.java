@@ -254,29 +254,46 @@ public class Vba {
         }
     }
 
-    // public String str$(Object number)
+    // public String cstr$(Object expression)
 
     @FunctionName("CStr")
-    @Signature("CStr(number)")
+    @Signature("CStr(expression)")
     @Description("Returns a Variant (String) representation of a number.")
-    public static String cstr(Object number) {
-        if (number instanceof Number) {
-            try {
-                int numInt = ((Number) number).intValue();
-                double numFractional = ((Number) number).doubleValue() - numInt;
-
-                return numFractional > 0.0
-                        ? number.toString() : Integer.toString(numInt);
-            } catch (Exception ex) {
+    public static String cstr(Object expression) {
+        if (expression instanceof Number) {
+            Number number = (Number) expression;
+            final int intValue = number.intValue();
+            if (number instanceof Float || number instanceof Double) {
+                final double doubleValue = number.doubleValue();
+                if (doubleValue == (double) intValue) {
+                    // Number is already an integer
+                    return Integer.toString(intValue);
+                }
                 return number.toString();
             }
-        } else {
+            return Integer.toString(intValue);
+         } else if (expression instanceof Boolean) {
+            Boolean bool = (Boolean) expression;
+            return bool ? "True" : "False";
+         } else if (expression instanceof Date) {
+            DateFormat dateFormat = DateFormat.getDateInstance(
+                    DateFormat.SHORT,
+                    // TODO: We should get de locale from the connection
+                    Locale.getDefault());
+            Date date = (Date) expression;
+            return dateFormat.format(date);
+         } else if (expression == null) {
+            return String.valueOf(new RuntimeException(
+                "Invalid parameter expression must not be null"));
+         } else if (expression == "") {
+            return "";
+         } else {
             throw new InvalidArgumentException(
-                "Invalid parameter. "
-                + "number parameter " + number
-                + " of CStr function must be " + "of type number");
-        }
+                "Invalid parameter. ");
+         }
     }
+
+    // public String str$(Object number)
 
     @FunctionName("Str")
     @Signature("Str(number)")

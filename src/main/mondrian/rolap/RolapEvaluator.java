@@ -931,10 +931,8 @@ public class RolapEvaluator implements Evaluator {
         return root.connection.getLocale();
     }
 
-    public final String getConnectionCustomData()
-    {
-        return root.connection.getConnectInfo().get(
-            PropertyDefinition.CustomData.name(), "");
+    public final String getConnectionCustomData() {
+        return root.connection.getCustomData();
     }
 
     public final String format(Object o) {
