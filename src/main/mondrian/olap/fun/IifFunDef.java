@@ -84,6 +84,9 @@ public class IifFunDef extends FunDefBase {
                 public Calc[] getCalcs() {
                     return new Calc[] {booleanCalc, calc1, calc2};
                 }
+                public ResultStyle getResultStyle() {
+                  return calc1.getResultStyle();
+                }
             };
         } else {
             return new GenericCalc(call) {
