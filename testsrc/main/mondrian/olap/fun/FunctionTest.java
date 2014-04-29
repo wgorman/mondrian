@@ -142,10 +142,26 @@ public class FunctionTest extends FoodMartTestCase {
             + "from [sales]");
     }
 
-    public void testStringPlusOperation() {
+    public void testStringConcatenatesOperation() {
         assertExprReturns(
-            "[Time].[Year].Dimension.UniqueName + \" \" + "
-            + "[Time].[Year].Dimension.Caption ", "[Time] Time");
+            "[Time].[Year].Dimension.UniqueName + \" \" + [Time].[Year].Dimension.Caption ",
+            "[Time] Time");
+        // String + null
+        assertExprReturns(
+            "[Time].[Year].Dimension.UniqueName + NULL",
+            "[Time]");
+        // null + String
+        assertExprReturns(
+            "NULL + [Time].[Year].Dimension.UniqueName",
+            "[Time]");
+        // String + empty
+        assertExprReturns(
+            "[Time].[Year].Dimension.UniqueName + \"\"",
+            "[Time]");
+        // empty + String
+        assertExprReturns(
+            "\"\" + [Time].[Year].Dimension.UniqueName",
+            "[Time]");
     }
 
     public void testPropertiesDateTYPED() {
