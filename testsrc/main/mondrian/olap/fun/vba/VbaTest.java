@@ -53,9 +53,24 @@ public class VbaTest extends TestCase {
     }
 
     public void testCStr() {
+        DateFormat dateFormat = DateFormat.getDateInstance(
+            DateFormat.SHORT,
+            Locale.getDefault());
+        Date date = new Date();
+        int a = 10, b = 10;
+
         assertEquals("1950", Vba.cstr(1950.0));
         assertEquals("1951", Vba.cstr(1951));
         assertEquals("1952.23", Vba.cstr(1952.23));
+        assertEquals("True", Vba.cstr(Boolean.TRUE));
+        assertEquals("False", Vba.cstr(Boolean.FALSE));
+        assertEquals("True", Vba.cstr(a == b));
+        assertEquals("False", Vba.cstr(a == (b - 1)));
+        assertEquals(dateFormat.format(date), Vba.cstr(date));
+        assertEquals(
+            "java.lang.RuntimeException: Invalid parameter expression must not be null",
+            Vba.cstr(null));
+        assertEquals("", Vba.cstr(""));
     }
 
     public void testCBool() {
