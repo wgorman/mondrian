@@ -1898,5 +1898,35 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "Row #1: 1,576\n"
           + "Row #2: 353\n");
     }
+
+    /**
+     * This issue would appear during validation of nonempty() native evaluation
+     */
+    public void testSelfReferenceWithNativeEval() {
+        String mdx =
+            "WITH\n"
+            + "member [Measures].[Ref] AS '[Measures].[SelfRef]'\n"
+            + "member [Measures].[SelfRef] as '\n"
+            + "CASE WHEN\n"
+            + "([Gender].CurrentMember IS [Gender].[M])\n"
+            + "THEN\n"
+            + "0\n"
+            + "WHEN\n"
+            + "([Gender].CurrentMember IS [Gender].[F])\n"
+            + "THEN\n"
+            + "1\n"
+            + "WHEN\n"
+            + "([Gender].CurrentMember IS [Gender].[All Gender])\n"
+            + "THEN\n"
+            + "SUM([Gender].[F], [Measures].[SelfRef])\n"
+            + "END'"
+            + "SELECT {NonEmpty([Measures].[Ref])} on 0 from [Warehouse and Sales]";
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Ref]}\n"
+            + "Row #0: 1\n");
+    }
 }
 // End NativeSetEvaluationTest.java

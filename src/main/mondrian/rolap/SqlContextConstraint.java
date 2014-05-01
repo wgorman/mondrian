@@ -140,7 +140,7 @@ public class SqlContextConstraint
                 addMeasure(
                     (RolapStoredMeasure) member, baseCubes, baseCubeList);
             } else if (member instanceof RolapCalculatedMember) {
-                findMeasures(member.getExpression(), baseCubes, baseCubeList);
+                findMeasures(member.getExpression(), baseCubes, baseCubeList, new TreeSet<Member>());
             }
         }
         if (baseCubes.isEmpty()) {
@@ -175,7 +175,8 @@ public class SqlContextConstraint
     private static void findMeasures(
         Exp exp,
         Set<RolapCube> baseCubes,
-        List<RolapCube> baseCubeList)
+        List<RolapCube> baseCubeList,
+        Set<Member> foundMeasures)
     {
         if (exp instanceof MemberExpr) {
             MemberExpr memberExpr = (MemberExpr) exp;
@@ -184,13 +185,16 @@ public class SqlContextConstraint
                 addMeasure(
                     (RolapStoredMeasure) member, baseCubes, baseCubeList);
             } else if (member instanceof RolapCalculatedMember) {
-                findMeasures(member.getExpression(), baseCubes, baseCubeList);
+                if (!foundMeasures.contains(member)) {
+                  foundMeasures.add(member);
+                  findMeasures(member.getExpression(), baseCubes, baseCubeList, foundMeasures);
+                }
             }
         } else if (exp instanceof ResolvedFunCall) {
             ResolvedFunCall funCall = (ResolvedFunCall) exp;
             Exp [] args = funCall.getArgs();
             for (Exp arg : args) {
-                findMeasures(arg, baseCubes, baseCubeList);
+                findMeasures(arg, baseCubes, baseCubeList, foundMeasures);
             }
         }
     }
