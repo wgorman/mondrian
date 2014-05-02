@@ -103,6 +103,7 @@ public class LinkMemberFunDef extends FunDefBase {
         List<RolapMember> referenceMembers,
         boolean hasParentChild)
     {
+        boolean isAllLevel = false;
         // get key values
         ArrayList<Comparable> keys =
             new ArrayList<Comparable>(referenceMembers.size() + 1);
@@ -110,7 +111,8 @@ public class LinkMemberFunDef extends FunDefBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapMember member : referenceMembers) {
             RolapLevel level = member.getLevel();
-            if (level.getKeyExp() != null) {
+            isAllLevel = level.getName().equals("(All)");
+            if (level.getKeyExp() != null || isAllLevel) {
                 Object key = member.getKey();
                 keys.add(
                     (key instanceof Comparable)
@@ -122,7 +124,7 @@ public class LinkMemberFunDef extends FunDefBase {
         // sort keys by descending level and start lookup from top level
         SchemaReader reader = evaluator.getSchemaReader();
         Collections.reverse(keys);
-        final int firstLevel = target.hasAll() ? 1 : 0;
+        final int firstLevel = target.hasAll() && !isAllLevel ? 1 : 0;
         OlapElement current = target.getLevels()[firstLevel];
         for (Object key : keys) {
             Id.KeySegment keySegment =
