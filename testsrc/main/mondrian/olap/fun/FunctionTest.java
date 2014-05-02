@@ -12879,6 +12879,14 @@ Intel platforms):
             "[Time].[Weekly].[1997]");
     }
 
+    public void testLinkMemberAll() throws Exception {
+        // apart from weekly having an all member,
+        // time and weekly hierarchies are equivalent up to year
+        assertAxisReturns(
+            "LinkMember([Gender].[All Gender], [Product])",
+            "[Product].[All Products]");
+    }
+
     public void testLinkMemberDims() throws Exception {
         String doubleTimeCube =
             "<Cube name=\"SalesTime\">\n"
