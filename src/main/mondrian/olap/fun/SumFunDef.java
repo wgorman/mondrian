@@ -12,6 +12,7 @@ package mondrian.olap.fun;
 import mondrian.calc.*;
 import mondrian.calc.impl.AbstractDoubleCalc;
 import mondrian.calc.impl.ValueCalc;
+import mondrian.mdx.MemberExpr;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 
@@ -70,6 +71,16 @@ class SumFunDef extends AbstractAggregateFunDef {
             compiler.getAcceptableResultStyles());
     }
 
+    private Member getMember(Exp exp ) {
+      if (exp instanceof MemberExpr) {
+          Member m = ((MemberExpr)exp).getMember();
+          if (m.isMeasure()) {
+              return m;
+          }
+      }
+      return null;
+    }
+
     protected Calc compileCall(
         final ResolvedFunCall call,
         ExpCompiler compiler,
@@ -82,21 +93,28 @@ class SumFunDef extends AbstractAggregateFunDef {
         final Calc calc = call.getArgCount() > 1
             ? compiler.compileScalar(call.getArg(1), true)
             : new ValueCalc(call);
+
+        final Member member = call.getArgCount() > 1 ? getMember(call.getArg(1)) : null;
+
         // we may have asked for one sort of Calc, but here's what we got.
         if (ncalc instanceof ListCalc) {
-            return genListCalc(call, (ListCalc) ncalc, calc);
+            return genListCalc(call, (ListCalc) ncalc, calc, member);
         } else {
-            return genIterCalc(call, (IterCalc) ncalc, calc);
+            return genIterCalc(call, (IterCalc) ncalc, calc, member);
         }
     }
 
     protected Calc genIterCalc(
         final ResolvedFunCall call,
         final IterCalc iterCalc,
-        final Calc calc)
+        final Calc calc,
+        final Member member)
     {
         return new AbstractDoubleCalc(call, new Calc[] {iterCalc, calc}) {
             public double evaluateDouble(Evaluator evaluator) {
+                if (member != null) {
+                    evaluator.setContext(member);
+                }
                 TupleIterable iterable =
                     evaluateCurrentIterable(iterCalc, evaluator);
                 final int savepoint = evaluator.savepoint();
@@ -116,10 +134,14 @@ class SumFunDef extends AbstractAggregateFunDef {
     protected Calc genListCalc(
         final ResolvedFunCall call,
         final ListCalc listCalc,
-        final Calc calc)
+        final Calc calc,
+        final Member member)
     {
         return new AbstractDoubleCalc(call, new Calc[] {listCalc, calc}) {
             public double evaluateDouble(Evaluator evaluator) {
+                if (member != null) {
+                  evaluator.setContext(member);
+                }
                 TupleList memberList = evaluateCurrentList(listCalc, evaluator);
                 final int savepoint = evaluator.savepoint();
                 try {
