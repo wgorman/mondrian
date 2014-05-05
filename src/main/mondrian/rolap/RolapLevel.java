@@ -602,7 +602,7 @@ public class RolapLevel extends LevelBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapLevel x = this;; x = (RolapLevel) x.getParentLevel()) {
             final MondrianDef.Expression keyExp1 = x.getKeyExp();
-            if (keyExp1 != null || x.getName().equals("(All)")) {
+            if (keyExp1 != null || x.isAll()) {
                 list.add(keyExp1);
             }
             if (x.isUnique()) {
