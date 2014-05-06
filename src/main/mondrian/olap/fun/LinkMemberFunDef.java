@@ -111,8 +111,7 @@ public class LinkMemberFunDef extends FunDefBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapMember member : referenceMembers) {
             RolapLevel level = member.getLevel();
-            isAllLevel = level.getName().equals("(All)");
-            if (level.getKeyExp() != null || isAllLevel) {
+            if (level.getKeyExp() != null || level.isAll()) {
                 Object key = member.getKey();
                 keys.add(
                     (key instanceof Comparable)
@@ -120,6 +119,8 @@ public class LinkMemberFunDef extends FunDefBase {
                         : key.toString());
                 keyColumns.add(level.getKeyExp());
             }
+            if (level.isAll())
+                isAllLevel = true;
         }
         // sort keys by descending level and start lookup from top level
         SchemaReader reader = evaluator.getSchemaReader();
