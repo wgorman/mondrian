@@ -73,6 +73,7 @@ public class LinkMemberFunDef extends FunDefBase {
         RolapHierarchy hierarchy)
     {
         boolean hasParentChild = false;
+        boolean isAll = member.isAll();
         // fetch all ancestors to get full key suite
         ArrayList<RolapMember> memberAndAncestors =
             new ArrayList<RolapMember>(member.getDepth() + 1);
@@ -86,16 +87,15 @@ public class LinkMemberFunDef extends FunDefBase {
             hasParentChild |= parentMember.getLevel().isParentChild();
         }
         return getLinkMember(
-            evaluator, hierarchy, memberAndAncestors, hasParentChild);
+            evaluator, hierarchy, memberAndAncestors, hasParentChild, isAll);
     }
 
     private static Member getLinkMember(
         Evaluator evaluator,
         RolapHierarchy target,
         List<RolapMember> referenceMembers,
-        boolean hasParentChild)
+        boolean hasParentChild, boolean isAll)
     {
-        boolean isAllLevel = false;
         // get key values
         ArrayList<Comparable> keys =
             new ArrayList<Comparable>(referenceMembers.size() + 1);
@@ -103,7 +103,7 @@ public class LinkMemberFunDef extends FunDefBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapMember member : referenceMembers) {
             RolapLevel level = member.getLevel();
-            if (level.getKeyExp() != null || level.isAll()) {
+            if (level.getKeyExp() != null || isAll) {
                 Object key = member.getKey();
                 keys.add(
                     (key instanceof Comparable)
@@ -111,17 +111,15 @@ public class LinkMemberFunDef extends FunDefBase {
                         : key.toString());
                 keyColumns.add(level.getKeyExp());
             }
-            if (level.isAll())
-                isAllLevel = true;
         }
         // sort keys by descending level and start lookup from top level
         SchemaReader reader = evaluator.getSchemaReader();
         Collections.reverse(keys);
-        final int firstLevel = target.hasAll() && !isAllLevel ? 1 : 0;
+        final int firstLevel = target.hasAll() && !isAll ? 1 : 0;
         OlapElement current = target.getLevels()[firstLevel];
         for (Object key : keys) {
             Id.KeySegment keySegment =
-                    new Id.KeySegment(new Id.NameSegment(key.toString()));
+                new Id.KeySegment(new Id.NameSegment(key.toString()));
             current = current.lookupChild(reader, keySegment, MatchType.EXACT);
         }
 
@@ -130,15 +128,16 @@ public class LinkMemberFunDef extends FunDefBase {
         if (member == null && target.isRagged()) {
             for (int i = firstLevel; i < target.getLevels().length; i++) {
                 Level lvl = target.getLevels()[i];
-                //if (!lvl.areMembersUnique()) continue;
                 current = lvl;
                 for (Object key : keys) {
                     Id.KeySegment keySegment =
-                            new Id.KeySegment(new Id.NameSegment(key.toString()));
-                    current = current.lookupChild(reader, keySegment, MatchType.EXACT);
+                        new Id.KeySegment(new Id.NameSegment(key.toString()));
+                    current = current.lookupChild(
+                        reader, keySegment, MatchType.EXACT);
 
-                    if (current instanceof Member)
+                    if (current instanceof Member) {
                         return (Member) current;
+                    }
                 }
             }
         }
