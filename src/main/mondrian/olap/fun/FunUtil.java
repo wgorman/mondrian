@@ -404,39 +404,38 @@ public class FunUtil extends Util {
         List<Member> memberList,
         boolean parentsToo)
     {
-        assert exp.getType() instanceof ScalarType;
-        Map<Member, Object> mapMemberToValue =
-            new HashMap<Member, Object>();
-        for (Member member : memberIter) {
-            if (memberList != null) {
-                memberList.add(member);
-            }
-            while (true) {
-                final int savepoint = evaluator.savepoint();
-                Object result = null;
-                try {
+        final int savepoint = evaluator.savepoint();
+        try {
+            assert exp.getType() instanceof ScalarType;
+            Map<Member, Object> mapMemberToValue =
+                new HashMap<Member, Object>();
+            for (Member member : memberIter) {
+                if (memberList != null) {
+                    memberList.add(member);
+                }
+                while (true) {
                     evaluator.setContext(member);
-                    result = exp.evaluate(evaluator);
-                } finally {
-                   evaluator.restore(savepoint);
-                }
-                if (result == null) {
-                    result = Util.nullValue;
-                }
-                mapMemberToValue.put(member, result);
-                if (!parentsToo) {
-                    break;
-                }
-                member = member.getParentMember();
-                if (member == null) {
-                    break;
-                }
-                if (mapMemberToValue.containsKey(member)) {
-                    break;
+                    Object result = exp.evaluate(evaluator);
+                    if (result == null) {
+                        result = Util.nullValue;
+                    }
+                    mapMemberToValue.put(member, result);
+                    if (!parentsToo) {
+                        break;
+                    }
+                    member = member.getParentMember();
+                    if (member == null) {
+                        break;
+                    }
+                    if (mapMemberToValue.containsKey(member)) {
+                        break;
+                    }
                 }
             }
+            return mapMemberToValue;
+        } finally {
+            evaluator.restore(savepoint);
         }
-        return mapMemberToValue;
     }
 
     /**

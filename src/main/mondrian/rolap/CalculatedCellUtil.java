@@ -135,6 +135,11 @@ public class CalculatedCellUtil {
         return true;
     }
     
+    static public class CellCalcReturn {
+      public List<CellCalc> currentCellCalcs = new ArrayList<CellCalc>();
+      public List<RolapCellCalculation> newCellCalcs = new ArrayList<RolapCellCalculation>();
+    }
+
     /**
      * This method is called by RolapEvaluator to determine which cell calculations apply to the current context. 
      * 
@@ -142,8 +147,8 @@ public class CalculatedCellUtil {
      * 
      * @return a list of cell calculations to apply.
      */
-    public static List<CellCalc> applyCellCalculations(RolapEvaluator eval) {
-        List<CellCalc> currentCellCalcs = null;
+    public static CellCalcReturn applyCellCalculations(RolapEvaluator eval) {
+        CellCalcReturn ret = null;
         if (eval.getCube().cellCalcs != null) {
             for (CellCalc calc : eval.getCube().cellCalcs) {
               if (!eval.root.activeCellCalcs.contains(calc) && insideSubcube(eval, calc)) {
@@ -152,18 +157,19 @@ public class CalculatedCellUtil {
                   eval.root.activeCellCalcs.add(calc);
       
                   // lazy init to avoid extra memory use and object creation
-                  if (currentCellCalcs == null) {
-                    currentCellCalcs = new ArrayList<CellCalc>(); 
+                  if (ret == null) {
+                    ret = new CellCalcReturn();
                   }
-                  currentCellCalcs.add(calc);
+                  ret.currentCellCalcs.add(calc);
                   final Calc calcVal = eval.root.getCompiled(calc.cellExp, true, null);
                   RolapCellCalculation calcObj = new RolapCellCalculation(calcVal, calc.solve_order);
                   // adds the cell calculation to the evaluator.
-                  eval.addCalculation(calcObj, true);                
+                  eval.addCalculation(calcObj, true);
+                  ret.newCellCalcs.add(calcObj);
                 } 
             }
         }
-        return currentCellCalcs;
+        return ret;
     }
 
     /**

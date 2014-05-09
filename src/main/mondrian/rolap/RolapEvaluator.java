@@ -17,6 +17,7 @@ import mondrian.calc.ParameterSlot;
 import mondrian.olap.*;
 import mondrian.olap.fun.FunUtil;
 import mondrian.rolap.CalculatedCellUtil.CellCalc;
+import mondrian.rolap.CalculatedCellUtil.CellCalcReturn;
 import mondrian.server.Statement;
 import mondrian.spi.Dialect;
 import mondrian.util.Format;
@@ -663,10 +664,10 @@ public class RolapEvaluator implements Evaluator {
 
         // if there are calculated cells,
         // apply the context if we are in a subcube
-        List<CellCalc> currentCellCalcs =
-                CalculatedCellUtil.applyCellCalculations(this);
+        CellCalcReturn currentCellCalcs =
+            CalculatedCellUtil.applyCellCalculations(this);
         if (currentCellCalcs != null) {
-            activeCellCalcs.addAll(currentCellCalcs);
+            activeCellCalcs.addAll(currentCellCalcs.currentCellCalcs);
         }
         RolapCalculation maxSolveMember;
         switch (calculationCount) {
@@ -704,7 +705,17 @@ public class RolapEvaluator implements Evaluator {
         }
         // unregister calculated cells from root evaluator after processing.
         if (currentCellCalcs != null) {
-            for (CellCalc cellCalc : currentCellCalcs) {
+            // remove cell calculations from play
+            for (RolapCalculation newCellCalc : currentCellCalcs.newCellCalcs) {
+                for (int i = 0; i < calculationCount; i++) {
+                    if (calculations[i] == newCellCalc) {
+                      removeCalculation(newCellCalc, true);
+                      break;
+                    }
+                }
+            }
+
+            for (CellCalc cellCalc : currentCellCalcs.currentCellCalcs) {
                 root.activeCellCalcs.remove(cellCalc);
             }
         }

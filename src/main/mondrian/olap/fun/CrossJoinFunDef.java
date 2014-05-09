@@ -1047,17 +1047,12 @@ public class CrossJoinFunDef extends FunDefBase {
                 // make sure that the data is all loaded
                 boolean found = false;
                 for (Member measure : measureSet) {
-                    final int savepoint = evaluator.savepoint();
-                    try {
-                        evaluator.setContext(measure);
-                        Object value = evaluator.evaluateCurrent();
-                        if (value != null
-                            && !(value instanceof Throwable))
-                        {
-                            found = true;
-                        }
-                    } finally {
-                        evaluator.restore(savepoint);
+                    evaluator.setContext(measure);
+                    Object value = evaluator.evaluateCurrent();
+                    if (value != null
+                        && !(value instanceof Throwable))
+                    {
+                        found = true;
                     }
                 }
                 return found;
