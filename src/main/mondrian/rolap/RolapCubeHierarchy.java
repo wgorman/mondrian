@@ -66,6 +66,7 @@ public class RolapCubeHierarchy extends RolapHierarchy {
     // processing
     private List<RolapCubeHierarchy> manyToManyHierarchies;
     public List<ManyToManyAddlJoin> manyToManyAddlJoins;
+    public MondrianDef.Relation bridgeTable = null;
 
     /**
      * Creates a RolapCubeHierarchy.
@@ -368,6 +369,9 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         join.leftKey = joiningHier.primaryKey;
 
         MondrianDef.Join right = new MondrianDef.Join();
+
+        // Note, the bridge cube and all downstream tables in the join should be wrapped in a distinct sub-select to avoid duplication of data.
+        bridgeTable = bridgeCubeObj.fact;
 
         // bridge cube fact table
         right.left = bridgeCubeObj.fact;

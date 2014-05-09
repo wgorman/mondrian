@@ -174,3 +174,31 @@
 2,3,650
 2,4,500
 2,5,150
+## TableName: m2m_bad_results_m2m_dim
+## ColumnNames: id,subcat
+## ColumnTypes: INTEGER,VARCHAR(20)
+## NosOfRows: 4
+1,A
+2,A
+3,B
+4,B
+## TableName: m2m_bad_results_m2m_join_fact
+## ColumnNames: m2m_dim_id,join_dim_id
+## ColumnTypes: INTEGER,INTEGER
+## NosOfRows: 4
+1,10
+1,20
+2,10
+2,20
+## TableName: m2m_bad_results_join_dim
+## ColumnNames: id
+## ColumnTypes: INTEGER
+## NosOfRows: 2
+10
+20
+## TableName: m2m_bad_results_fact
+## ColumnNames: join_dim_id,sales
+## ColumnTypes: INTEGER,INTEGER
+## NosOfRows: 2
+10,28
+20,10

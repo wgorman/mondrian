@@ -319,6 +319,27 @@ public class SqlQuery {
         addFromQuery(sqlQuery.toString(), alias, failIfExists);
     }
 
+    Map<String, SqlQuery> subqueries = new HashMap<String, SqlQuery>();
+
+    public boolean addFrom(
+        final MondrianDef.RelationOrJoin relation,
+        final String alias,
+        final boolean failIfExists,
+        final String subquery)
+    {
+        if (subquery != null) {
+            SqlQuery subq = subqueries.get(subquery);
+            if (subq == null) {
+                subq = new SqlQuery(dialect, generateFormattedSql );
+                subq.setDistinct(true);
+                subqueries.put(subquery, subq);
+            }
+            return subq.addFrom(relation, alias, failIfExists, null);
+        } else {
+            return addFrom(relation, alias, failIfExists);
+        }
+    }
+    
     /**
      * Adds a relation to a query, adding appropriate join conditions, unless
      * it is already present.
@@ -376,7 +397,7 @@ public class SqlQuery {
             final MondrianDef.Relation relation1 =
                 RolapUtil.convertInlineTableToRelation(
                     (MondrianDef.InlineTable) relation, dialect);
-            return addFrom(relation1, alias, failIfExists);
+            return addFrom(relation1, alias, failIfExists, null);
 
         } else if (relation instanceof MondrianDef.Table) {
             final MondrianDef.Table table = (MondrianDef.Table) relation;
@@ -416,8 +437,8 @@ public class SqlQuery {
         String rightKey,
         boolean failIfExists)
     {
-        boolean addLeft = addFrom(left, leftAlias, failIfExists);
-        boolean addRight = addFrom(right, rightAlias, failIfExists);
+        boolean addLeft = addFrom(left, leftAlias, failIfExists, null);
+        boolean addRight = addFrom(right, rightAlias, failIfExists, null);
 
         boolean added = addLeft || addRight;
         if (added) {
@@ -519,6 +540,10 @@ public class SqlQuery {
         return "c" + select.size();
     }
 
+    public SqlQuery getSubQuery(String subQueryAlias) {
+      return subqueries.get(subQueryAlias);
+    }
+
     /**
      * Adds an expression to the select clause, with a specified type and
      * column alias.
@@ -574,6 +599,22 @@ public class SqlQuery {
                 joinCondition.getLeft(this),
                 " = ",
                 joinCondition.getRight(this));
+        }
+    }
+
+    public void addWhere(final String expression, String subquery) {
+      if (subquery != null) {
+        subqueries.get(subquery).addWhere(expression);
+      } else {
+        addWhere(expression);
+      }
+    }
+
+    public void addSubWhere(final String expression, final String subSelectExpr, final String subquery) {
+        assert expression != null && !expression.equals("");
+        boolean added = where.add(expression);
+        if (added) {
+          getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
         }
     }
 
@@ -671,8 +712,31 @@ public class SqlQuery {
         final String first = distinct ? "select distinct " : "select ";
         select.toBuffer(buf, generateFormattedSql, prefix, first, ", ", "", "");
         groupingFunctionsToBuffer(buf, prefix);
-        from.toBuffer(
-            buf, generateFormattedSql, prefix, " from ", ", ", "", "");
+
+        if (subqueries.size() > 0) {
+          FromClauseList newfrom = from.clone();
+          for (String alias : subqueries.keySet()) {
+            SqlQuery subquery = subqueries.get( alias );
+            StringBuilder subbuf = new StringBuilder();
+            subbuf.setLength(0);
+            subbuf.append('(');
+            subbuf.append(subquery.toString());
+            subbuf.append(')');
+            if (dialect.allowsAs()) {
+              subbuf.append(" as ");
+            } else {
+              subbuf.append(' ');
+            }
+            dialect.quoteIdentifier(alias, subbuf);
+            newfrom.add(subbuf.toString());
+          }
+          newfrom.toBuffer(
+              buf, generateFormattedSql, prefix, " from ", ", ", "", "");
+          
+        } else {
+          from.toBuffer(
+              buf, generateFormattedSql, prefix, " from ", ", ", "", "");
+        }
         where.toBuffer(
             buf, generateFormattedSql, prefix, " where ", " and ", "", "");
         if (groupingSets.isEmpty()) {
@@ -821,6 +885,13 @@ public class SqlQuery {
     static class FromClauseList extends ClauseList {
         private final List<JoinOnClause> joinOnClauses =
             new ArrayList<JoinOnClause>();
+
+        public FromClauseList clone() {
+          FromClauseList list = new FromClauseList(this.allowDups);
+          list.joinOnClauses.addAll(this.joinOnClauses);
+          list.addAll( this );
+          return list;
+        }
 
         FromClauseList(boolean allowsDups) {
             super(allowsDups);

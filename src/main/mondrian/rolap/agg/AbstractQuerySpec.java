@@ -97,10 +97,10 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                 // this is a funky dimension -- ignore for now
                 continue;
             }
-            table.addToFrom(sqlQuery, false, true);
+            table.addToFrom(sqlQuery, false, true, true);
 
             String expr = column.generateExprString(sqlQuery);
-
+            String subquery = column.getTable().getSubQueryAlias();
             StarColumnPredicate predicate = getColumnPredicate(i);
             final String where = RolapStar.Column.createInExpr(
                 expr,
@@ -108,7 +108,11 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                 column.getDatatype(),
                 sqlQuery);
             if (!where.equals("true")) {
-                sqlQuery.addWhere(where);
+                if (subquery != null) {
+                  sqlQuery.getSubQuery(subquery).addWhere(where);
+                } else {
+                    sqlQuery.addWhere(where);
+                }
             }
 
             if (countOnly) {
@@ -117,6 +121,12 @@ public abstract class AbstractQuerySpec implements QuerySpec {
 
             if (!isPartOfSelect(column)) {
                 continue;
+            }
+
+            if (subquery != null) {
+                // add select to subquery and replace expr
+                String newalias = sqlQuery.getSubQuery(subquery).addSelect(expr, null );
+                expr = sqlQuery.getDialect().quoteIdentifier(subquery, newalias);
             }
 
             // some DB2 (AS400) versions throw an error, if a column alias is

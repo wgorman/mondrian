@@ -1269,6 +1269,7 @@ public class RolapStar {
         private List<Table> children;
         private final Condition joinCondition;
         private final String alias;
+        private boolean wrapInDistinctSubselect = false;
 
         private Table(
             RolapStar star,
@@ -1293,6 +1294,32 @@ public class RolapStar {
             Util.assertTrue((parent == null) == (joinCondition == null));
         }
 
+        /**
+         * Returns the current subquery alias of self or parent if one exists.
+         */
+        public String getSubQueryAlias() {
+            if (wrapInDistinctSubselect) {
+                return alias;
+            } else if (parent != null) {
+                return parent.getSubQueryAlias();
+            } else {
+                return null;
+            }
+        }
+
+        /**
+         * Question: can I re-use the alias in the inner and outer query? would simplify things.
+         * 
+         * @param wrapInDistinctSubselect
+         */
+        public void setWrapInDistinctSubselect(boolean wrapInDistinctSubselect) {
+          this.wrapInDistinctSubselect = wrapInDistinctSubselect;
+        }
+        
+        public boolean getWrapInDistinctSubselect() {
+          return this.wrapInDistinctSubselect;
+        }
+        
         /**
          * Returns the condition by which a dimension table is connected to its
          * {@link #getParentTable() parent}; or null if this is the fact table.
@@ -1776,6 +1803,14 @@ public class RolapStar {
             return false;
         }
 
+        public void addToFrom(
+            SqlQuery query,
+            boolean failIfExists,
+            boolean joinToParent)
+        {
+          addToFrom(query, failIfExists, joinToParent, false);
+        }
+
         /**
          * Adds this table to the FROM clause of a query, and also, if
          * <code>joinToParent</code>, any join condition.
@@ -1789,27 +1824,51 @@ public class RolapStar {
         public void addToFrom(
             SqlQuery query,
             boolean failIfExists,
-            boolean joinToParent)
+            boolean joinToParent,
+            boolean distinctSubQuery)
         {
-            query.addFrom(relation, alias, failIfExists);
+            // may need to add this to a distinct sub-query vs. the main query, depending on parent
+            String subqueryAlias = distinctSubQuery ? getSubQueryAlias() : null;
+            // if we are part of a subquery, we need to deal with that.
+            query.addFrom(relation, alias, failIfExists, subqueryAlias);
+
             Util.assertTrue((parent == null) == (joinCondition == null));
             if (joinToParent) {
                 if (parent != null) {
-                    parent.addToFrom(query, failIfExists, joinToParent);
+                    parent.addToFrom(query, failIfExists, joinToParent, distinctSubQuery);
                 }
                 if (joinCondition != null) {
-                    query.addWhere(joinCondition.toString(query));
+                    if (subqueryAlias != null && !wrapInDistinctSubselect) {
+                        query.getSubQuery(subqueryAlias).addWhere(joinCondition.toString(query));
+                    } else {
+                        if (subqueryAlias != null) {
+                            // we need to add the join condition selector to the select clause
+                            query.addSubWhere(joinCondition.toString(query), joinCondition.right.getExpression(query), subqueryAlias);
+                        } else {
+                            query.addWhere(joinCondition.toString(query));
+                        }
+                    }
                 }
                 // if there are additional parents, add them to the
                 // query as well. this is used by many to many dims
                 if (addlParents != null) {
                     for (Table table : addlParents) {
-                        table.addToFrom(query,  failIfExists, joinToParent);
+                        table.addToFrom(query,  failIfExists, joinToParent, distinctSubQuery);
                     }
                     // also add any additional join conditions
                     if (addlJoinConditions != null) {
                         for (Condition condition : addlJoinConditions) {
-                            query.addWhere(condition.toString(query));
+                            if (subqueryAlias != null && !wrapInDistinctSubselect) {
+                                query.getSubQuery( subqueryAlias ).addWhere(condition.toString(query));
+                            } else {
+                                if (subqueryAlias != null) {
+                                    // we need to add the join condition selector to the select clause
+                                    query.addSubWhere(condition.toString(query), condition.right.getExpression(query), subqueryAlias);
+                                    // need to include the left alias
+                                } else {
+                                    query.addWhere(condition.toString(query));
+                                }
+                            }
                         }
                     }
                 }

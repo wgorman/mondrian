@@ -1833,10 +1833,17 @@ public class RolapCube extends CubeBase {
                     table = table.addJoin(this, relation, joinCondition);
 
                     // this logic adds additional parents for many to many
-                    // hierarchies
+                    // hierarchies and handles enabling distinct sub-select
                     if (hierarchy instanceof RolapCubeHierarchy) {
                         RolapCubeHierarchy hier =
                             (RolapCubeHierarchy)hierarchy;
+                        if (hier.bridgeTable != null) {
+                            RolapStar.Table bridge =
+                                table.findAncestor(hier.bridgeTable.getAlias());
+                            // this tells the star schema to generate M2M SQL correctly
+                            bridge.setWrapInDistinctSubselect( true );
+                        }
+
                         if (hier.manyToManyAddlJoins != null
                             && hier.manyToManyAddlJoins.size() > 0)
                         {
