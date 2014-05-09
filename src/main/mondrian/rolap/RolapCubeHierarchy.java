@@ -609,6 +609,11 @@ public class RolapCubeHierarchy extends RolapHierarchy {
         return currentRelation;
     }
 
+    @Override
+    public boolean isDefaultMemberExplicit() {
+        return rolapHierarchy.isDefaultMemberExplicit();
+    }
+
     // override with stricter return type; make final, important for
     // performance
     public final RolapCubeMember getDefaultMember() {
