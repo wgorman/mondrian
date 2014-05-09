@@ -6303,6 +6303,12 @@ public class FunctionTest extends FoodMartTestCase {
             "xxx");
     }
 
+    public void testPropertiesWithTYPED() {
+        assertExprReturns(
+            "[Store].[USA].[CA].[Beverly Hills].[Store 6].Properties(\"Store Type\", TYPED)",
+            "Gourmet Supermarket");    
+    }
+
     public void testPropertiesExpr() {
         assertExprReturns(
             "[Store].[USA].[CA].[Beverly Hills].[Store 6].Properties(\"Store Type\")",
@@ -12939,6 +12945,14 @@ Intel platforms):
         assertAxisReturns(
             "LinkMember([Time].[1997], " + TimeWeekly + ")",
             "[Time].[Weekly].[1997]");
+    }
+
+    public void testLinkMemberAll() throws Exception {
+        // apart from weekly having an all member,
+        // time and weekly hierarchies are equivalent up to year
+        assertAxisReturns(
+            "LinkMember([Gender].[All Gender], [Product])",
+            "[Product].[All Products]");
     }
 
     public void testLinkMemberDims() throws Exception {
