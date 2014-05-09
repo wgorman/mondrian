@@ -15,15 +15,7 @@ import mondrian.calc.HierarchyCalc;
 import mondrian.calc.MemberCalc;
 import mondrian.calc.impl.AbstractMemberCalc;
 import mondrian.mdx.ResolvedFunCall;
-import mondrian.olap.Evaluator;
-import mondrian.olap.Exp;
-import mondrian.olap.Id;
-import mondrian.olap.MatchType;
-import mondrian.olap.Member;
-import mondrian.olap.MondrianDef;
-import mondrian.olap.OlapElement;
-import mondrian.olap.SchemaReader;
-import mondrian.olap.Validator;
+import mondrian.olap.*;
 import mondrian.olap.type.Type;
 import mondrian.rolap.RolapHierarchy;
 import mondrian.rolap.RolapLevel;
@@ -129,8 +121,26 @@ public class LinkMemberFunDef extends FunDefBase {
         OlapElement current = target.getLevels()[firstLevel];
         for (Object key : keys) {
             Id.KeySegment keySegment =
-                new Id.KeySegment(new Id.NameSegment(key.toString()));
+                    new Id.KeySegment(new Id.NameSegment(key.toString()));
             current = current.lookupChild(reader, keySegment, MatchType.EXACT);
+        }
+
+        Member member = (current instanceof Member) ? (Member) current : null;
+
+        if (member == null && target.isRagged()) {
+            for (int i = firstLevel; i < target.getLevels().length; i++) {
+                Level lvl = target.getLevels()[i];
+                //if (!lvl.areMembersUnique()) continue;
+                current = lvl;
+                for (Object key : keys) {
+                    Id.KeySegment keySegment =
+                            new Id.KeySegment(new Id.NameSegment(key.toString()));
+                    current = current.lookupChild(reader, keySegment, MatchType.EXACT);
+
+                    if (current instanceof Member)
+                        return (Member) current;
+                }
+            }
         }
         return (current instanceof Member) ? (Member) current : null;
     }
