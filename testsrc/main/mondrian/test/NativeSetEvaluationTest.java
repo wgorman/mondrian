@@ -1368,6 +1368,47 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #2:\n");
     }
 
+    public void testNativeNonEmptyWithMeasure() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "SELECT\n"
+            + "NonEmpty([Store].[Store City].Members, [Measures].[Store Sales]) ON 0\n"
+            + "FROM [Sales]";
+
+        // TODO: Verify SQL Generation from Native Eval
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[CA].[San Francisco]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bellingham]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Walla Walla]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Row #0: 21,333\n"
+            + "Row #0: 25,663\n"
+            + "Row #0: 25,635\n"
+            + "Row #0: 2,117\n"
+            + "Row #0: 26,079\n"
+            + "Row #0: 41,580\n"
+            + "Row #0: 2,237\n"
+            + "Row #0: 24,576\n"
+            + "Row #0: 25,011\n"
+            + "Row #0: 23,591\n"
+            + "Row #0: 35,257\n"
+            + "Row #0: 2,203\n"
+            + "Row #0: 11,491\n");
+    }
+
     public void testNativeNonEmptyFunc() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
         final String mdx =

@@ -9,20 +9,28 @@
 */
 package mondrian.rolap;
 
+import mondrian.mdx.MemberExpr;
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
+import mondrian.olap.Member;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
 import mondrian.olap.SchemaReader;
 import mondrian.olap.Util;
+import mondrian.olap.fun.CrossJoinFunDef;
+import mondrian.olap.fun.FunDefBase;
+import mondrian.olap.fun.NonEmptyCrossJoinFunDef;
 import mondrian.rolap.RolapNativeFilter.FilterConstraint;
 import mondrian.rolap.sql.CrossJoinArg;
 import mondrian.rolap.sql.DescendantsCrossJoinArg;
 import mondrian.rolap.sql.MemberListCrossJoinArg;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class RolapNativeNonEmptyFunction extends RolapNativeSet {
 
@@ -62,17 +70,58 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         }
         // we want the second arg to be added just as a crossjoin constraint
         boolean hasTwoArgs = args.length == 2;
+        if (hasTwoArgs) {
+            // this check verifies there isn't anything that would cause
+            // overall native eval to fail in both arguments
+            FunDef nonEmptyCrossJoin =
+                new NonEmptyCrossJoinFunDef(
+                    new FunDefBase("NonEmptyCrossJoin", null, "fxxx") {}
+                );
+            List<CrossJoinArg[]> allArgs = crossJoinArgFactory().checkCrossJoin(evaluator, nonEmptyCrossJoin, args, true);
+            if (failedCjArg(allArgs)) {
+                alertNonNative(evaluator, fun, args[1]);
+                return null;
+            }
+        }
+
         List<CrossJoinArg[]> extraArgs =
             hasTwoArgs
-                ? crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1])
+                ? crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1], true, false)
                 : null;
-        if (hasTwoArgs
-            && failedCjArg(extraArgs))
-        {
-            alertNonNative(evaluator, fun, args[1]);
-            return null;
-            // TODO: if measures are present find if they can be separated and
-            // filtered afterwards
+
+        RolapStoredMeasure measure = null;
+        if (hasTwoArgs) {
+
+          // investigate all measures in second param,
+          // if they are all regular measures from the same base cube
+          // select the final one for non-empty evaluation
+
+          Set<RolapCube> baseCubes = new HashSet<RolapCube>();
+          Set<Member> measures = new HashSet<Member>();
+          List<RolapCube> baseCubeList = new ArrayList<RolapCube>();
+          findMeasures(args[1], baseCubes, baseCubeList, measures);
+          boolean calculatedMeasures = false;
+
+          for (Member m : measures) {
+              if (m instanceof RolapStoredMeasure) {
+                measure = (RolapStoredMeasure)m;
+              }
+              if (m.isCalculated()) {
+                calculatedMeasures = true;
+              }
+          }
+
+          if (baseCubeList.size() > 1 || calculatedMeasures) {
+              // unable to perform
+              alertNonNative(evaluator, fun, args[1]);
+              return null;
+          }
+        }
+
+        if (hasTwoArgs && extraArgs == null) {
+          // set to false if there are no extra args
+          // so that the two arg lists can be merged
+          hasTwoArgs = false;
         }
 
         // what should end up in the select
@@ -90,7 +139,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
 
         final int savepoint = evaluator.savepoint();
         try {
-            overrideContext(evaluator, cjArgs, null);
+            overrideContext(evaluator, cjArgs, measure);
             NonEmptyFunctionConstraint constraint =
                 new NonEmptyFunctionConstraint(
                     constraintArgs, evaluator, restrictMemberTypes());
@@ -133,6 +182,57 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         RolapUtil.alertNonNative(
             fun.getName(),
             "set argument " + offendingArg.toString());
+    }
+
+    /**
+     * Extracts the stored measures referenced in an expression
+     *
+     * @param exp expression
+     * @param baseCubes set of base cubes
+     */
+    private static void findMeasures(
+        Exp exp,
+        Set<RolapCube> baseCubes,
+        List<RolapCube> baseCubeList,
+        Set<Member> foundMeasures)
+    {
+        if (exp instanceof MemberExpr) {
+            MemberExpr memberExpr = (MemberExpr) exp;
+            Member member = memberExpr.getMember();
+            if (member instanceof RolapStoredMeasure) {
+                foundMeasures.add(member);
+                addMeasure(
+                    (RolapStoredMeasure) member, baseCubes, baseCubeList);
+            } else if (member instanceof RolapCalculatedMember) {
+                if (!foundMeasures.contains(member)) {
+                  foundMeasures.add(member);
+                  findMeasures(member.getExpression(), baseCubes, baseCubeList, foundMeasures);
+                }
+            }
+        } else if (exp instanceof ResolvedFunCall) {
+            ResolvedFunCall funCall = (ResolvedFunCall) exp;
+            Exp [] args = funCall.getArgs();
+            for (Exp arg : args) {
+                findMeasures(arg, baseCubes, baseCubeList, foundMeasures);
+            }
+        }
+    }
+
+    /**
+     * Adds information regarding a stored measure to maps
+     *
+     * @param measure the stored measure
+     * @param baseCubes set of base cubes
+     */
+    private static void addMeasure(
+        RolapStoredMeasure measure,
+        Set<RolapCube> baseCubes,
+        List<RolapCube> baseCubeList)
+    {
+        RolapCube baseCube = measure.getCube();
+        if (baseCubes.add(baseCube)) {
+            baseCubeList.add(baseCube);
+        }
     }
 
     static class NonEmptyFunctionConstraint extends SetConstraint {
