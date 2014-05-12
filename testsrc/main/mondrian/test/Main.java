@@ -222,8 +222,10 @@ public class Main extends TestSuite {
             addTest(suite, SegmentCacheTest.class);
             addTest(suite, CVBasicTest.class, "suite");
             addTest(suite, GrandTotalTest.class, "suite");
-            addTest(suite, mondrian.test.clearview.HangerDimensionTest.class, "suite");
-            addTest(suite, mondrian.test.HangerDimensionTest.class);            
+            addTest(
+                suite, mondrian.test.clearview.HangerDimensionTest.class,
+                "suite");
+            addTest(suite, mondrian.test.HangerDimensionTest.class);
             addTest(suite, MetricFilterTest.class, "suite");
             addTest(suite, MiscTest.class, "suite");
             addTest(suite, PredicateFilterTest.class, "suite");
@@ -247,6 +249,7 @@ public class Main extends TestSuite {
             addTest(suite, ExpiringReferenceTest.class);
             addTest(suite, Olap4jTest.class);
             addTest(suite, SortTest.class);
+            addTest(suite, LinkMemberTest.class);
             if (isRunOnce()) {
                 addTest(suite, TestAggregationManager.class);
             }

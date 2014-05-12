@@ -1,0 +1,37 @@
+# link_member.csv
+## TableName: quarter_table
+## ColumnNames: quarter_id,quarter_1,quarter_2,quarter_3,quarter_4
+## ColumnTypes: INTEGER,VARCHAR(20),VARCHAR(20),VARCHAR(20),VARCHAR(20)
+## NosOfRows: 4
+## ActionAfter: CreateIndex id_quarter id_quarter
+1,Q1,null,null,null
+2,null,Q2,null,null
+3,null,null,Q3,null
+4,null,null,null,Q4
+## TableName: time_by_day_2
+## ColumnNames: time_id,the_date,the_day,the_month,the_year,day_of_month,week_of_year,month_of_year,quarter
+## ColumnTypes: INTEGER,DATE,VARCHAR(30),VARCHAR(30),INTEGER,INTEGER,INTEGER,INTEGER,VARCHAR(30)
+## NosOfRows: 8
+## ActionAfter: CreateIndex time_id time_id
+367,1997-01-01,Wednesday,January,1997,1,2,1,Q1
+372,1997-01-06,Monday,January,1997,6,3,1,Q1
+457,1997-04-01,Tuesday,April,1997,1,15,4,Q2
+484,1997-04-28,Monday,April,1997,28,19,4,Q2
+548,1997-07-01,Tuesday,July,1997,1,28,7,Q3
+629,1997-09-20,Saturday,September,1997,20,39,9,Q3
+645,1997-10-06,Monday,October,1997,6,42,10,Q4
+683,1997-11-13,Thursday,November,1997,13,47,11,Q4
+## TableName: quarter_sales_fact_1997
+## ColumnNames: time_id,store_id,store_sales,store_cost,unit_sales,quarter_id
+## ColumnTypes: INTEGER,INTEGER,DECIMAL(10,4),DECIMAL(10,4),DECIMAL(10,4),INTEGER
+## NosOfRows: 8
+## ActionAfter: CreateIndex id_time id_time
+## ActionAfter: CreateIndex quarter_id quarter_id
+367,2,1.5000,0.5100,2.0000,1
+372,2,1.6200,0.6318,3.0000,1
+457,2,1.3200,0.5849,5.0000,2
+484,2,1.4320,0.1234,10.0000,2
+548,2,2.3900,1.2300,6.0000,3
+629,2,1.5200,0.9900,11.0000,3
+645,2,1.6600,1.0000,15.0000,4
+683,2,1.7800,0.8400,7.0000,4

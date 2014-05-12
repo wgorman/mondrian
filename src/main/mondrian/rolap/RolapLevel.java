@@ -602,7 +602,7 @@ public class RolapLevel extends LevelBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapLevel x = this;; x = (RolapLevel) x.getParentLevel()) {
             final MondrianDef.Expression keyExp1 = x.getKeyExp();
-            if (keyExp1 != null || x.isAll()) {
+            if (keyExp1 != null) {
                 list.add(keyExp1);
             }
             if (x.isUnique()) {
@@ -660,16 +660,19 @@ public class RolapLevel extends LevelBase {
         }
 
         if (getHierarchy().isRagged()) {
-            // check to see if the current level and all parents are Never, if so, we aren't too ragged
+            // check to see if the current level and all parents are Never,
+            // if so, we aren't too ragged
             for (int i = getDepth(); i >= 0; i--) {
-                if (((RolapLevel)getHierarchy().getLevels()[i]).getHideMemberCondition() != HideMemberCondition.Never) {
+                if (((RolapLevel)getHierarchy().getLevels()[i])
+                    .getHideMemberCondition() != HideMemberCondition.Never)
+                {
                     return true;
                 }
             }
         }
 
         // either we are in a regular hierarchy or we are in a ragged hierarchy
-        // but all levels current and above aren't too ragged 
+        // but all levels current and above aren't too ragged
         return false;
     }
 
