@@ -2692,13 +2692,14 @@ public class FunUtil extends Util {
     static boolean existsInTuple(
         final List<Member> leftTuple, final List<Member> rightTuple,
         final List<Hierarchy> leftHierarchies,
-        final List<Hierarchy> rightHierarchies)
+        final List<Hierarchy> rightHierarchies,
+        final Evaluator eval)
     {
         List<Member> checkedMembers = new ArrayList<Member>();
 
         for (Member leftMember : leftTuple) {
             Member rightMember = getCorrespondingMember(
-                leftMember, rightTuple, rightHierarchies);
+                leftMember, rightTuple, rightHierarchies, eval);
             checkedMembers.add(rightMember);
             if (!isOnSameHierarchyChain(leftMember, rightMember)) {
                 return false;
@@ -2713,7 +2714,7 @@ public class FunUtil extends Util {
                 continue;
             }
             Member leftMember = getCorrespondingMember(
-                rightMember, leftTuple, leftHierarchies);
+                rightMember, leftTuple, leftHierarchies, eval);
             if (!isOnSameHierarchyChain(leftMember, rightMember)) {
                 return false;
             }
@@ -2740,14 +2741,20 @@ public class FunUtil extends Util {
      */
     private static Member getCorrespondingMember(
         final Member member, final List<Member> tuple,
-        final List<Hierarchy> tupleHierarchies)
+        final List<Hierarchy> tupleHierarchies,
+        final Evaluator eval
+        )
     {
         assert tuple.size() == tupleHierarchies.size();
         int dimPos = tupleHierarchies.indexOf(member.getHierarchy());
         if (dimPos >= 0) {
             return tuple.get(dimPos);
         } else {
-            return member.getHierarchy().getDefaultMember();
+            if (eval != null) {
+                return eval.getContext(member.getHierarchy());
+            } else {
+                return member.getHierarchy().getDefaultMember();
+            }
         }
     }
 

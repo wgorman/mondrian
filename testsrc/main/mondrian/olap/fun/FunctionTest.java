@@ -13091,6 +13091,37 @@ Intel platforms):
             + "Row #0: 50,236\n");
     }
 
+    /**
+     * This issue demonstrates the problem.  Note that if
+     * [Measures].[Unit Sales] is used, which happens to be the default
+     * measure, this query returns expected results.  There seems to be some
+     * behavior in FunUtil.existsInTuple() that shouldn't be there.
+     */
+    public void testExistingWithCalcMember() {
+        assertQueryReturns(
+            "with \n"
+            + "  member [Product].[All Products].[WithExisting] as 'Aggregate(Existing [Product].[Drink])'\n"
+            + "  member [Product].[All Products].[WithoutExisting] as 'Aggregate([Product].[Drink])'\n"
+            + "  select {[Product].[Product Family].AllMembers} on 0,\n"
+            + "  [Measures].[Store Sales] on 1\n"
+            + "  from [Sales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "{[Product].[All Products].[WithExisting]}\n"
+            + "{[Product].[All Products].[WithoutExisting]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Row #0: 48,836.21\n"
+            + "Row #0: 409,035.59\n"
+            + "Row #0: 107,366.33\n"
+            + "Row #0: 48,836.21\n"
+            + "Row #0: 48,836.21\n");
+    }
+
     public void testNonEmptyFunSlicer() {
         assertQueryReturns(
             "SELECT\n"

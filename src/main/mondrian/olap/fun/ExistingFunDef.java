@@ -70,7 +70,7 @@ public class ExistingFunDef extends FunDefBase {
                         argDims = getHierarchies(tuple);
                     }
                     if (existsInTuple(tuple, contextMembers,
-                        argDims, contextDims))
+                        argDims, contextDims, evaluator))
                     {
                         result.add(tuple);
                     }

@@ -99,7 +99,7 @@ class ExistsFunDef extends FunDefBase
                 for (List<Member> leftTuple : leftTuples) {
                     for (List<Member> rightTuple : rightTuples) {
                         if (existsInTuple(leftTuple, rightTuple,
-                            leftDims, rightDims))
+                            leftDims, rightDims, null))
                         {
                             if (isNotEmptyForFactCountMeasure(
                                 leftTuple, evaluator, targetMeasure))
