@@ -74,6 +74,10 @@ public class LinkMemberFunDef extends FunDefBase {
     {
         boolean hasParentChild = false;
         boolean isAll = member.isAll();
+
+        if (isAll) {
+            return hierarchy.hasAll() ? hierarchy.getAllMember() : null;
+        }
         // fetch all ancestors to get full key suite
         ArrayList<RolapMember> memberAndAncestors =
             new ArrayList<RolapMember>(member.getDepth() + 1);
@@ -87,14 +91,14 @@ public class LinkMemberFunDef extends FunDefBase {
             hasParentChild |= parentMember.getLevel().isParentChild();
         }
         return getLinkMember(
-            evaluator, hierarchy, memberAndAncestors, hasParentChild, isAll);
+            evaluator, hierarchy, memberAndAncestors, hasParentChild);
     }
 
     private static Member getLinkMember(
         Evaluator evaluator,
         RolapHierarchy target,
         List<RolapMember> referenceMembers,
-        boolean hasParentChild, boolean isAll)
+        boolean hasParentChild)
     {
         // get key values
         ArrayList<Comparable> keys =
@@ -103,7 +107,7 @@ public class LinkMemberFunDef extends FunDefBase {
             new ArrayList<MondrianDef.Expression>();
         for (RolapMember member : referenceMembers) {
             RolapLevel level = member.getLevel();
-            if (level.getKeyExp() != null || isAll) {
+            if (level.getKeyExp() != null) {
                 Object key = member.getKey();
                 keys.add(
                     (key instanceof Comparable)
@@ -115,12 +119,16 @@ public class LinkMemberFunDef extends FunDefBase {
         // sort keys by descending level and start lookup from top level
         SchemaReader reader = evaluator.getSchemaReader();
         Collections.reverse(keys);
-        final int firstLevel = target.hasAll() && !isAll ? 1 : 0;
+        final int firstLevel = target.hasAll() ? 1 : 0;
         OlapElement current = target.getLevels()[firstLevel];
         for (Object key : keys) {
             Id.KeySegment keySegment =
                 new Id.KeySegment(new Id.NameSegment(key.toString()));
-            current = current.lookupChild(reader, keySegment, MatchType.EXACT);
+            OlapElement olapElement = current.lookupChild(
+                reader, keySegment, MatchType.EXACT);
+            if (olapElement != null) {
+                current = olapElement;
+            }
         }
 
         Member member = (current instanceof Member) ? (Member) current : null;
@@ -132,9 +140,12 @@ public class LinkMemberFunDef extends FunDefBase {
                 for (Object key : keys) {
                     Id.KeySegment keySegment =
                         new Id.KeySegment(new Id.NameSegment(key.toString()));
-                    current = current.lookupChild(
-                        reader, keySegment, MatchType.EXACT);
 
+                    OlapElement olapElement = current.lookupChild(
+                        reader, keySegment, MatchType.EXACT);
+                    if (olapElement != null) {
+                        current = olapElement;
+                    }
                     if (current instanceof Member) {
                         return (Member) current;
                     }
