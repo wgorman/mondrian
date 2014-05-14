@@ -376,7 +376,7 @@ public class RolapResult extends ResultBase {
                     final TupleList tupleList1 = tupleList;
 
 
-                    final Calc calc =
+                    final Calc calcCached =
                         new GenericCalc(
                             new DummyExp(query.slicerCalc.getType()))
                         {
@@ -384,7 +384,15 @@ public class RolapResult extends ResultBase {
                                 return AggregateFunDef.AggregateCalc.aggregate(
                                     valueCalc, evaluator, tupleList1);
                             }
+                            // depend on the full evaluation context
+                            public boolean dependsOn(Hierarchy hierarchy) {
+                                return true;
+                            }
                         };
+
+                    final ExpCacheDescriptor cacheDescriptor = new ExpCacheDescriptor(query.getSlicerAxis().getSet(), calcCached, slicerEvaluator);
+                    // generate a cached calculation for slicer aggregation
+                    final Calc calc = new CacheCalc(query.getSlicerAxis().getSet(), cacheDescriptor);
                     final List<RolapHierarchy> hierarchyList =
                         new AbstractList<RolapHierarchy>() {
                             final List<Member> pos0 = tupleList1.get(0);
@@ -565,6 +573,9 @@ public class RolapResult extends ResultBase {
                 batchingReader.getHitCount(),
                 batchingReader.getMissCount(),
                 batchingReader.getPendingCount());
+            // flush the expression cache during each
+            // phase of loading aggregations
+            evaluator.clearExpResultCache(false);
 
             return batchingReader.loadAggregations();
         } else {
