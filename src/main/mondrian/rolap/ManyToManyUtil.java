@@ -29,7 +29,9 @@ import mondrian.olap.type.SetType;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 /**
@@ -53,7 +55,9 @@ public class ManyToManyUtil {
     protected static void buildCartesianProduct(
         List<List<List<Member>>> newMembersList,
         TupleList newList,
-        Member[] mlist)
+        Member[] mlist,
+        final Set<String> dedupeSet
+        )
     {
         List<List<Member>> totalmembers = new ArrayList<List<Member>>();
         totalmembers.add(new ArrayList<Member>());
@@ -85,30 +89,24 @@ public class ManyToManyUtil {
                         for (int j = 1; j <= m.size(); j++) {
                           mlist[mlist.length - j] = m.get(m.size() - j);
                         }
-                        // future improvement - optimize dedupe
-                        boolean duplicate = false;
-                        for (int j = 0; j < newList.size(); j++) {
-                            List<Member> tc = newList.get(j);
-                            boolean matches = true;
-                            for (int k = 0;
-                                k < mlist.length && matches; k++)
-                            {
-                                if (!mlist[k].equals(tc.get(k))) {
-                                    matches = false;
-                                }
-                            }
-                            if (matches) {
-                                duplicate = true;
-                                break;
-                            }
-                        }
-                        if (!duplicate) {
+                        // check for duplicates
+                        String tupleKey = generateTupleKey(mlist);
+                        if (!dedupeSet.contains(tupleKey)) {
                             newList.addTuple(mlist);
+                            dedupeSet.add(tupleKey);
                         }
                     }
                 }
             }
         }
+    }
+
+    private static String generateTupleKey(Member mlist[]) {
+        StringBuilder sb = new StringBuilder();
+        for (Member m : mlist) {
+          sb.append(m.getUniqueName() + ":");
+        }
+        return sb.toString();
     }
 
     /**
@@ -289,6 +287,7 @@ public class ManyToManyUtil {
                 new ArrayList<Member>());
         final TupleCursor cursor = tupleList.tupleCursor();
         Member mlist[] = new Member[cursor.getArity() + totalLevels];
+        final Set<String> dedupeSet = new HashSet<String>();
 
         // for each tuple, lookup the list of members for each m2m member,
         // and then perform a cartesian product on those m2m values
@@ -318,7 +317,7 @@ public class ManyToManyUtil {
                 }
             }
             // build cartesian product of new members list
-            buildCartesianProduct(newMembersList, newList, mlist);
+            buildCartesianProduct(newMembersList, newList, mlist, dedupeSet);
         } // for each tuple
         return newList;
     }

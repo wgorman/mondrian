@@ -33,9 +33,11 @@ import junit.framework.Assert;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * TODO: Test scenarios where multiple many to many dimensions are at play
@@ -1823,9 +1825,10 @@ public class ManyToManyTest  extends CsvDBTestCase {
         cSet.add(cSetList2);
         newMembersList.add(cSet);
         newMembersList.add(bSet);
+        final Set<String> dedupeSet = new HashSet<String>();
 
         TestManyToManyUtil.buildCartesianProduct(
-            newMembersList, newList, mlist);
+            newMembersList, newList, mlist, dedupeSet);
 
         TestContext.assertEqualsVerbose(
             "[[A, B, C, F, G, D], [A, B, C, H, I, D], [A, B, C, F, G, E], "
@@ -1836,9 +1839,10 @@ public class ManyToManyTest  extends CsvDBTestCase {
         newMembersList.clear();
         newMembersList.add(bSet);
         newMembersList.add(cSet);
+        dedupeSet.clear();
 
         TestManyToManyUtil.buildCartesianProduct(
-            newMembersList, newList, mlist);
+            newMembersList, newList, mlist, dedupeSet);
 
         // test newList
         TestContext.assertEqualsVerbose(
@@ -1855,10 +1859,11 @@ public class ManyToManyTest  extends CsvDBTestCase {
         public static void buildCartesianProduct(
             List<List<List<Member>>> newMembersList,
             TupleList newList,
-            Member[] mlist)
+            Member[] mlist,
+            final Set<String> dedupeSet)
         {
             ManyToManyUtil.buildCartesianProduct(
-                newMembersList, newList, mlist);
+                newMembersList, newList, mlist, dedupeSet);
         }
     }
 
@@ -1876,7 +1881,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
 
         @Override
         public String getUniqueName() {
-            return null;
+            return name;
         }
 
         @Override
