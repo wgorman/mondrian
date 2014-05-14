@@ -2600,6 +2600,14 @@ public class RolapCube extends CubeBase {
                     List<RolapCubeHierarchy> manyToManyHierarchies =
                         ((RolapCubeHierarchy)dimension.getHierarchies()[0])
                         .getManyToManyHierarchies();
+
+                    // this can be null if a virtual cube has parents that in
+                    // one case have a many to many dimension, and in another
+                    // scenario it's a regular dimension.
+                    if (manyToManyHierarchies == null) {
+                        continue;
+                    }
+
                     for (RolapCubeHierarchy m2mHierarchy
                       : manyToManyHierarchies)
                     {
