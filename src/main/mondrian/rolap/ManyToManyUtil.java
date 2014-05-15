@@ -141,6 +141,18 @@ public class ManyToManyUtil {
         List<RolapCubeHierarchy> bridgeHierarchyList)
     {
         TupleList newList;
+
+        // The All Member is a special case
+        if (m.isAll()) {
+            newList = new ListTupleList(bridgeHierarchyList.size(), new ArrayList<Member>());
+            List<Member> memberList = new ArrayList<Member>();
+            for (RolapCubeHierarchy h : bridgeHierarchyList) {
+                memberList.add(h.getAllMember());
+            }
+            newList.add(memberList);
+            return newList;
+        }
+
         Evaluator neweval = evaluator.push();
 
         // clear out the full context including the slicer
