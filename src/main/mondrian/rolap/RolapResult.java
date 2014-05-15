@@ -381,8 +381,9 @@ public class RolapResult extends ResultBase {
                             new DummyExp(query.slicerCalc.getType()))
                         {
                             public Object evaluate(Evaluator evaluator) {
+                                TupleList list = AbstractAggregateFunDef.processUnrelatedDimensions(tupleList1, evaluator);
                                 return AggregateFunDef.AggregateCalc.aggregate(
-                                    valueCalc, evaluator, tupleList1);
+                                    valueCalc, evaluator, list);
                             }
                             // depend on the full evaluation context
                             public boolean dependsOn(Hierarchy hierarchy) {

@@ -136,7 +136,7 @@ public class AbstractAggregateFunDef extends FunDefBase {
      * @param evaluator Evaluator
      * @return list of members or tuples
      */
-    private static TupleList processUnrelatedDimensions(
+    public static TupleList processUnrelatedDimensions(
         TupleList tuplesForAggregation,
         Evaluator evaluator)
     {
