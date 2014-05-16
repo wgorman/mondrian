@@ -22,12 +22,12 @@ import mondrian.olap.Util;
 import mondrian.olap.fun.CrossJoinFunDef;
 import mondrian.olap.fun.FunDefBase;
 import mondrian.olap.fun.NonEmptyCrossJoinFunDef;
+import mondrian.olap.fun.TupleFunDef;
 import mondrian.rolap.RolapNativeFilter.FilterConstraint;
 import mondrian.rolap.sql.CrossJoinArg;
-import mondrian.rolap.sql.DescendantsCrossJoinArg;
-import mondrian.rolap.sql.MemberListCrossJoinArg;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -52,7 +52,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         if (!isEnabled()) {
             return null;
         }
-        
+
         if (!FilterConstraint.isValidContext(
                 evaluator, false, new Level[]{}, restrictMemberTypes()))
         {
@@ -77,7 +77,12 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                 new NonEmptyCrossJoinFunDef(
                     new FunDefBase("NonEmptyCrossJoin", null, "fxxx") {}
                 );
-            List<CrossJoinArg[]> allArgs = crossJoinArgFactory().checkCrossJoin(evaluator, nonEmptyCrossJoin, args, true);
+            List<CrossJoinArg[]> allArgs =
+                crossJoinArgFactory().checkCrossJoin(
+                    evaluator,
+                    nonEmptyCrossJoin,
+                    args,
+                    true);
             if (failedCjArg(allArgs)) {
                 alertNonNative(evaluator, fun, args[1]);
                 return null;
@@ -86,12 +91,11 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
 
         List<CrossJoinArg[]> extraArgs =
             hasTwoArgs
-                ? crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1], true, false)
+                ? crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1])
                 : null;
 
         RolapStoredMeasure measure = null;
         if (hasTwoArgs) {
-
           // investigate all measures in second param,
           // if they are all regular measures from the same base cube
           // select the final one for non-empty evaluation
@@ -119,9 +123,29 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         }
 
         if (hasTwoArgs && extraArgs == null) {
-          // set to false if there are no extra args
-          // so that the two arg lists can be merged
-          hasTwoArgs = false;
+            // second arg failed, check if it's just because of a measure set
+            if (measure != null) {
+                // see if it can be nativized without the measures
+                Exp altExp = stripMeasureSets(args[1]);
+                if (altExp != null) {
+                    extraArgs =
+                        crossJoinArgFactory().checkCrossJoinArg(
+                            evaluator,
+                            altExp);
+                    if (failedCjArg(extraArgs)) {
+                        // can't be nativized even without measures
+                        alertNonNative(evaluator, fun, args[1]);
+                        return null;
+                    }
+                } else {
+                    // second arg is just a measure set
+                    hasTwoArgs = false;
+                }
+            } else {
+                // what made it fail wasn't a measure
+                alertNonNative(evaluator, fun, args[1]);
+                return null;
+            }
         }
 
         // what should end up in the select
@@ -144,7 +168,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                 new NonEmptyFunctionConstraint(
                     constraintArgs, evaluator, restrictMemberTypes());
 
-            SetEvaluator nativeEvaluator =
+            NativeEvaluator nativeEvaluator =
                 new SetEvaluator(returnArgs, schemaReader, constraint);
             RolapUtil.SQL_LOGGER.debug("NonEmpty() going native");
             return nativeEvaluator;
@@ -205,8 +229,12 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                     (RolapStoredMeasure) member, baseCubes, baseCubeList);
             } else if (member instanceof RolapCalculatedMember) {
                 if (!foundMeasures.contains(member)) {
-                  foundMeasures.add(member);
-                  findMeasures(member.getExpression(), baseCubes, baseCubeList, foundMeasures);
+                    foundMeasures.add(member);
+                    findMeasures(
+                        member.getExpression(),
+                        baseCubes,
+                        baseCubeList,
+                        foundMeasures);
                 }
             }
         } else if (exp instanceof ResolvedFunCall) {
@@ -216,6 +244,69 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                 findMeasures(arg, baseCubes, baseCubeList, foundMeasures);
             }
         }
+    }
+
+    /**
+     * Take measure sets from the expression. Should be otherwise equivalent.
+     * @param exp
+     * @return expression without measure sets, or null if only a measure set.
+     */
+    private Exp stripMeasureSets(Exp exp) {
+        if (isMeasureSet(exp)) {
+            return null;
+        }
+        if (exp instanceof ResolvedFunCall) {
+            ResolvedFunCall funCall = (ResolvedFunCall) exp;
+            FunDef funDef = funCall.getFunDef();
+            if (funDef instanceof CrossJoinFunDef
+                || funDef instanceof TupleFunDef)
+            {
+                int minArgs = (funDef instanceof CrossJoinFunDef) ? 2 : 1;
+                List<Exp> nonMeasureArgs = new ArrayList<Exp>();
+                for (Exp arg : funCall.getArgs()) {
+                    Exp nonMeasArg = stripMeasureSets(arg);
+                    if (nonMeasArg != null) {
+                        nonMeasureArgs.add(nonMeasArg);
+                    }
+                }
+                Exp[] newArgs = nonMeasureArgs.toArray(
+                    new Exp[nonMeasureArgs.size()]);
+                //if (nonMeasureArgs.size() < funCall.getArgCount()) {
+                if (!Arrays.equals(newArgs, funCall.getArgs())) {
+                    if (nonMeasureArgs.size() >= minArgs) {
+                        return new ResolvedFunCall(
+                            funCall.getFunDef(),
+                            nonMeasureArgs.toArray(
+                                new Exp[nonMeasureArgs.size()]),
+                            funCall.getType());
+                    } else {
+                        return nonMeasureArgs.size() == 1
+                            ? nonMeasureArgs.get(0)
+                            : null;
+                    }
+                }
+            }
+        }
+        return exp;
+    }
+
+    private boolean isMeasureSet(Exp exp) {
+        if (exp instanceof ResolvedFunCall) {
+            ResolvedFunCall funCall = (ResolvedFunCall) exp;
+            if (funCall.getFunName().equals("{}")) {
+                for (Exp arg : funCall.getArgs()) {
+                    if (!isMeasure(arg)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+        return isMeasure(exp);
+    }
+    private boolean isMeasure(Exp exp) {
+        return exp instanceof MemberExpr
+            && ((MemberExpr)exp).getMember() instanceof RolapMeasure;
     }
 
     /**
@@ -250,16 +341,12 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         {
             super.constrainExtraLevels(baseCube, levelBitKey);
             for (CrossJoinArg arg : args) {
-                if (arg instanceof DescendantsCrossJoinArg
-                    || arg instanceof MemberListCrossJoinArg)
-                {
-                    final RolapLevel level = arg.getLevel();
-                    if (level != null && !level.isAll()) {
-                        RolapStar.Column column =
-                            ((RolapCubeLevel)level)
-                                .getBaseStarKeyColumn(baseCube);
-                        levelBitKey.set(column.getBitPosition());
-                    }
+                final RolapLevel level = arg.getLevel();
+                if (level != null && !level.isAll()) {
+                    RolapStar.Column column =
+                        ((RolapCubeLevel)level)
+                            .getBaseStarKeyColumn(baseCube);
+                    levelBitKey.set(column.getBitPosition());
                 }
             }
         }
@@ -267,8 +354,6 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         @Override
         public Object getCacheKey() {
             List<Object> key = new ArrayList<Object>();
-            //  // we're "special"
-            //  key.add(this.getClass());
             key.add(super.getCacheKey());
             if (this.getEvaluator() instanceof RolapEvaluator) {
                 key.add(

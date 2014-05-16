@@ -1369,13 +1369,11 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     public void testNativeNonEmptyWithMeasure() {
-        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
         final String mdx =
             "SELECT\n"
             + "NonEmpty([Store].[Store City].Members, [Measures].[Store Sales]) ON 0\n"
             + "FROM [Sales]";
 
-        // TODO: Verify SQL Generation from Native Eval
         assertQueryReturns(
             mdx,
             "Axis #0:\n"
@@ -1407,6 +1405,164 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 35,257\n"
             + "Row #0: 2,203\n"
             + "Row #0: 11,491\n");
+
+        if (!MondrianProperties.instance().EnableNativeNonEmptyFunction.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mysqlQuery = isUseAgg()
+            ? "select\n"
+              + "    `store`.`store_country` as `c0`,\n"
+              + "    `store`.`store_state` as `c1`,\n"
+              + "    `store`.`store_city` as `c2`\n"
+              + "from\n"
+              + "    `store` as `store`,\n"
+              + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`\n"
+              + "where\n"
+              + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+              + "and\n"
+              + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+              + "group by\n"
+              + "    `store`.`store_country`,\n"
+              + "    `store`.`store_state`,\n"
+              + "    `store`.`store_city`\n"
+              + "order by\n"
+              + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+              + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+              + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC"
+            : "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+    }
+
+    public void testNativeNonEmptyFuncMeasureAndMembers() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx = "SELECT { Measures.[Store Sales] } ON COLUMNS,\n"
+            + "       NonEmpty( [Customers].[USA].[CA].[San Francisco].Children, CrossJoin({Gender.[F]}, CrossJoin( {[Measures].[Store Sales]}, {[Marital Status].[S]}) ) ) ON ROWS\n"
+            + "FROM [Sales]";
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Customers].[USA].[CA].[San Francisco].[Gladys Evans]}\n"
+            + "Row #0: 17.20\n");
+        if (!MondrianProperties.instance().EnableNativeNonEmptyFunction.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mySql = isUseAgg()
+            ? "select\n"
+            + "    `customer`.`country` as `c0`,\n"
+            + "    `customer`.`state_province` as `c1`,\n"
+            + "    `customer`.`city` as `c2`,\n"
+            + "    `customer`.`customer_id` as `c3`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) as `c4`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) as `c5`,\n"
+            + "    `customer`.`gender` as `c6`,\n"
+            + "    `customer`.`marital_status` as `c7`,\n"
+            + "    `customer`.`education` as `c8`,\n"
+            + "    `customer`.`yearly_income` as `c9`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `agg_l_03_sales_fact_1997` as `agg_l_03_sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `agg_l_03_sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `agg_l_03_sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`customer`.`city` = 'San Francisco' and `customer`.`state_province` = 'CA')\n"
+            + "and\n"
+            + "    (`customer`.`gender` = 'F')\n"
+            + "and\n"
+            + "    (`customer`.`marital_status` = 'S')\n"
+            + "group by\n"
+            + "    `customer`.`country`,\n"
+            + "    `customer`.`state_province`,\n"
+            + "    `customer`.`city`,\n"
+            + "    `customer`.`customer_id`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`),\n"
+            + "    `customer`.`gender`,\n"
+            + "    `customer`.`marital_status`,\n"
+            + "    `customer`.`education`,\n"
+            + "    `customer`.`yearly_income`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`country`) ASC, `customer`.`country` ASC,\n"
+            + "    ISNULL(`customer`.`state_province`) ASC, `customer`.`state_province` ASC,\n"
+            + "    ISNULL(`customer`.`city`) ASC, `customer`.`city` ASC,\n"
+            + "    ISNULL(CONCAT(`customer`.`fname`, ' ', `customer`.`lname`)) ASC, CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) ASC"
+            : "select\n"
+            + "    `customer`.`country` as `c0`,\n"
+            + "    `customer`.`state_province` as `c1`,\n"
+            + "    `customer`.`city` as `c2`,\n"
+            + "    `customer`.`customer_id` as `c3`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) as `c4`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) as `c5`,\n"
+            + "    `customer`.`gender` as `c6`,\n"
+            + "    `customer`.`marital_status` as `c7`,\n"
+            + "    `customer`.`education` as `c8`,\n"
+            + "    `customer`.`yearly_income` as `c9`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`customer`.`city` = 'San Francisco' and `customer`.`state_province` = 'CA')\n"
+            + "and\n"
+            + "    (`customer`.`gender` = 'F')\n"
+            + "and\n"
+            + "    (`customer`.`marital_status` = 'S')\n"
+            + "group by\n"
+            + "    `customer`.`country`,\n"
+            + "    `customer`.`state_province`,\n"
+            + "    `customer`.`city`,\n"
+            + "    `customer`.`customer_id`,\n"
+            + "    CONCAT(`customer`.`fname`, ' ', `customer`.`lname`),\n"
+            + "    `customer`.`gender`,\n"
+            + "    `customer`.`marital_status`,\n"
+            + "    `customer`.`education`,\n"
+            + "    `customer`.`yearly_income`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`country`) ASC, `customer`.`country` ASC,\n"
+            + "    ISNULL(`customer`.`state_province`) ASC, `customer`.`state_province` ASC,\n"
+            + "    ISNULL(`customer`.`city`) ASC, `customer`.`city` ASC,\n"
+            + "    ISNULL(CONCAT(`customer`.`fname`, ' ', `customer`.`lname`)) ASC, CONCAT(`customer`.`fname`, ' ', `customer`.`lname`) ASC";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mySql, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
     }
 
     public void testNativeNonEmptyFunc() {
@@ -1968,6 +2124,12 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Ref]}\n"
             + "Row #0: 1\n");
+    }
+
+    private static final boolean isUseAgg() {
+        return
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
     }
 }
 // End NativeSetEvaluationTest.java
