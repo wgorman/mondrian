@@ -13155,7 +13155,6 @@ Intel platforms):
             + "Row #0: \n");
     }
 
-
     public void testNonEmptyFunOneArg() {
         assertQueryReturns(
             "SELECT\n"
@@ -13317,6 +13316,27 @@ Intel platforms):
             + "Axis #2:\n"
             + "{[Store].[USA]}\n"
             + "Row #0: 565,238.13\n");
+    }
+
+    public void testNonEmptyFunExcept() {
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Customers].[USA].[CA].[San Francisco].[Cindy Westhaiser]}\n"
+            + "{[Customers].[USA].[CA].[San Francisco].[Gladys Evans]}\n"
+            + "{[Customers].[USA].[CA].[San Francisco].[Karen Moreland]}\n"
+            + "{[Customers].[USA].[CA].[San Francisco].[Kent Brant]}\n"
+            + "Row #0: 22.44\n"
+            + "Row #1: 17.20\n"
+            + "Row #2: 33.75\n"
+            + "Row #3: 10.58\n";
+        assertQueryReturns(
+            "SELECT { Measures.[Store Sales] } ON COLUMNS,\n"
+            + "       NonEmpty( [Customers].[USA].[CA].[San Francisco].Children, Except( [Gender].[All Gender].Children, Gender.[M] ) ) ON ROWS\n"
+            + "FROM [Sales]",
+            result);
     }
 
     public void testExpectedValueConversion() {
