@@ -292,7 +292,7 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
     }
 
     public void testAxisInCalculatedMeasure() {
-        TestContext testContext = TestContext.instance().createSubstitutingCube(
+        TestContext testContext = getTestContext().createSubstitutingCube(
             "Sales",
             null,
             "<CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"AxisTest\">"
