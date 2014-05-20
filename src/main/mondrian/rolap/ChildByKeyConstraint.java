@@ -21,12 +21,12 @@ import java.util.Arrays;
  */
 class ChildByKeyConstraint extends DefaultMemberChildrenConstraint {
 
-    private final String childKey;
+    private final Comparable<?> childKey;
     private final Object cacheKey;
 
     public ChildByKeyConstraint(Id.KeySegment childKey) {
-        // assuming only one key segment, discarding the rest
-        this.childKey = childKey.getKeyParts().get(0).name;
+
+        this.childKey = getKeyValue(childKey);
         this.cacheKey = Arrays.asList(ChildByKeyConstraint.class, childKey);
     }
 
@@ -48,6 +48,15 @@ class ChildByKeyConstraint extends DefaultMemberChildrenConstraint {
 
     public int hashCode() {
         return getCacheKey().hashCode();
+    }
+
+    private Comparable<?> getKeyValue(Id.KeySegment key) {
+        // assuming only one key segment, discarding the rest
+        Comparable<?> value = key.getKeyParts().get(0).name;
+        if (value.equals(RolapUtil.mdxNullLiteral())) {
+            return RolapUtil.sqlNullValue;
+        }
+        return value;
     }
 
     public String toString() {
