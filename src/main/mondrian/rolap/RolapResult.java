@@ -365,6 +365,9 @@ public class RolapResult extends ResultBase {
                 slicerEvaluator = this.evaluator;
                 if (tupleList.size() > 1) {
                     tupleList =
+                        removeUnaryMembersFromTupleList(
+                            tupleList, slicerEvaluator);
+                    tupleList =
                         AggregateFunDef.AggregateCalc.optimizeTupleList(
                             slicerEvaluator,
                             tupleList,
@@ -582,6 +585,67 @@ public class RolapResult extends ResultBase {
         } else {
             return false;
         }
+    }
+
+    /**
+     * This function removes single instance members from the compound slicer,
+     * enabling more regular slicer behavior for those members. For instance,
+     * calculated members can override the context of these members correctly.
+     *
+     * @param tupleList The list to shrink.
+     * @param evaluator The slicer evaluator.
+     * @return a new list of tuples reduced in size.
+     */
+    private TupleList removeUnaryMembersFromTupleList(
+        TupleList tupleList, RolapEvaluator evaluator)
+    {
+        // we can remove any unary coordinates from the compound slicer, and
+        // account for them in the slicer evaluator.
+
+        // First, determine if there are any unary members within the tuples.
+        List<Member> first = null;
+        boolean unary[] = null;
+        for (List<Member> tuple : tupleList) {
+            if (first == null) {
+                first = tuple;
+                unary = new boolean[tuple.size()];
+                for (int i = 0 ; i < unary.length; i++) {
+                    unary[i] = true;
+                }
+            } else {
+                for (int i = 0; i < tuple.size(); i++) {
+                    if (unary[i] && !tuple.get(i).equals(first.get(i))) {
+                        unary[i] = false;
+                    }
+                }
+            }
+        }
+        int toRemove = 0;
+        for (int i = 0; i < unary.length; i++) {
+            if (unary[i]) {
+                evaluator.setContext(first.get(i));
+                toRemove++;
+            }
+        }
+
+        // remove the unnecessary members from the compound slicer
+        if (toRemove > 0) {
+          TupleList newList =
+              new ListTupleList(
+                  tupleList.getArity() - toRemove,
+                  new ArrayList<Member>());
+          for (List<Member> tuple : tupleList) {
+              List<Member> ntuple = new ArrayList<Member>();
+              for (int i = 0; i < tuple.size(); i++) {
+                  if (!unary[i]) {
+                      ntuple.add(tuple.get(i));
+                  }
+              }
+              newList.add(ntuple);
+          }
+          tupleList = newList;
+        }
+        return tupleList;
     }
 
     @Override
