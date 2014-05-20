@@ -348,8 +348,8 @@ public class ManyToManyUtil {
         RolapEvaluator evaluator)
     {
         RolapEvaluator neweval = null;
-        List<Member> slicer = ((RolapEvaluator)evaluator).getSlicerMembers();
-        List<Member> newSlicer = new ArrayList<Member>();
+        List<Member> slicer = evaluator.getSlicerMembers();
+        Set<Member> newSlicer = new HashSet<Member>();
         boolean manyToMany = false;
         for (Member m : slicer) {
             RolapCubeHierarchy hier = getCubeHierarchyForMember(m);
@@ -359,7 +359,7 @@ public class ManyToManyUtil {
                 newSlicer.add(m);
             } else {
                 if (neweval == null) {
-                    neweval = (RolapEvaluator)evaluator.push();
+                    neweval = evaluator.push();
                 }
                 manyToMany = true;
                 Member dm = hier.getDefaultMember();
