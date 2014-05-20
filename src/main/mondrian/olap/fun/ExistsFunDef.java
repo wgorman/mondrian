@@ -83,7 +83,7 @@ class ExistsFunDef extends FunDefBase
                     // just filter by measure
                     for (List<Member> leftTuple : leftTuples) {
                         if (isNotEmptyForFactCountMeasure(
-                                leftTuple, evaluator, targetMeasure))
+                                leftTuple, null, evaluator, targetMeasure))
                         {
                           result.add(leftTuple);
                         }
@@ -102,7 +102,8 @@ class ExistsFunDef extends FunDefBase
                             leftDims, rightDims, null))
                         {
                             if (isNotEmptyForFactCountMeasure(
-                                leftTuple, evaluator, targetMeasure))
+                                leftTuple, rightTuple, evaluator,
+                                targetMeasure))
                             {
                                 result.add(leftTuple);
                             }
@@ -117,11 +118,15 @@ class ExistsFunDef extends FunDefBase
 
     private boolean isNotEmptyForFactCountMeasure(
         List<Member> tupleElement,
+        List<Member> rightTupleElement,
         Evaluator eval,
         Member factCountMeasure)
     {
         if (factCountMeasure == null) {
             return true;
+        }
+        if (rightTupleElement != null) {
+            eval.setContext(rightTupleElement);
         }
         eval.setContext(tupleElement);
         eval.setContext(factCountMeasure);
