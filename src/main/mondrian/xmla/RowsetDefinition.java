@@ -5338,7 +5338,8 @@ TODO: see above
                     hierarchy,
                     hierarchy));
             row.set(LevelName.name, level.getName());
-            row.set(LevelUniqueName.name,
+            row.set(
+                LevelUniqueName.name,
                 XmlaHandler.getFullUniqueName(
                     fullUniqueNames,
                     hierarchy,
@@ -7004,7 +7005,6 @@ TODO: see above
     private static Level lookupLevel(Cube cube, String levelUniqueName) {
         boolean fullUniqueNames =
             MondrianProperties.instance().SsasCompatibleNaming.get()
-            && MondrianProperties.instance().XmlaFullHierarchyNames.get()
             && !MondrianProperties.instance().FullHierarchyNames.get();
         for (Dimension dimension : cube.getDimensions()) {
             for (Hierarchy hierarchy : dimension.getHierarchies()) {

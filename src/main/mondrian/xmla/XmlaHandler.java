@@ -687,7 +687,6 @@ public class XmlaHandler {
         this.connectionMgr = new XmlaSessionConnectionManager(this);
         this.fullUniqueNames =
             MondrianProperties.instance().SsasCompatibleNaming.get()
-            && MondrianProperties.instance().XmlaFullHierarchyNames.get()
             && !MondrianProperties.instance().FullHierarchyNames.get();
     }
 
@@ -2330,15 +2329,15 @@ public class XmlaHandler {
                         member, k, childrenCard);
                 } else if (longProp == StandardMemberProperty.DEPTH) {
                     value = member.getDepth();
-                } else if (longProp ==
-                    StandardMemberProperty.MEMBER_UNIQUE_NAME)
+                } else if (longProp
+                    == StandardMemberProperty.MEMBER_UNIQUE_NAME)
                 {
                     value = getFullUniqueName(
                         fullUniqueNames,
                         member.getHierarchy(),
                         member);
-                } else if (longProp ==
-                    StandardMemberProperty.LEVEL_UNIQUE_NAME)
+                } else if (longProp
+                    == StandardMemberProperty.LEVEL_UNIQUE_NAME)
                 {
                     value = getFullUniqueName(
                         fullUniqueNames,
@@ -2385,15 +2384,15 @@ public class XmlaHandler {
                     value = displayInfo;
                 } else if (longProp == StandardMemberProperty.DEPTH) {
                     value = member.getDepth();
-                } else if (longProp ==
-                    StandardMemberProperty.MEMBER_UNIQUE_NAME)
+                } else if (longProp
+                    == StandardMemberProperty.MEMBER_UNIQUE_NAME)
                 {
                     value = getFullUniqueName(
                         fullUniqueNames,
                         member.getHierarchy(),
                         member);
-                } else if (longProp ==
-                    StandardMemberProperty.LEVEL_UNIQUE_NAME)
+                } else if (longProp
+                    == StandardMemberProperty.LEVEL_UNIQUE_NAME)
                 {
                     value = getFullUniqueName(
                         fullUniqueNames,
@@ -2736,7 +2735,6 @@ public class XmlaHandler {
             int memberOrdinal = 0;
             final boolean fullUniqueNames =
                 MondrianProperties.instance().SsasCompatibleNaming.get()
-                && MondrianProperties.instance().XmlaFullHierarchyNames.get()
                 && !MondrianProperties.instance().FullHierarchyNames.get();
             if (!empty) {
                 for (int i = axes.size() - 1; i > 0; i--) {
@@ -3474,8 +3472,7 @@ public class XmlaHandler {
     private static String getHierarchyName(Hierarchy hierarchy) {
         if (MondrianProperties.instance().SsasCompatibleNaming.get()) {
             return getFullUniqueName(
-                MondrianProperties.instance().XmlaFullHierarchyNames.get()
-                && !MondrianProperties.instance().FullHierarchyNames.get(),
+                !MondrianProperties.instance().FullHierarchyNames.get(),
                 hierarchy,
                 hierarchy);
         } else {
