@@ -1388,16 +1388,6 @@ otherwise looks at the bottom level.</p>
         <Default>false</Default>
     </PropertyDefinition>
     <PropertyDefinition>
-        <Name>XmlaFullHierarchyNames</Name>
-        <Path>mondrian.xmla.FullHierarchyNames</Path>
-        <Description>
-<p>(Deprecated) If true and SSasCompatibleNaming=true, hierarchy names will include dimension even if names are equal.</p>
-<p>This only affects Xmla layer.</p>
-        </Description>
-        <Type>boolean</Type>
-        <Default>false</Default>
-    </PropertyDefinition>
-    <PropertyDefinition>
         <Name>FullHierarchyNames</Name>
         <Path>mondrian.olap.FullHierarchyNames</Path>
         <Description>

@@ -129,7 +129,6 @@ abstract class Rowset implements XmlaConstants {
         this.deep = deep;
         this.fullUniqueNames =
             MondrianProperties.instance().SsasCompatibleNaming.get()
-            && MondrianProperties.instance().XmlaFullHierarchyNames.get()
             && !MondrianProperties.instance().FullHierarchyNames.get();
     }
 
