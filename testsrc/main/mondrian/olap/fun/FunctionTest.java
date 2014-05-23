@@ -13339,6 +13339,24 @@ Intel platforms):
             result);
     }
 
+    public void testNonEmptyFunUnknownMember() {
+        String mdx =
+            "with member [Measures].[y] as '(StrToMember(\"[Product].[Food]\"), [Measures].[Unit Sales])'"
+            + "SELECT NonEmpty([Store].[Store State].Members, {[Measures].[y]}) ON 0 FROM [Sales]";
+        // unknown dimension from StrToMember would cause NPE
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA]}\n"
+            + "{[Store].[USA].[OR]}\n"
+            + "{[Store].[USA].[WA]}\n"
+            + "Row #0: 74,748\n"
+            + "Row #0: 67,659\n"
+            + "Row #0: 124,366\n");
+      }
+
     public void testExpectedValueConversion() {
         // note this failed before when log mondrian.profile=DEBUG
         // due to instanceof checking in AbstractExpCompiler
@@ -13392,6 +13410,7 @@ Intel platforms):
             + "Row #3: 5,581\n"
             + "Row #3: 3,261\n");
     }
+
 }
 
 // End FunctionTest.java
