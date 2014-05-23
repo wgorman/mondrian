@@ -507,6 +507,30 @@ public abstract class RolapNativeSet extends RolapNative {
         }
     }
 
+    /**
+     * checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
+     * array is the CrossJoin dimensions.  The second array, if any,
+     * contains additional constraints on the dimensions. If either the list
+     * or the first array is null, then native cross join is not feasible.
+     * @param args list of CrossJoinArg arrays
+     * @return whether arguments are valid
+     */
+    protected static boolean failedCjArg(List<CrossJoinArg[]> args) {
+        return args == null || args.isEmpty() || args.get(0) == null;
+    }
+
+    protected static void alertNonNative(
+        RolapEvaluator evaluator,
+        FunDef fun,
+        Exp offendingArg)
+    {
+        if (!evaluator.getQuery().shouldAlertForNonNative(fun)) {
+            return;
+        }
+        RolapUtil.alertNonNative(
+            fun.getName(),
+            "set argument " + offendingArg.toString());
+    }
 
     public interface SchemaReaderWithMemberReaderAvailable
         extends SchemaReader

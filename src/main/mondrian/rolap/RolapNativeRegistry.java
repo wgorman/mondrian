@@ -38,6 +38,7 @@ public class RolapNativeRegistry extends RolapNative {
         register("Subset".toUpperCase(), new RolapNativeSubset());
         register("NonEmpty".toUpperCase(), new RolapNativeNonEmptyFunction());
         register("Count".toUpperCase(), new RolapNativeCount());
+        register("Existing".toUpperCase(), new RolapNativeExisting());
     }
 
     /**

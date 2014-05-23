@@ -177,10 +177,6 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
         }
     }
 
-    private static boolean failedCjArg(List<CrossJoinArg[]> args) {
-        return args == null || args.isEmpty() || args.get(0) == null;
-    }
-
     private CrossJoinArg[] getConstraintArgs(
         List<CrossJoinArg[]> firstSet, List<CrossJoinArg[]> secondSet)
     {
@@ -193,19 +189,6 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
             (secondSet != null && secondSet.size() > 1)
                 ? secondSet.get(1)
                 : empty);
-    }
-
-    private static void alertNonNative(
-        RolapEvaluator evaluator,
-        FunDef fun,
-        Exp offendingArg)
-    {
-        if (!evaluator.getQuery().shouldAlertForNonNative(fun)) {
-            return;
-        }
-        RolapUtil.alertNonNative(
-            fun.getName(),
-            "set argument " + offendingArg.toString());
     }
 
     /**
