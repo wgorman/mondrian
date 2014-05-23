@@ -15,6 +15,8 @@ import mondrian.calc.impl.ValueCalc;
 import mondrian.mdx.MemberExpr;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 
 /**
  * Definition of the <code>Sum</code> MDX function.
@@ -115,6 +117,22 @@ class SumFunDef extends AbstractAggregateFunDef {
                 if (member != null) {
                     evaluator.setContext(member);
                 }
+
+                // Attempt to natively evaluate the Sum() function
+                RolapEvaluator manyToManyEval =
+                    ManyToManyUtil.getManyToManyEvaluator(
+                        (RolapEvaluator)evaluator);
+                SchemaReader schemaReader = evaluator.getSchemaReader();
+                NativeEvaluator nativeEvaluator =
+                    schemaReader.getNativeSetEvaluator(
+                        call.getFunDef(),
+                        call.getArgs(),
+                        manyToManyEval,
+                        this);
+                if (nativeEvaluator != null) {
+                    return (Double)nativeEvaluator.execute(ResultStyle.VALUE);
+                }
+
                 TupleIterable iterable =
                     evaluateCurrentIterable(iterCalc, evaluator);
                 final int savepoint = evaluator.savepoint();
@@ -142,6 +160,22 @@ class SumFunDef extends AbstractAggregateFunDef {
                 if (member != null) {
                   evaluator.setContext(member);
                 }
+
+                // Attempt to natively evaluate the Sum() function
+                RolapEvaluator manyToManyEval =
+                    ManyToManyUtil.getManyToManyEvaluator(
+                        (RolapEvaluator)evaluator);
+                SchemaReader schemaReader = evaluator.getSchemaReader();
+                NativeEvaluator nativeEvaluator =
+                    schemaReader.getNativeSetEvaluator(
+                        call.getFunDef(),
+                        call.getArgs(),
+                        manyToManyEval,
+                        this);
+                if (nativeEvaluator != null) {
+                    return (Double)nativeEvaluator.execute(ResultStyle.VALUE);
+                }
+
                 TupleList memberList = evaluateCurrentList(listCalc, evaluator);
                 final int savepoint = evaluator.savepoint();
                 try {

@@ -2194,5 +2194,548 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             MondrianProperties.instance().UseAggregates.get()
             && MondrianProperties.instance().ReadAggregates.get();
     }
+
+    public void testNativeSumScenarios() {
+
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+
+      String mdx =
+          "WITH MEMBER [Measures].[TotalVal] AS 'SUM({[Store].[Store City].members})'\n"
+          + "SELECT [Measures].[TotalVal] ON 0 FROM [Sales]";
+
+      String mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalVal]}\n"
+          + "Row #0: 266,773\n");
+
+      mdx =
+          "WITH MEMBER [Measures].[TotalVal] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 20000))'\n"
+          + "SELECT [Measures].[TotalVal] ON 0 FROM [Sales]";
+
+      mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalVal]}\n"
+          + "Row #0: 248,725\n");
+
+      mdx =
+          "WITH MEMBER [Measures].[TotalVal] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 20000))'\n"
+          + "SELECT [Measures].[TotalVal] ON 0 FROM [Sales] where {[Product].[Food]}";
+
+      mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Food'\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{[Product].[Food]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalVal]}\n"
+          + "Row #0: 55,358\n");
+
+      mdx =
+          "WITH MEMBER [Measures].[TotalVal] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 3000))'\n"
+          + "SELECT [Measures].[TotalVal] ON 0, [Product].[All Products].Children on 1 FROM [Sales]";
+
+      mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Drink'\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 3000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalVal]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Drink]}\n"
+          + "{[Product].[Food]}\n"
+          + "{[Product].[Non-Consumable]}\n"
+          + "Row #0: 6,827\n"
+          + "Row #1: 187,176\n"
+          + "Row #2: 46,877\n");
+
+      mdx =
+          "WITH MEMBER [Measures].[TotalVal] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000))'\n"
+          + "SELECT [Measures].[TotalVal] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE [Time].[1997].[Q1]";
+
+      mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `time_by_day`.`quarter` = 'Q1'\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Drink'\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{[Time].[1997].[Q1]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalVal]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Drink]}\n"
+          + "{[Product].[Food]}\n"
+          + "{[Product].[Non-Consumable]}\n"
+          + "Row #0: 1,063\n"
+          + "Row #1: 46,759\n"
+          + "Row #2: 9,983\n");
+    }
+
+    public void testNativeSumWithSecondParam() {
+
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+
+      String mdx =
+          "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Sales Count])'\n"
+          + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE [Time].[1997].[Q1]";
+
+      String mysqlQuery =
+          "select\n"
+          + "    sum(`m1`)\n"
+          + "from\n"
+          + "    (select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`,\n"
+          + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `time_by_day`.`quarter` = 'Q1'\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Drink'\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{[Time].[1997].[Q1]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalCount]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Drink]}\n"
+          + "{[Product].[Food]}\n"
+          + "{[Product].[Non-Consumable]}\n"
+          + "Row #0: 347\n"
+          + "Row #1: 14,898\n"
+          + "Row #2: 3,201\n");
+    }
+
+    public void testNativeFilterWithVirtualCube() {
+
+      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+
+      String mdx =
+          "WITH MEMBER [Measures].[TotalCount] AS 'Aggregate(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Warehouse Sales])'\n"
+          + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+      String mysqlQuery =
+          "select\n"
+          + "    `store`.`store_country` as `c0`,\n"
+          + "    `store`.`store_state` as `c1`,\n"
+          + "    `store`.`store_city` as `c2`\n"
+          + "from\n"
+          + "    `store` as `store`,\n"
+          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+          + "    `time_by_day` as `time_by_day`,\n"
+          + "    `product_class` as `product_class`,\n"
+          + "    `product` as `product`\n"
+          + "where\n"
+          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+          + "and\n"
+          + "    `time_by_day`.`the_year` = 1997\n"
+          + "and\n"
+          + "    `time_by_day`.`quarter` = 'Q1'\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+          + "and\n"
+          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+          + "and\n"
+          + "    `product_class`.`product_family` = 'Drink'\n"
+          + "group by\n"
+          + "    `store`.`store_country`,\n"
+          + "    `store`.`store_state`,\n"
+          + "    `store`.`store_city`\n"
+          + "having\n"
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
+          + "order by\n"
+          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+      if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
+          getTestContext().flushSchemaCache();
+          SqlPattern mysqlPattern =
+              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+      }
+
+      assertQueryReturns(
+          mdx,
+          "Axis #0:\n"
+          + "{[Time].[1997].[Q1]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[TotalCount]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Drink]}\n"
+          + "{[Product].[Food]}\n"
+          + "{[Product].[Non-Consumable]}\n"
+          + "Row #0: 745\n"
+          + "Row #1: 31,059\n"
+          + "Row #2: 6,235\n");
+    }
+
+    public void testNativeSumInVirtualCube() {
+
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        String mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Sales Count])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    sum(`m1`)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`,\n"
+            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q1'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalCount]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 347\n"
+            + "Row #1: 14,898\n"
+            + "Row #2: 3,201\n");
+
+        // the following should pass but is non native, multiple fact tables are in play here.
+        mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Warehouse Sales])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalCount]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 745\n"
+            + "Row #1: 31,059\n"
+            + "Row #2: 6,235\n");
+    }
+
+    // This test currently fails, and will be fixed once we support compound slicers.
+    public void _testNativeFilterWithCompoundSlicer() {
+        String mdx =
+            "WITH MEMBER [Measures].[TotalVal] AS 'Aggregate(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000))'\n"
+            + "SELECT [Measures].[TotalVal] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE {[Time].[1997].[Q1],[Time].[1997].[Q2]}";
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalVal]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 10,152\n"
+            + "Row #1: 90,413\n"
+            + "Row #2: 23,813\n");
+    }
 }
 // End NativeSetEvaluationTest.java

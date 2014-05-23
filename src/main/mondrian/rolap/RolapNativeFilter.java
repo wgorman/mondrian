@@ -212,7 +212,7 @@ public class RolapNativeFilter extends RolapNativeSet {
 
             TupleConstraint constraint =
                 new FilterConstraint(combinedArgs, evaluator, filterExpr);
-            return new SetEvaluator(cjArgs, schemaReader, constraint);
+            return new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
         } finally {
             evaluator.restore(savepoint);
         }

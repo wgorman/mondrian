@@ -217,7 +217,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
                 new TopCountConstraint(
                     count, combinedArgs, evaluator, orderByExpr, ascending);
             SetEvaluator sev =
-                new SetEvaluator(cjArgs, schemaReader, constraint);
+                new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
             sev.setMaxRows(count);
             return sev;
         } finally {

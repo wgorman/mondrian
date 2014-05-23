@@ -16,6 +16,7 @@ import mondrian.calc.TupleList;
 import mondrian.calc.impl.*;
 import mondrian.olap.*;
 import mondrian.rolap.RolapNativeCount.CountConstraint;
+import mondrian.rolap.RolapNativeSum.SumConstraint;
 import mondrian.rolap.TupleReader.MemberBuilder;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.cache.*;
@@ -47,6 +48,9 @@ public abstract class RolapNativeSet extends RolapNative {
 
     private SmartCache<Object, Integer> countCache = 
         new SoftSmartCache<Object, Integer>();
+
+    private SmartCache<Object, Double> sumCache =
+        new SoftSmartCache<Object, Double>();
     /**
      * Returns whether certain member types (e.g. calculated members) should
      * disable native SQL evaluation for expressions containing them.
@@ -162,8 +166,20 @@ public abstract class RolapNativeSet extends RolapNative {
     protected class SetEvaluator implements NativeEvaluator {
         private final CrossJoinArg[] args;
         private final SchemaReaderWithMemberReaderAvailable schemaReader;
-        private final TupleConstraint constraint;
+        private TupleConstraint constraint;
         private int maxRows = 0;
+        private Member measure = null;
+
+        public SetEvaluator(
+            CrossJoinArg[] args,
+            SchemaReader schemaReader,
+            TupleConstraint constraint,
+            Member measure
+            )
+        {
+          this(args, schemaReader, constraint);
+          this.measure = measure;
+        }
 
         public SetEvaluator(
             CrossJoinArg[] args,
@@ -179,6 +195,22 @@ public abstract class RolapNativeSet extends RolapNative {
                     new SchemaReaderWithMemberReaderCache(schemaReader);
             }
             this.constraint = constraint;
+        }
+
+        public Member getMeasure() {
+            return measure;
+        }
+
+        public TupleConstraint getConstraint() {
+            return constraint;
+        }
+
+        public void setConstraint(TupleConstraint constraint) {
+            this.constraint = constraint;
+        }
+
+        public CrossJoinArg[] getArgs() {
+            return args;
         }
 
         public Object execute(ResultStyle desiredResultStyle) {
@@ -199,7 +231,11 @@ public abstract class RolapNativeSet extends RolapNative {
             case LIST:
                 return executeList(new SqlTupleReader(constraint));
             case VALUE:
-                return executeCount(new SqlTupleReader(constraint));
+                if (constraint instanceof SumConstraint) {
+                    return executeSum(new SqlTupleReader(constraint));
+                } else {
+                    return executeCount(new SqlTupleReader(constraint));
+                }
             default:
                 throw ResultStyleException.generate(
                     ResultStyle.ITERABLE_MUTABLELIST_LIST,
@@ -278,6 +314,56 @@ public abstract class RolapNativeSet extends RolapNative {
                 }
             }
             return filterInaccessibleTuples(result);
+        }
+
+        protected double executeSum(final SqlTupleReader tr) {
+            tr.setMaxRows(maxRows);
+            for (CrossJoinArg arg : args) {
+                addLevel(tr, arg);
+            }
+
+            // Look up the result in cache; we can't return the cached
+            // result if the tuple reader contains a target with calculated
+            // members because the cached result does not include those
+            // members; so we still need to cross join the cached result
+            // with those enumerated members.
+            //
+            // The key needs to include the arguments (projection) as well as
+            // the constraint, because it's possible (see bug MONDRIAN-902)
+            // that independent axes have identical constraints but different
+            // args (i.e. projections). REVIEW: In this case, should we use the
+            // same cached result and project different columns?
+            List<Object> key = new ArrayList<Object>();
+            key.add(tr.getCacheKey());
+            key.addAll(Arrays.asList(args));
+            key.add(maxRows);
+
+            Double result = sumCache.get(key);
+            if (result != null) {
+              // TODO: Add Listener Interface?  Is this for testing only?
+  //              if (listener != null) {
+  //                  TupleEvent e = new TupleEvent(this, tr);
+  //                  listener.foundInCache(e);
+  //              }
+                return result;
+            }
+
+            // execute sql and store the result
+  //          if (result == null && listener != null) {
+  //              TupleEvent e = new TupleEvent(this, tr);
+  //              listener.executingSql(e);
+  //          }
+
+            DataSource dataSource = schemaReader.getDataSource();
+            double sum = ((SqlTupleReader)tr).sumTuples(dataSource);
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                sumCache.put(key, new Double(sum));
+            }
+
+            // TODO: Note, this method won't work against secured tuples, we
+            // should have already detected this eariler in the process.
+            // filterInaccessibleTuples(result)
+            return  sum;
         }
 
         protected int executeCount(final SqlTupleReader tr) {
@@ -447,9 +533,11 @@ public abstract class RolapNativeSet extends RolapNative {
         if (hard) {
             cache = new HardSmartCache();
             countCache = new HardSmartCache();
+            sumCache = new HardSmartCache();
         } else {
             cache = new SoftSmartCache();
             countCache = new SoftSmartCache();
+            sumCache = new SoftSmartCache();
         }
     }
 
@@ -504,6 +592,15 @@ public abstract class RolapNativeSet extends RolapNative {
         }
         if (storedMeasure != null) {
             evaluator.setContext(storedMeasure);
+
+            // if a specific measure is in play, we need to force
+            // the native evaluation to only focus on it's referenced
+            // cube.
+            if (evaluator.getCube().isVirtual()) {
+                List<RolapCube> baseCubes = new ArrayList<RolapCube>();
+                baseCubes.add(storedMeasure.getCube());
+                evaluator.getQuery().setBaseCubes(baseCubes);
+            }
         }
     }
 
