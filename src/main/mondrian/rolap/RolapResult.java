@@ -84,10 +84,12 @@ public class RolapResult extends ResultBase {
         this.aggregatingReader = aggMgr.getCacheCellReader();
         final int expDeps =
             MondrianProperties.instance().TestExpDependencies.get();
+        final RolapResultEvaluatorRoot root;
         if (expDeps > 0) {
+            root = null;
             this.evaluator = new RolapDependencyTestingEvaluator(this, expDeps);
         } else {
-            final RolapEvaluatorRoot root =
+            root =
                 new RolapResultEvaluatorRoot(this);
             if (statement.getProfileHandler() != null) {
                 this.evaluator = new RolapProfilingEvaluator(root);
@@ -420,6 +422,12 @@ public class RolapResult extends ResultBase {
                     Member placeholder = setPlaceholderSlicerAxis(
                         (RolapMember)tupleList.get(0).get(0), calc);
                     evaluator.setContext(placeholder);
+                    if (tupleList.size() > 1 && root != null) {
+                        // named sets were evaluated with an incomplete
+                        // compound slicer; force reevaluation until we a better
+                        // solution comes along
+                        root.namedSetEvaluators.clear();
+                    }
                 }
             } while (phase());
 
