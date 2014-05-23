@@ -2130,7 +2130,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
         String mdx =
             "with \n"
             + "  member measures.drinkSum as\n"
-            + "  sum(Existing [Product].[Product Name].Members)\n"
+            + "  aggregate(Existing [Product].[Product Name].Members)\n"
             + "  select {measures.drinkSum} on 0,\n"
             + "  [Product].[Product Family].[Drink] on 1\n"
             + "  from [Sales]";
