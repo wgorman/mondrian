@@ -802,12 +802,22 @@ level.members and member descendants will be computed in SQL.</p>
         <Type>boolean</Type>
         <Default>true</Default>
     </PropertyDefinition>
-        <PropertyDefinition>
+    <PropertyDefinition>
         <Name>EnableNativeCount</Name>
         <Path>mondrian.native.count.enable</Path>
         <Category>SQL generation</Category>
         <Description>
 <p>If enabled, some Count() calls will be computed in SQL.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>EnableNativeExisting</Name>
+        <Path>mondrian.native.existing.enable</Path>
+        <Category>SQL generation</Category>
+        <Description>
+<p>If enabled, some Existing calls will be computed in SQL.</p>
         </Description>
         <Type>boolean</Type>
         <Default>true</Default>

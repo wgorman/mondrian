@@ -12,6 +12,7 @@ package mondrian.olap.fun;
 import mondrian.calc.Calc;
 import mondrian.calc.ExpCompiler;
 import mondrian.calc.IterCalc;
+import mondrian.calc.ResultStyle;
 import mondrian.calc.TupleCollections;
 import mondrian.calc.TupleIterable;
 import mondrian.calc.TupleList;
@@ -21,8 +22,11 @@ import mondrian.olap.Evaluator;
 import mondrian.olap.Exp;
 import mondrian.olap.Hierarchy;
 import mondrian.olap.Member;
+import mondrian.olap.NativeEvaluator;
 import mondrian.olap.Validator;
 import mondrian.olap.type.Type;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,7 +48,7 @@ public class ExistingFunDef extends FunDefBase {
         return args[0].getType();
     }
 
-    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
+    public Calc compileCall(final ResolvedFunCall call, ExpCompiler compiler) {
         final IterCalc setArg = compiler.compileIter(call.getArg(0));
         final Type myType = call.getArg(0).getType();
 
@@ -55,27 +59,40 @@ public class ExistingFunDef extends FunDefBase {
             }
 
             public TupleList evaluateList(Evaluator evaluator) {
-                TupleIterable setTuples = setArg.evaluateIterable(evaluator);
-
-                TupleList result =
-                    TupleCollections.createList(setTuples.getArity());
-                List<Member> contextMembers =
-                    Arrays.asList(evaluator.getMembers());
-
-                List<Hierarchy> argDims = null;
-                List<Hierarchy> contextDims = getHierarchies(contextMembers);
-
-                for (List<Member> tuple : setTuples) {
-                    if (argDims == null) {
-                        argDims = getHierarchies(tuple);
-                    }
-                    if (existsInTuple(tuple, contextMembers,
-                        argDims, contextDims, evaluator))
-                    {
-                        result.add(tuple);
-                    }
-                }
-                return result;
+                RolapEvaluator manyToManyEval =
+                    ManyToManyUtil.getManyToManyEvaluator(
+                        (RolapEvaluator)evaluator);
+                NativeEvaluator nativeEvaluator =
+                    evaluator.getSchemaReader().getNativeSetEvaluator(
+                        call.getFunDef(),
+                        call.getArgs(),
+                        manyToManyEval,
+                        this);
+                if (nativeEvaluator != null) {
+                    return (TupleList) nativeEvaluator.execute(ResultStyle.LIST);
+                } else {
+                  TupleIterable setTuples = setArg.evaluateIterable(evaluator);
+  
+                  TupleList result =
+                      TupleCollections.createList(setTuples.getArity());
+                  List<Member> contextMembers =
+                      Arrays.asList(evaluator.getMembers());
+  
+                  List<Hierarchy> argDims = null;
+                  List<Hierarchy> contextDims = getHierarchies(contextMembers);
+  
+                  for (List<Member> tuple : setTuples) {
+                      if (argDims == null) {
+                          argDims = getHierarchies(tuple);
+                      }
+                      if (existsInTuple(tuple, contextMembers,
+                          argDims, contextDims, evaluator))
+                      {
+                          result.add(tuple);
+                      }
+                  }
+                  return result;
+              }
             }
         };
     }
