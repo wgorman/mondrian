@@ -40,8 +40,7 @@ import javax.sql.DataSource;
   */
 public abstract class RolapNativeSet extends RolapNative {
     protected static final Logger LOGGER =
-        RolapUtil.SQL_LOGGER;
-        //Logger.getLogger(RolapNativeSet.class);
+        Logger.getLogger(RolapNativeSet.class);
 
     private SmartCache<Object, TupleList> cache =
         new SoftSmartCache<Object, TupleList>();
