@@ -583,9 +583,8 @@ public class SqlTupleReader implements TupleReader {
             // Add the subquery to the wrapper query.
             countQuery.addFromQuery(
                 pair.left, "sumQuery", true);
-
             // Dont forget to select all columns.
-            countQuery.addSelect("sum(`m1`)", null, null);
+            countQuery.addSelect("sum(" + countQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
             String sql = countQuery.toSqlAndTypes().left;
 
             assert sql != null && !sql.equals("");
