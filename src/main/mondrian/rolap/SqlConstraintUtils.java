@@ -324,20 +324,21 @@ public class SqlConstraintUtils {
     {
         Map<MondrianDef.Expression, Set<RolapMember>> mapOfSlicerMembers =
             new HashMap<MondrianDef.Expression, Set<RolapMember>>();
+        List<Member> slicerMembers =
+            ((RolapEvaluator)evaluator).getSlicerMembers();
+        Member[] expandedSlicers =
+            evaluator.isEvalAxes()
+                ? expandSupportedCalculatedMembers(
+                    slicerMembers,
+                    evaluator.push())
+                : slicerMembers.toArray(new Member[slicerMembers.size()]);
 
-        if (evaluator.isEvalAxes()) {
-            Member[] expandedSlicers =
-                expandSupportedCalculatedMembers(
-                    ((RolapEvaluator)evaluator).getSlicerMembers(),
-                    evaluator.push());
-
-            if (hasMultiPositionSlicer(expandedSlicers)) {
-                for (Member slicerMember : expandedSlicers) {
-                    if (slicerMember.isMeasure()) {
-                        continue;
-                    }
-                    addSlicedMemberToMap(mapOfSlicerMembers, slicerMember);
+        if (hasMultiPositionSlicer(expandedSlicers)) {
+            for (Member slicerMember : expandedSlicers) {
+                if (slicerMember.isMeasure()) {
+                    continue;
                 }
+                addSlicedMemberToMap(mapOfSlicerMembers, slicerMember);
             }
         }
         return mapOfSlicerMembers;
@@ -407,6 +408,11 @@ public class SqlConstraintUtils {
             {
                 listOfMembers.addAll(
                     expandExpressions(member, null, evaluator));
+            } else if (member instanceof RolapResult.CompoundSlicerRolapMember)
+            {
+                listOfMembers.add(replaceCompoundSlicerPlaceholder(
+                    member,
+                    (RolapEvaluator) evaluator));
             } else {
                 // just add the member
                 listOfMembers.add(member);
@@ -414,6 +420,17 @@ public class SqlConstraintUtils {
         }
         members = listOfMembers.toArray(new Member[listOfMembers.size()]);
         return members;
+    }
+
+    private static Member replaceCompoundSlicerPlaceholder(
+        Member member, RolapEvaluator evaluator)
+    {
+        for (Member slicerMember : evaluator.getSlicerMembers()) {
+            if (slicerMember.getDimension().equals(member.getDimension())) {
+                return slicerMember;
+            }
+        }
+        return member;
     }
 
     public static List<Member> expandExpressions(
