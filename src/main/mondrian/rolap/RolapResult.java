@@ -2250,7 +2250,7 @@ public class RolapResult extends ResultBase {
      * the context of the slicer members.
      * See MONDRIAN-1226.
      */
-    private class CompoundSlicerRolapMember extends DelegatingRolapMember
+    public class CompoundSlicerRolapMember extends DelegatingRolapMember
     implements RolapMeasure
     {
         private final Calc calc;

@@ -107,7 +107,21 @@ public class SqlContextConstraint
                 return false;
             }
         }
-        return true;
+
+        // finally, we can't handle slicer axis members with different levels
+        // from the same dimension
+        return !hasMultipleLevelSlicer(context);
+    }
+
+    private static boolean hasMultipleLevelSlicer(Evaluator evaluator) {
+        Map<Dimension, Level> levels = new HashMap<Dimension, Level>();
+        for (Member member: ((RolapEvaluator) evaluator).getSlicerMembers()) {
+            Level before = levels.put(member.getDimension(), member.getLevel());
+            if (before != null && !before.equals(member.getLevel())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

@@ -2001,7 +2001,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #1: 820\n"
             + "Row #2: 169\n");
     }
-    
+
     /**
      * This tests a scenario where a hanger dimension still allows nonempty
      * native evaluation with a calculated member.
@@ -2144,11 +2144,45 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "{[Product].[Drink]}\n"
             + "Row #0: 24,597\n");
 
-        if (!MondrianProperties.instance().EnableNativeCount.get()) {
+        if (!MondrianProperties.instance().EnableNativeExisting.get()) {
             return;
         }
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
-        String mysqlQuery = "select\n"
+        String mysqlQuery = isUseAgg()
+            ? "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`,\n"
+            + "    `product_class`.`product_category` as `c2`,\n"
+            + "    `product_class`.`product_subcategory` as `c3`,\n"
+            + "    `product`.`brand_name` as `c4`,\n"
+            + "    `product`.`product_name` as `c5`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`,\n"
+            + "    `product_class`.`product_category`,\n"
+            + "    `product_class`.`product_subcategory`,\n"
+            + "    `product`.`brand_name`,\n"
+            + "    `product`.`product_name`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC"
+            : "select\n"
             + "    `product_class`.`product_family` as `c0`,\n"
             + "    `product_class`.`product_department` as `c1`,\n"
             + "    `product_class`.`product_category` as `c2`,\n"
@@ -2717,11 +2751,11 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #2: 6,235\n");
     }
 
-    // This test currently fails, and will be fixed once we support compound slicers.
-    public void _testNativeFilterWithCompoundSlicer() {
+    public void testNativeFilterWithCompoundSlicer() {
         String mdx =
             "WITH MEMBER [Measures].[TotalVal] AS 'Aggregate(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000))'\n"
-            + "SELECT [Measures].[TotalVal] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE {[Time].[1997].[Q1],[Time].[1997].[Q2]}";
+            + "SELECT [Measures].[TotalVal] ON 0, [Product].[All Products].Children on 1 \n"
+            + "FROM [Sales] WHERE {[Time].[1997].[Q1],[Time].[1997].[Q2]}";
         assertQueryReturns(
             mdx,
             "Axis #0:\n"
@@ -2736,6 +2770,157 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 10,152\n"
             + "Row #1: 90,413\n"
             + "Row #2: 23,813\n");
+        if (!MondrianProperties.instance().EnableNativeFilter.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mysql = !isUseAgg()
+            ? "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` in ('Q1', 'Q2')\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC"
+            : "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`quarter` in ('Q1', 'Q2')\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`agg_c_14_sales_fact_1997`.`unit_sales`) > 1000)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
     }
+
+    public void testNativeFilterWithCompoundSlicerCJ() {
+        String mdx =
+            "WITH MEMBER [Measures].[TotalVal] AS 'Aggregate(Filter( {[Store].[Store City].members},[Measures].[Unit Sales] > 1000))'\n"
+            + "SELECT [Measures].[TotalVal] ON 0, [Gender].[All Gender].Children on 1 \n"
+            + "FROM [Sales]\n"
+            + "WHERE CrossJoin({ [Product].[Non-Consumable], [Product].[Drink] }, {[Time].[1997].[Q1],[Time].[1997].[Q2]})";
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Product].[Non-Consumable], [Time].[1997].[Q1]}\n"
+            + "{[Product].[Non-Consumable], [Time].[1997].[Q2]}\n"
+            + "{[Product].[Drink], [Time].[1997].[Q1]}\n"
+            + "{[Product].[Drink], [Time].[1997].[Q2]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalVal]}\n"
+            + "Axis #2:\n"
+            + "{[Gender].[F]}\n"
+            + "{[Gender].[M]}\n"
+            + "Row #0: 16,729\n"
+            + "Row #1: 17,044\n");
+    }
+
+    public void testFilterWithDiffLevelCompoundSlicer() {
+        // not supported in native, but detected
+        // and skipped to regular evaluation
+        String mdx =
+            "SELECT [Measures].[Unit Sales] ON 0,\n"
+            + " Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 10000) on 1 \n"
+            + "FROM [Sales] WHERE {[Time].[1997].[Q1], [Time].[1997].[Q2].[4]}";
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "{[Time].[1997].[Q2].[4]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Row #0: 14,683\n"
+            + "Row #1: 10,950\n");
+    }
+
+    public void testNativeFilterWithCompoundSlicer2049() {
+        assertQueryReturns(
+            "with member measures.avgQtrs as 'avg( filter( time.quarter.members, measures.[unit sales] < 200))' "
+            + "select measures.avgQtrs * gender.members on 0 from sales where head( product.[product name].members, 3)",
+            "Axis #0:\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Imported Beer]}\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Good].[Good Light Beer]}\n"
+            + "{[Product].[Drink].[Alcoholic Beverages].[Beer and Wine].[Beer].[Pearl].[Pearl Imported Beer]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[avgQtrs], [Gender].[All Gender]}\n"
+            + "{[Measures].[avgQtrs], [Gender].[F]}\n"
+            + "{[Measures].[avgQtrs], [Gender].[M]}\n"
+            + "Row #0: 111\n"
+            + "Row #0: 58\n"
+            + "Row #0: 53\n");
+    }
+
+    public void _testNativeFilterTupleCompoundSlicer1861() {
+        // Using a slicer list instead of tuples causes slicers with
+        // tuples where not all combinations of their members are present to
+        // fail when nativized.
+        // MondrianProperties.instance().EnableNativeFilter.set(true);
+        assertQueryReturns(
+            "select [Measures].[Unit Sales] on columns, Filter([Time].[1997].Children, [Measures].[Unit Sales] < 12335) on rows from [Sales] where {([Product].[Drink],[Store].[USA].[CA]),([Product].[Food],[Store].[USA].[OR])}",
+            "Axis #0:\n"
+            + "{[Product].[Drink], [Store].[USA].[CA]}\n"
+            + "{[Product].[Food], [Store].[USA].[OR]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Row #0: 12,334\n");
+    }
+
 }
 // End NativeSetEvaluationTest.java

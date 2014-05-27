@@ -11,6 +11,7 @@ package mondrian.rolap;
 
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
+import mondrian.olap.Level;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
 import mondrian.olap.Util;
@@ -35,6 +36,11 @@ public class RolapNativeExisting extends RolapNativeSet {
         Exp[] args)
     {
         if (!isEnabled()) {
+            return null;
+        }
+        if (!ExistingConstraint.isValidContext(
+            evaluator, false, new Level[]{}, restrictMemberTypes()))
+        {
             return null;
         }
         // attempt to nativize the set expression
