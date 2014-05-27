@@ -2001,7 +2001,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #1: 820\n"
             + "Row #2: 169\n");
     }
-    
+
     /**
      * This tests a scenario where a hanger dimension still allows nonempty
      * native evaluation with a calculated member.
@@ -2144,11 +2144,45 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "{[Product].[Drink]}\n"
             + "Row #0: 24,597\n");
 
-        if (!MondrianProperties.instance().EnableNativeCount.get()) {
+        if (!MondrianProperties.instance().EnableNativeExisting.get()) {
             return;
         }
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
-        String mysqlQuery = "select\n"
+        String mysqlQuery = isUseAgg()
+            ? "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`,\n"
+            + "    `product_class`.`product_category` as `c2`,\n"
+            + "    `product_class`.`product_subcategory` as `c3`,\n"
+            + "    `product`.`brand_name` as `c4`,\n"
+            + "    `product`.`product_name` as `c5`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`,\n"
+            + "    `product_class`.`product_category`,\n"
+            + "    `product_class`.`product_subcategory`,\n"
+            + "    `product`.`brand_name`,\n"
+            + "    `product`.`product_name`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC"
+            : "select\n"
             + "    `product_class`.`product_family` as `c0`,\n"
             + "    `product_class`.`product_department` as `c1`,\n"
             + "    `product_class`.`product_category` as `c2`,\n"
