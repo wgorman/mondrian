@@ -687,8 +687,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     /**
-     * Check if getSlicerMembers in native evaluation context
-     * doesn't break the results as in MONDRIAN-1187
+     * Partial crossjoin cannot be nativized correctly
+     * see MONDRIAN-1187, MONDRIAN-1861
      */
     public void testSlicerTuplesPartialCrossJoin() {
         final String mdx =
@@ -710,10 +710,10 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Store Sales]}\n"
             + "Axis #2:\n"
-            + "{[Product].[Food].[Eggs].[Eggs].[Eggs].[Urban].[Urban Small Eggs]}\n"
-            + "{[Product].[Food].[Produce].[Vegetables].[Fresh Vegetables].[Hermanos].[Hermanos Green Pepper]}\n"
-            + "Row #0: 332.86\n"
-            + "Row #1: 343.54\n";
+            + "{[Product].[Food].[Snack Foods].[Snack Foods].[Dried Fruit].[Fort West].[Fort West Raspberry Fruit Roll]}\n"
+            + "{[Product].[Food].[Canned Foods].[Canned Soup].[Soup].[Bravo].[Bravo Noodle Soup]}\n"
+            + "Row #0: 372.36\n"
+            + "Row #1: 365.20\n";
 
         assertQueryReturns(mdx, result);
     }
@@ -2905,7 +2905,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 53\n");
     }
 
-    public void _testNativeFilterTupleCompoundSlicer1861() {
+    public void testNativeFilterTupleCompoundSlicer1861() {
         // Using a slicer list instead of tuples causes slicers with
         // tuples where not all combinations of their members are present to
         // fail when nativized.

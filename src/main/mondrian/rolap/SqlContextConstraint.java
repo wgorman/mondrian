@@ -16,6 +16,7 @@ import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.RestrictedMemberReader.MultiCardinalityDefaultMember;
 import mondrian.rolap.RolapHierarchy.LimitedRollupMember;
+import mondrian.rolap.RolapResult.CompoundSlicerRolapMember;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
 
@@ -110,7 +111,13 @@ public class SqlContextConstraint
 
         // finally, we can't handle slicer axis members with different levels
         // from the same dimension
-        return !hasMultipleLevelSlicer(context);
+        if (hasMultipleLevelSlicer(context)) {
+            return false;
+        }
+        if (isDisjointTupleSlicer(context)) {
+            return false;
+        }
+        return true;
     }
 
     private static boolean hasMultipleLevelSlicer(Evaluator evaluator) {
@@ -119,6 +126,15 @@ public class SqlContextConstraint
             Level before = levels.put(member.getDimension(), member.getLevel());
             if (before != null && !before.equals(member.getLevel())) {
                 return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isDisjointTupleSlicer(Evaluator evaluator) {
+        for (Member member: evaluator.getMembers()) {
+            if (member instanceof CompoundSlicerRolapMember) {
+                return ((CompoundSlicerRolapMember)member).isDisjointTuple();
             }
         }
         return false;
