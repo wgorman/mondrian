@@ -23,7 +23,6 @@ import mondrian.rolap.CalculatedCellUtil.CellCalcReturn;
 import mondrian.server.Statement;
 import mondrian.spi.Dialect;
 import mondrian.util.Format;
-import mondrian.xmla.PropertyDefinition;
 
 import org.apache.log4j.Logger;
 
