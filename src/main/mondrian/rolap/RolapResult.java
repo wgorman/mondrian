@@ -84,12 +84,10 @@ public class RolapResult extends ResultBase {
         this.aggregatingReader = aggMgr.getCacheCellReader();
         final int expDeps =
             MondrianProperties.instance().TestExpDependencies.get();
-        final RolapResultEvaluatorRoot root;
         if (expDeps > 0) {
-            root = null;
             this.evaluator = new RolapDependencyTestingEvaluator(this, expDeps);
         } else {
-            root =
+          final RolapResultEvaluatorRoot root =
                 new RolapResultEvaluatorRoot(this);
             if (statement.getProfileHandler() != null) {
                 this.evaluator = new RolapProfilingEvaluator(root);
@@ -243,7 +241,8 @@ public class RolapResult extends ResultBase {
             final List<List<Member>> emptyNonAllMembers =
                 Collections.emptyList();
 
-            // Initial evaluator, to execute slicer.
+            // Initial evaluator, to execute slicer. 
+            // Used by named sets in slicer
             slicerEvaluator = evaluator.push();
 
             /////////////////////////////////////////////////////////////////
@@ -283,62 +282,10 @@ public class RolapResult extends ResultBase {
             slicerEvaluator = evaluator.push();
 
             /////////////////////////////////////////////////////////////////
-            // Determine Axes
-            //
-            boolean changed = false;
-
-            // reset to total member count
-            axisMembers.clearTotalCellCount();
-
-            for (int i = 0; i < axes.length; i++) {
-                final QueryAxis axis = query.axes[i];
-                final Calc calc = query.axisCalcs[i];
-                loadMembers(
-                    emptyNonAllMembers, evaluator, axis, calc, axisMembers);
-            }
-
-            if (!axisMembers.isEmpty()) {
-                for (Member m : axisMembers) {
-                    if (m.isMeasure()) {
-                        // A Measure was explicitly declared on an
-                        // axis, don't need to worry about Measures
-                        // for this query.
-                        measureMembers.clear();
-                    }
-                }
-                changed = replaceNonAllMembers(nonAllMembers, axisMembers);
-                axisMembers.clearMembers();
-            }
-
-            if (changed) {
-                // only count number of members, do not collect any
-                axisMembers.countOnly(true);
-                // reset to total member count
-                axisMembers.clearTotalCellCount();
-
-                final int savepoint = evaluator.savepoint();
-                try {
-                    for (int i = 0; i < axes.length; i++) {
-                        final QueryAxis axis = query.axes[i];
-                        final Calc calc = query.axisCalcs[i];
-                        loadMembers(
-                            nonAllMembers,
-                            evaluator,
-                            axis, calc, axisMembers);
-                        evaluator.restore(savepoint);
-                    }
-                } finally {
-                    evaluator.restore(savepoint);
-                }
-            }
-
-            // throws exception if number of members exceeds limit
-            axisMembers.checkLimit();
-            Axis savedSlicerAxis;
-            /////////////////////////////////////////////////////////////////
             // Execute Slicer
             //
-            RolapEvaluator slicerEvaluator;
+            Axis savedSlicerAxis;
+            RolapEvaluator internalSlicerEvaluator;
             do {
                 TupleIterable tupleIterable =
                     evalExecute(
@@ -364,14 +311,14 @@ public class RolapResult extends ResultBase {
                 // Sales] > 100) on columns from Sales where
                 // ([Time].[1998])" should show customers whose 1998 (not
                 // total) purchases exceeded 100.
-                slicerEvaluator = this.evaluator;
+                internalSlicerEvaluator = this.evaluator;
                 if (tupleList.size() > 1) {
                     tupleList =
                         removeUnaryMembersFromTupleList(
-                            tupleList, slicerEvaluator);
+                            tupleList, evaluator);
                     tupleList =
                         AggregateFunDef.AggregateCalc.optimizeTupleList(
-                            slicerEvaluator,
+                            evaluator,
                             tupleList,
                             false);
                     evaluator.setSlicerTuples(tupleList);
@@ -402,22 +349,9 @@ public class RolapResult extends ResultBase {
                             }
                         };
 
-                    final ExpCacheDescriptor cacheDescriptor = new ExpCacheDescriptor(query.getSlicerAxis().getSet(), calcCached, slicerEvaluator);
+                    final ExpCacheDescriptor cacheDescriptor = new ExpCacheDescriptor(query.getSlicerAxis().getSet(), calcCached, evaluator);
                     // generate a cached calculation for slicer aggregation
                     final Calc calc = new CacheCalc(query.getSlicerAxis().getSet(), cacheDescriptor);
-                    final List<RolapHierarchy> hierarchyList =
-                        new AbstractList<RolapHierarchy>() {
-                            final List<Member> pos0 = evaluator.getSlicerTuples().get(0);
-
-                            public RolapHierarchy get(int index) {
-                                return ((RolapMember) pos0.get(index))
-                                    .getHierarchy();
-                            }
-
-                            public int size() {
-                                return pos0.size();
-                            }
-                        };
 
                     // replace the slicer set with a placeholder to avoid
                     // interaction between the aggregate calc we just created
@@ -436,15 +370,64 @@ public class RolapResult extends ResultBase {
                     Member placeholder = setPlaceholderSlicerAxis(
                         (RolapMember)tupleList.get(0).get(0), calc, true);
                     evaluator.setContext(placeholder);
-
-                    if (tupleList.size() > 1 && root != null) {
-                        // named sets were evaluated with an incomplete
-                        // compound slicer; force reevaluation until we a better
-                        // solution comes along
-                        root.namedSetEvaluators.clear();
-                    }
                 }
             } while (phase());
+
+            // final slicerEvaluator
+            slicerEvaluator = evaluator.push();
+
+            /////////////////////////////////////////////////////////////////
+            // Determine Axes
+            //
+            boolean changed = false;
+
+            // reset to total member count
+            axisMembers.clearTotalCellCount();
+
+            for (int i = 0; i < axes.length; i++) {
+                final QueryAxis axis = query.axes[i];
+                final Calc calc = query.axisCalcs[i];
+                loadMembers(
+                    emptyNonAllMembers, evaluator, axis, calc, axisMembers);
+            }
+
+            if (!axisMembers.isEmpty()) {
+            for (Member m : axisMembers) {
+                if (m.isMeasure()) {
+                    // A Measure was explicitly declared on an
+                    // axis, don't need to worry about Measures
+                    // for this query.
+                    measureMembers.clear();
+                    }
+                }
+                changed = replaceNonAllMembers(nonAllMembers, axisMembers);
+                axisMembers.clearMembers();
+            }
+
+            if (changed) {
+                // only count number of members, do not collect any
+                axisMembers.countOnly(true);
+                // reset to total member count
+                axisMembers.clearTotalCellCount();
+
+                final int savepoint = evaluator.savepoint();
+                try {
+                    for (int i = 0; i < axes.length; i++) {
+                        final QueryAxis axis = query.axes[i];
+                        final Calc calc = query.axisCalcs[i];
+                        loadMembers(
+                            nonAllMembers,
+                            evaluator,
+                            axis, calc, axisMembers);
+                        evaluator.restore(savepoint);
+                    }
+                } finally {
+                    evaluator.restore(savepoint);
+                }
+            }
+
+            // throws exception if number of members exceeds limit
+            axisMembers.checkLimit();
 
             /////////////////////////////////////////////////////////////////
             // Execute Axes
@@ -507,7 +490,7 @@ public class RolapResult extends ResultBase {
             final Locus locus = new Locus(execution, null, "Loading cells");
             Locus.push(locus);
             try {
-                executeBody(slicerEvaluator, query, new int[axes.length]);
+                executeBody(internalSlicerEvaluator, query, new int[axes.length]);
             } finally {
                 Locus.pop(locus);
             }
