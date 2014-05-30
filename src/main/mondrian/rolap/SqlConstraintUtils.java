@@ -207,7 +207,6 @@ public class SqlConstraintUtils {
 
         // get columns constrained by slicer
         BitKey slicerBitKey = tupleListPredicate.getConstrainedColumnBitKey();
-
         // constrain context members not in slicer tuples
         RolapStar.Column[] columns = request.getConstrainedColumns();
         Object[] values = request.getSingleValues();
@@ -217,10 +216,10 @@ public class SqlConstraintUtils {
             if (!slicerBitKey.get(column.getBitPosition())) {
                 // column not constrained by tupleSlicer
                 String expr = getColumnExpr(sqlQuery, aggStar, column);
-                // TODO: we had special handling for null values
                 addSimpleColumnConstraint(sqlQuery, column, expr, value);
             }
-            // XXX ignoring otherwise
+            // ok to ignore otherwise, using optimizedSlicerTuples
+            // that shouldn't have overridden tuples
         }
 
         // add our slicer tuples
@@ -240,15 +239,6 @@ public class SqlConstraintUtils {
     public static boolean useTupleSlicer(RolapEvaluator evaluator) {
         return evaluator.isDisjointSlicerTuple()
             || evaluator.isMultiLevelSlicerTuple();
-//        for (Member member : evaluator.getMembers()) {
-//            if (member instanceof CompoundSlicerRolapMember) {
-//              CompoundSlicerRolapMember compoundSlicer =
-//                      (CompoundSlicerRolapMember) member;
-//              return compoundSlicer.isMultiLevel()
-//                  || compoundSlicer.isDisjointTuple();
-//            }
-//        }
-//        return false;
     }
 
     /**
@@ -276,12 +266,6 @@ public class SqlConstraintUtils {
 
     public static TupleList getSlicerTuple(RolapEvaluator evaluator) {
         return evaluator.getOptimizedSlicerTuples();
-        //  for (Member member : evaluator.getMembers()) {
-        //      if (member instanceof CompoundSlicerRolapMember) {
-        //          return ((CompoundSlicerRolapMember) member).getTupleList();
-        //      }
-        //  }
-        //  return null;
     }
     public static boolean isDisjointTuple(TupleList tupleList) {
         // This assumes the same level for each hierarchy;
