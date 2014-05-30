@@ -233,7 +233,7 @@ public class SqlContextConstraint
                     evaluator)));
         cacheKey.add(expandedMembers);
         // TODO review
-        cacheKey.add(SqlConstraintUtils.getSlicerTuple(evaluator));
+        cacheKey.add(evaluator.getSlicerTuples());
 
         // Add restrictions imposed by Role based access filtering
         Map<Level, List<RolapMember>> roleMembers =

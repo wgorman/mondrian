@@ -99,6 +99,9 @@ public class RolapEvaluator implements Evaluator {
     private final List<Member> slicerMembers;
     // contains a list of slicer tuples
     private TupleList slicerTuples;
+    // extra info on slicer tuples (temp)
+    private boolean disjointSlicerTuple;
+    private boolean multiLevelSlicerTuple;
     private boolean nativeEnabled;
     private Member[] nonAllMembers;
     private int commandCount;
@@ -159,6 +162,8 @@ public class RolapEvaluator implements Evaluator {
         calculationCount = parent.calculationCount;
         slicerMembers = new ArrayList<Member>(parent.slicerMembers);
         slicerTuples = parent.slicerTuples;
+        disjointSlicerTuple = parent.disjointSlicerTuple;
+        multiLevelSlicerTuple = parent.multiLevelSlicerTuple;
         commands = new Object[10];
         commands[0] = Command.SAVEPOINT; // sentinel
         commandCount = 1;
@@ -510,6 +515,16 @@ public class RolapEvaluator implements Evaluator {
      */
     public final void setSlicerTuples(TupleList tuples) {
         slicerTuples = tuples;
+        // XXX: TEMPORARY, change this!
+        if (tuples != null) {
+            disjointSlicerTuple = SqlConstraintUtils.isDisjointTuple(tuples);
+            multiLevelSlicerTuple =
+              SqlConstraintUtils.hasMultipleLevelSlicer(this);
+        }
+        else {
+            disjointSlicerTuple = false;
+            multiLevelSlicerTuple = false;
+        }
     }
 
     /**
@@ -518,6 +533,14 @@ public class RolapEvaluator implements Evaluator {
      */
     public final TupleList getSlicerTuples() {
         return slicerTuples;
+    }
+
+    public boolean isDisjointSlicerTuple() {
+        return disjointSlicerTuple;
+    }
+
+    public boolean isMultiLevelSlicerTuple() {
+        return multiLevelSlicerTuple;
     }
 
     /**

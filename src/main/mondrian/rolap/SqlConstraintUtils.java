@@ -68,7 +68,6 @@ public class SqlConstraintUtils {
         if (baseCube == null && evaluator instanceof RolapEvaluator) {
             baseCube = ((RolapEvaluator) evaluator).getCube();
         }
-
         // find columns affected by context members
         final CellRequest request =
             makeContextMembersRequest(evaluator, restrictMemberTypes);
@@ -80,9 +79,9 @@ public class SqlConstraintUtils {
             // request is impossible to satisfy.
             return;
         }
-
+        RolapEvaluator rEvaluator = (RolapEvaluator) evaluator;
         // decide if we should use the tuple-based version instead
-        if (useTupleSlicer(evaluator)) {
+        if (useTupleSlicer(rEvaluator)) {
             LOG.warn("Using tuple-based native slicer.");
             addContextConstraintTuples(
                     sqlQuery,
@@ -238,16 +237,18 @@ public class SqlConstraintUtils {
                 evaluator);
     }
 
-    public static boolean useTupleSlicer(Evaluator evaluator) {
-        for (Member member : evaluator.getMembers()) {
-            if (member instanceof CompoundSlicerRolapMember) {
-              CompoundSlicerRolapMember compoundSlicer =
-                      (CompoundSlicerRolapMember) member;
-              return compoundSlicer.isMultiLevel()
-                  || compoundSlicer.isDisjointTuple();
-            }
-        }
-        return false;
+    public static boolean useTupleSlicer(RolapEvaluator evaluator) {
+        return evaluator.isDisjointSlicerTuple()
+            || evaluator.isMultiLevelSlicerTuple();
+//        for (Member member : evaluator.getMembers()) {
+//            if (member instanceof CompoundSlicerRolapMember) {
+//              CompoundSlicerRolapMember compoundSlicer =
+//                      (CompoundSlicerRolapMember) member;
+//              return compoundSlicer.isMultiLevel()
+//                  || compoundSlicer.isDisjointTuple();
+//            }
+//        }
+//        return false;
     }
 
     /**
@@ -274,12 +275,45 @@ public class SqlConstraintUtils {
     }
 
     public static TupleList getSlicerTuple(RolapEvaluator evaluator) {
-        for (Member member : evaluator.getMembers()) {
-            if (member instanceof CompoundSlicerRolapMember) {
-                return ((CompoundSlicerRolapMember) member).getTupleList();
+        return evaluator.getOptimizedSlicerTuples();
+        //  for (Member member : evaluator.getMembers()) {
+        //      if (member instanceof CompoundSlicerRolapMember) {
+        //          return ((CompoundSlicerRolapMember) member).getTupleList();
+        //      }
+        //  }
+        //  return null;
+    }
+    public static boolean isDisjointTuple(TupleList tupleList) {
+        // This assumes the same level for each hierarchy;
+        // won't work if the level restriction is eliminated
+        List<Set<Member>> counters =
+            new ArrayList<Set<Member>>(tupleList.getArity());
+        for (int i = 0; i < tupleList.size(); i++) {
+            final List<Member> tuple = tupleList.get(i);
+            for (int j=0; j < tupleList.getArity(); j++) {
+                final Member member = tuple.get(j);
+                if (i == 0) {
+                    counters.add(new HashSet<Member>());
+                }
+                counters.get(j).add(member);
             }
         }
-        return null;
+        int piatory = 1;
+        for (Set<Member> counter : counters) {
+            piatory *= counter.size();
+        }
+        return tupleList.size() < piatory;
+    }
+
+    public static boolean hasMultipleLevelSlicer(Evaluator evaluator) {
+        Map<Dimension, Level> levels = new HashMap<Dimension, Level>();
+        for (Member member: ((RolapEvaluator) evaluator).getSlicerMembers()) {
+            Level before = levels.put(member.getDimension(), member.getLevel());
+            if (before != null && !before.equals(member.getLevel())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
