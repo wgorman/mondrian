@@ -127,6 +127,10 @@ public class VerticaDialect extends JdbcDialectImpl {
     public boolean supportsLimitAndOffset() {
         return true;
     }
+
+    public boolean supportsMultiValueInExpr() {
+        return true;
+    }
 }
 
 // End VerticaDialect.java
