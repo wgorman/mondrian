@@ -374,19 +374,25 @@ public class RolapResult extends ResultBase {
                             slicerEvaluator,
                             tupleList,
                             false);
+                    evaluator.setSlicerTuples(tupleList);
 
                     final Calc valueCalc =
                         new ValueCalc(
                             new DummyExp(new ScalarType()));
-                    final TupleList tupleList1 = tupleList;
 
+                    final List<Member> prevSlicerMembers = new ArrayList<Member>();
 
                     final Calc calcCached =
                         new GenericCalc(
                             new DummyExp(query.slicerCalc.getType()))
                         {
                             public Object evaluate(Evaluator evaluator) {
-                                TupleList list = AbstractAggregateFunDef.processUnrelatedDimensions(tupleList1, evaluator);
+                                TupleList list = AbstractAggregateFunDef.processUnrelatedDimensions(((RolapEvaluator)evaluator).getOptimizedSlicerTuples(), evaluator);
+                                for (Member member : prevSlicerMembers) {
+                                    if (evaluator.getContext(member.getHierarchy()) instanceof CompoundSlicerRolapMember) {
+                                        evaluator.setContext(member);
+                                    }
+                                }
                                 return AggregateFunDef.AggregateCalc.aggregate(
                                     valueCalc, evaluator, list);
                             }
@@ -401,7 +407,7 @@ public class RolapResult extends ResultBase {
                     final Calc calc = new CacheCalc(query.getSlicerAxis().getSet(), cacheDescriptor);
                     final List<RolapHierarchy> hierarchyList =
                         new AbstractList<RolapHierarchy>() {
-                            final List<Member> pos0 = tupleList1.get(0);
+                            final List<Member> pos0 = evaluator.getSlicerTuples().get(0);
 
                             public RolapHierarchy get(int index) {
                                 return ((RolapMember) pos0.get(index))
@@ -419,9 +425,18 @@ public class RolapResult extends ResultBase {
                     // the slicer.
                     // Arbitrarily picks the first dim of the first tuple
                     // to use as placeholder.
+                    if (tupleList.get( 0 ).size() > 1) {
+                        for (int i = 1; i < tupleList.get(0).size(); i++) {
+                            Member placeholder = setPlaceholderSlicerAxis(
+                                (RolapMember)tupleList.get(0).get(i), calc, false);
+                            prevSlicerMembers.add(evaluator.setContext(placeholder));
+                        }
+                    }
+
                     Member placeholder = setPlaceholderSlicerAxis(
-                        (RolapMember)tupleList.get(0).get(0), calc);
+                        (RolapMember)tupleList.get(0).get(0), calc, true);
                     evaluator.setContext(placeholder);
+
                     if (tupleList.size() > 1 && root != null) {
                         // named sets were evaluated with an incomplete
                         // compound slicer; force reevaluation until we a better
@@ -550,7 +565,7 @@ public class RolapResult extends ResultBase {
      * up the set on the slicer.
      */
     private Member setPlaceholderSlicerAxis(
-        final RolapMember member, final Calc calc)
+        final RolapMember member, final Calc calc, boolean first)
     {
         ValueFormatter formatter;
         if (member.getDimension().isMeasures()) {
@@ -572,10 +587,11 @@ public class RolapResult extends ResultBase {
             Property.FORMAT_EXP_PARSED.getName(),
             member.getPropertyValue(Property.FORMAT_EXP_PARSED.getName()));
 
-        TupleList dummyList = TupleCollections.createList(1);
-        dummyList.addTuple(placeholderMember);
-
-        this.slicerAxis = new RolapAxis(dummyList);
+        if (first) {
+            TupleList dummyList = TupleCollections.createList(1);
+            dummyList.addTuple(placeholderMember);
+            this.slicerAxis = new RolapAxis(dummyList);
+        }
         return placeholderMember;
     }
 
@@ -1067,6 +1083,7 @@ public class RolapResult extends ResultBase {
         if (contextEvaluator != null && contextEvaluator.isEvalAxes()) {
             evaluator.setEvalAxes(true);
             evaluator.setContext(contextEvaluator.getMembers());
+            evaluator.setSlicerTuples(((RolapEvaluator)contextEvaluator).getSlicerTuples());
         }
 
         final int savepoint = evaluator.savepoint();
