@@ -107,21 +107,7 @@ public class SqlContextConstraint
                 return false;
             }
         }
-
-        // finally, we can't handle slicer axis members with different levels
-        // from the same dimension
-        return !hasMultipleLevelSlicer(context);
-    }
-
-    private static boolean hasMultipleLevelSlicer(Evaluator evaluator) {
-        Map<Dimension, Level> levels = new HashMap<Dimension, Level>();
-        for (Member member: ((RolapEvaluator) evaluator).getSlicerMembers()) {
-            Level before = levels.put(member.getDimension(), member.getLevel());
-            if (before != null && !before.equals(member.getLevel())) {
-                return true;
-            }
-        }
-        return false;
+        return true;
     }
 
     /**
@@ -246,6 +232,8 @@ public class SqlContextConstraint
                     members,
                     evaluator)));
         cacheKey.add(expandedMembers);
+        // TODO review
+        cacheKey.add(evaluator.getSlicerTuples());
 
         // Add restrictions imposed by Role based access filtering
         Map<Level, List<RolapMember>> roleMembers =
