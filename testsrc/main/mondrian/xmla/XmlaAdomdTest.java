@@ -70,6 +70,14 @@ public class XmlaAdomdTest extends XmlaBaseTestCase {
     }
 
     @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
+        // flush cache so downstream tests don't
+        // pick up naming differences.
+        testContext.flushSchemaCache();
+    }
+
+    @Override
     public void doTest(
         String requestType,
         Properties props,
