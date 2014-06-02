@@ -110,8 +110,11 @@ public class SqlConstraintUtils {
 
             // choose from agg or regular star
             String expr = getColumnExpr(sqlQuery, aggStar, column);
-            // TODO: Support Agg Tables
-            String subquery = column.getTable().getSubQueryAlias();
+            String subquery = null;
+            // TODO: Support Agg Tables for M2M scenario
+            if (aggStar == null) {
+              subquery = column.getTable().getSubQueryAlias();
+            }
 
             if ((RolapUtil.mdxNullLiteral().equalsIgnoreCase(value))
                 || (value.equalsIgnoreCase(RolapUtil.sqlNullValue.toString())))
