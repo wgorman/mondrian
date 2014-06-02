@@ -347,6 +347,8 @@ public class ManyToManyUtil {
     public static RolapEvaluator getManyToManyEvaluator(
         RolapEvaluator evaluator)
     {
+        // this is no longer applicable, we now push down the SQL.
+        if (true) return evaluator;
         RolapEvaluator neweval = null;
         List<Member> slicer = evaluator.getSlicerMembers();
         Set<Member> newSlicer = new HashSet<Member>();

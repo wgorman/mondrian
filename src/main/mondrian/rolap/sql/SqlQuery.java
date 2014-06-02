@@ -319,8 +319,11 @@ public class SqlQuery {
         addFromQuery(sqlQuery.toString(), alias, failIfExists);
     }
 
-    Map<String, SqlQuery> subqueries = new HashMap<String, SqlQuery>();
-
+    // TODO: Clean up access to these methods, now used in
+    // SqlConstraintUtils to do some compound tuple many to many processing.
+    public Map<String, SqlQuery> subqueries = new HashMap<String, SqlQuery>();
+    public Map<String, List<String>> subwhereExpr = new HashMap<String, List<String>>();
+    public boolean correlatedSubquery = false;
     public boolean addFrom(
         final MondrianDef.RelationOrJoin relation,
         final String alias,
@@ -581,6 +584,15 @@ public class SqlQuery {
         final String exprMid,
         final String exprRight)
     {
+        addWhere(exprLeft, exprMid,exprRight, null);
+    }
+
+    public void addWhere(
+        final String exprLeft,
+        final String exprMid,
+        final String exprRight,
+        final String subquery)
+    {
         int len = exprLeft.length() + exprMid.length() + exprRight.length();
         StringBuilder buf = new StringBuilder(len);
 
@@ -588,7 +600,7 @@ public class SqlQuery {
         buf.append(exprMid);
         buf.append(exprRight);
 
-        addWhere(buf.toString());
+        addWhere(buf.toString(), subquery);
     }
 
     public void addWhere(RolapStar.Condition joinCondition) {
@@ -610,11 +622,27 @@ public class SqlQuery {
       }
     }
 
-    public void addSubWhere(final String expression, final String subSelectExpr, final String subquery) {
-        assert expression != null && !expression.equals("");
-        boolean added = where.add(expression);
-        if (added) {
-          getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
+    public void addSubWhere(final RolapStar.Condition joinCondition, final String subquery) {
+        String subSelectExpr = joinCondition.getRight(this);
+        if (correlatedSubquery) {
+            List<String> subwhereList = subwhereExpr.get( subquery );
+            if (subwhereList == null) {
+              subwhereList = new ArrayList<String>();
+              subwhereExpr.put(subquery, subwhereList);
+            }
+            String condition = joinCondition.getLeft(this);
+            // only add the condition once
+            if (!subwhereList.contains(condition)) {
+                subwhereList.add(joinCondition.getLeft(this));
+                getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
+            }
+        } else {
+            String expression = joinCondition.toString(this);
+            assert expression != null && !expression.equals("");
+            boolean added = where.add(expression);
+            if (added) {
+                getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
+            }
         }
     }
 
@@ -713,7 +741,7 @@ public class SqlQuery {
         select.toBuffer(buf, generateFormattedSql, prefix, first, ", ", "", "");
         groupingFunctionsToBuffer(buf, prefix);
 
-        if (subqueries.size() > 0) {
+        if (subqueries.size() > 0 && !correlatedSubquery) {
           FromClauseList newfrom = from.clone();
           for (String alias : subqueries.keySet()) {
             SqlQuery subquery = subqueries.get( alias );
@@ -737,8 +765,32 @@ public class SqlQuery {
           from.toBuffer(
               buf, generateFormattedSql, prefix, " from ", ", ", "", "");
         }
-        where.toBuffer(
-            buf, generateFormattedSql, prefix, " where ", " and ", "", "");
+
+        // generate correlated sub queries if necessary for
+        // many to many dimensions
+        if (subqueries.size() > 0 && subwhereExpr.size() > 0) {
+            ClauseList newWhere = (ClauseList)where.clone();
+            for (String subquery : subwhereExpr.keySet()) {
+                StringBuilder subbuf = new StringBuilder();
+                subbuf.append("(");
+                List<String> keys = subwhereExpr.get(subquery);
+                for (int i = 0; i < keys.size(); i++) {
+                    if (i != 0) {
+                        subbuf.append(",");
+                    }
+                    subbuf.append(keys.get(i));
+                }
+                subbuf.append(") IN (");
+                subbuf.append(subqueries.get( subquery ).toString());
+                subbuf.append(")");
+                newWhere.add(subbuf.toString());
+            }
+            newWhere.toBuffer(
+                buf, generateFormattedSql, prefix, " where ", " and ", "", "");
+        } else {
+            where.toBuffer(
+                buf, generateFormattedSql, prefix, " where ", " and ", "", "");
+        }
         if (groupingSets.isEmpty()) {
             groupBy.toBuffer(
                 buf, generateFormattedSql, prefix, " group by ", ", ", "", "");

@@ -11,6 +11,7 @@
 
 package mondrian.rolap;
 
+import mondrian.calc.TupleList;
 import mondrian.mdx.MemberExpr;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
@@ -222,7 +223,7 @@ public class SqlContextConstraint
 
         members.addAll(
             Arrays.asList(
-                SqlConstraintUtils.removeMultiPositionSlicerMembers(
+                SqlConstraintUtils.expandMultiPositionSlicerMembers(
                     evaluator.getMembers(), evaluator)));
 
         // Now we'll need to expand the aggregated members
@@ -232,8 +233,14 @@ public class SqlContextConstraint
                     members,
                     evaluator)));
         cacheKey.add(expandedMembers);
-        // TODO review
-        cacheKey.add(evaluator.getSlicerTuples());
+
+        // TODO: If slicerTuple contains a calculated member in this
+        // query, it may be different in the next.  See
+        // CompoundSlicerTest.testTopCountWithAggregatedMemberCacheKey()
+        TupleList slicerTuples = evaluator.getSlicerTuples();
+        if (slicerTuples != null) {
+            cacheKey.add(slicerTuples);
+        }
 
         // Add restrictions imposed by Role based access filtering
         Map<Level, List<RolapMember>> roleMembers =

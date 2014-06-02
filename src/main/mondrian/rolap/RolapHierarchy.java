@@ -713,16 +713,19 @@ public class RolapHierarchy extends HierarchyBase {
             // If no table is found or specified, add the entire base relation.
             subRelation = getRelation();
         }
-
-        boolean tableAdded =
-            query.addFrom(
-                subRelation,
-                table != null ? table.getAlias() : null,
-                failIfExists);
-        if (tableAdded && table != null) {
-            RolapStar.Condition joinCondition = table.getJoinCondition();
-            if (joinCondition != null) {
-                query.addWhere(joinCondition);
+        if (subRelation == getRelation()) {
+            table.addToFrom(query, failIfExists, true, true);
+        } else {
+            boolean tableAdded =
+                query.addFrom(
+                    subRelation,
+                    table != null ? table.getAlias() : null,
+                    failIfExists);
+            if (tableAdded && table != null) {
+                RolapStar.Condition joinCondition = table.getJoinCondition();
+                if (joinCondition != null) {
+                    query.addWhere(joinCondition);
+                }
             }
         }
     }

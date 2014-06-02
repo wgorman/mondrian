@@ -600,6 +600,31 @@ public class ManyToManyTest  extends CsvDBTestCase {
         testMultiJoinM2MScenarios(createMultiJoinManyToManySchema());
     }
 
+    public void testMultiJoinM2MNativeScenarios() {
+        TestContext context = createMultiJoinManyToManySchema();
+        context.assertQueryReturns(
+            "select Filter([Gender].[Gender].Members, [Measures].[Spending]<= 300) on columns\n"
+            + "from [GenderYearSpending] where {[Category].[Category 2014]}",
+            "Axis #0:\n"
+            + "{[Category].[Category 2014]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[Male]}\n"
+            + "Row #0: 300\n");
+        /*
+         AggregateFunDef.AggregateCalc.optimizeTupleList() used in RolapResult does not handle disjoint scenarios,
+         Causing this scenario to fail.
+         context.assertQueryReturns(
+            "select Filter([Gender].[Gender].Members, [Measures].[Spending]<= 325) on columns\n"
+            + "from [GenderYearSpending] where {([Category].[Category 2014], [Location].[San Francisco]),([Category].[Category 2013], [Location].[Orlando])}",
+            "Axis #0:\n"
+            + "{[Category].[Category 2014], [Location].[San Francisco]}\n"
+            + "{[Category].[Category 2013], [Location].[Orlando]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[Male]}\n"
+            + "Row #0: 325\n");
+         */
+    }
+
     public void testMultiJoinM2MScenariosWithView() {
         testMultiJoinM2MScenarios(createMultiJoinManyToManyViewSchema());
     }
@@ -736,7 +761,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #0: 300\n");
     }
 
-    public void testNativeFilter() {
+    public void testNativeFilterWithCompoundSlicer() {
         boolean filter = prop.EnableNativeFilter.get();
         prop.EnableNativeFilter.set(true);
         TestContext context = createTestContext();
@@ -756,6 +781,22 @@ public class ManyToManyTest  extends CsvDBTestCase {
 
         prop.EnableNativeFilter.set(filter);
     }
+
+    public void testNativeFilterWithRegSlicer() {
+      TestContext context = createTestContext();
+      context.assertQueryReturns(
+          "Select\n"
+          + "[Measures].[Amount] on columns,\n"
+          + "Filter([Account].[All Accounts].Children, [Measures].[Amount] < 200) on rows\n"
+          + "From [M2M] WHERE ([Customer].[All Customers].[Mark])\n",
+          "Axis #0:\n"
+          + "{[Customer].[Mark]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[Amount]}\n"
+          + "Axis #2:\n"
+          + "{[Account].[Mark-Paul]}\n"
+          + "Row #0: 100\n");
+  }
 
     public void testNativeTopCount() {
         boolean topcount = prop.EnableNativeTopCount.get();

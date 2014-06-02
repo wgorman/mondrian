@@ -24,8 +24,17 @@ import java.util.*;
  */
 public class AndPredicate extends ListPredicate {
 
+    // TODO: Use this or come up with a new Predicate that can support multiple column level
+    // constraints within a many to many dim
+    Map<String, SqlQuery> subqueryMap = null;
+
     public AndPredicate(List<StarPredicate> predicateList) {
         super(predicateList);
+    }
+
+    public AndPredicate(List<StarPredicate> predicateList, Map<String, SqlQuery> subqueryMap) {
+        super(predicateList);
+        this.subqueryMap = subqueryMap;
     }
 
     public boolean evaluate(List<Object> valueList) {
@@ -120,6 +129,17 @@ public class AndPredicate extends ListPredicate {
                         // This column predicate cannot be translated to IN
                         inListRHSBitKey.clear(
                             columnPred.getConstrainedColumn().getBitPosition());
+                    }
+                    if (predicate instanceof MemberColumnPredicate) {
+                        MemberColumnPredicate memberPred =
+                            ((MemberColumnPredicate) predicate);
+                        if (((RolapCubeHierarchy)memberPred.getMember().getHierarchy()).getManyToManyHierarchies() != null) {
+                            // for now, revert to full AND approach, but
+                            // could get fancy similar to the null and do something like:
+                            // (D, E) IN (SELECT... WHERE A=1) AND (B, C) IN (1, 2)
+                            // Where D and E are the foreign keys to the many to many dimension
+                            inListRHSBitKey.clear();
+                        }
                     }
                     // else do nothing because this column predicate can be
                     // translated to IN

@@ -1843,7 +1843,7 @@ public class RolapStar {
                     } else {
                         if (subqueryAlias != null) {
                             // we need to add the join condition selector to the select clause
-                            query.addSubWhere(joinCondition.toString(query), joinCondition.right.getExpression(query), subqueryAlias);
+                            query.addSubWhere(joinCondition, subqueryAlias);
                         } else {
                             query.addWhere(joinCondition.toString(query));
                         }
@@ -1863,7 +1863,7 @@ public class RolapStar {
                             } else {
                                 if (subqueryAlias != null) {
                                     // we need to add the join condition selector to the select clause
-                                    query.addSubWhere(condition.toString(query), condition.right.getExpression(query), subqueryAlias);
+                                    query.addSubWhere(condition, subqueryAlias);
                                     // need to include the left alias
                                 } else {
                                     query.addWhere(condition.toString(query));

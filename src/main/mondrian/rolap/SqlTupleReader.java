@@ -1025,6 +1025,7 @@ public class SqlTupleReader implements TupleReader {
 
         // Allow query to use optimization hints from the table definition
         SqlQuery sqlQuery = SqlQuery.newQuery(dataSource, s);
+        sqlQuery.correlatedSubquery = true;
         sqlQuery.setAllowHints(true);
 
 

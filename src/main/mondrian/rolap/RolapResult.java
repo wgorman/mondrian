@@ -316,6 +316,8 @@ public class RolapResult extends ResultBase {
                     tupleList =
                         removeUnaryMembersFromTupleList(
                             tupleList, evaluator);
+
+                    // TODO: This function is not working for a two member level disjoint tuple
                     tupleList =
                         AggregateFunDef.AggregateCalc.optimizeTupleList(
                             evaluator,

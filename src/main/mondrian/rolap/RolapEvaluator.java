@@ -555,7 +555,7 @@ public class RolapEvaluator implements Evaluator {
         // current member
         if (slicerTuples == null) return null;
         int toRemove = 0;
-        boolean removeMember[] = new boolean[slicerTuples.get(0).size()];
+        boolean removeMember[] = new boolean[slicerTuples.getArity()];
         for (int i = 0; i < slicerTuples.get( 0 ).size(); i++) {
             Hierarchy h = slicerTuples.get(0).get(i).getHierarchy();
             if (!(getContext(h) instanceof
@@ -567,6 +567,9 @@ public class RolapEvaluator implements Evaluator {
                 toRemove++;
                 removeMember[i] = true;
             }
+        }
+        if (toRemove == slicerTuples.getArity()) {
+          return null;
         }
         if (toRemove > 0) {
             // collapse tuple
