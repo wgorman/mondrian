@@ -73,15 +73,6 @@ public class NonEmptyFunDef extends FunDefBase {
                 ? slicer.getSet().getType()
                 : null;
 
-        //  boolean hasMeasures = false;
-        //  for (MemberType type : types) {
-        //      if (type.getHierarchy().getDimension().isMeasures()) {
-        //          hasMeasures = true;
-        //          break;
-        //      }
-        //  }
-        //  final boolean mustConstrainMeasures = !hasMeasures;
-
         return new AbstractListCalc(
             call, new Calc[] {arg1Calc, arg2Calc}, false)
         {

@@ -24,11 +24,15 @@ import mondrian.olap.fun.FunDefBase;
 import mondrian.olap.fun.NonEmptyCrossJoinFunDef;
 import mondrian.olap.fun.TupleFunDef;
 import mondrian.rolap.RolapNativeFilter.FilterConstraint;
+import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.CrossJoinArg;
+import mondrian.rolap.sql.SqlQuery;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -95,6 +99,8 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                 : null;
 
         RolapStoredMeasure measure = null;
+        List<RolapStoredMeasure> nativeMeasures =
+          new ArrayList<RolapStoredMeasure>();
         if (hasTwoArgs) {
           // investigate all measures in second param,
           // if they are all regular measures from the same base cube
@@ -108,6 +114,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
 
           for (Member m : measures) {
               if (m instanceof RolapStoredMeasure) {
+                nativeMeasures.add((RolapStoredMeasure) m);
                 measure = (RolapStoredMeasure)m;
               }
               if (m.isCalculated()) {
@@ -121,10 +128,16 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
               return null;
           }
         }
+        else {
+          // use context measure
+          if (evaluator.getMembers()[0] instanceof RolapStoredMeasure) {
+              nativeMeasures.add((RolapStoredMeasure) evaluator.getMembers()[0]);
+          }
+        }
 
         if (hasTwoArgs && extraArgs == null) {
             // second arg failed, check if it's just because of a measure set
-            if (measure != null) {
+            if (!nativeMeasures.isEmpty()) {
                 // see if it can be nativized without the measures
                 Exp altExp = stripMeasureSets(args[1]);
                 if (altExp != null) {
@@ -166,7 +179,8 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
             overrideContext(evaluator, cjArgs, measure);
             NonEmptyFunctionConstraint constraint =
                 new NonEmptyFunctionConstraint(
-                    constraintArgs, evaluator, restrictMemberTypes());
+                    constraintArgs, nativeMeasures,
+                    evaluator, restrictMemberTypes());
 
             NativeEvaluator nativeEvaluator =
                 new SetEvaluator(returnArgs, schemaReader, constraint);
@@ -310,11 +324,21 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
     }
 
     static class NonEmptyFunctionConstraint extends SetConstraint {
+        // using linked for deterministic iteration
+        private Set<RolapStar.Measure> nonEmptyMeasures =
+            new LinkedHashSet<RolapStar.Measure>();
 
         NonEmptyFunctionConstraint(
-            CrossJoinArg[] args, RolapEvaluator evaluator, boolean restrict)
+            CrossJoinArg[] args,
+            Collection<RolapStoredMeasure> measures,
+            RolapEvaluator evaluator,
+            boolean restrict)
         {
             super(args, evaluator, restrict);
+            for (RolapStoredMeasure measure : measures) {
+                nonEmptyMeasures.add(
+                    (RolapStar.Measure) measure.getStarMeasure());
+            }
         }
 
         @Override
@@ -332,6 +356,50 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                     levelBitKey.set(column.getBitPosition());
                 }
             }
+            for (RolapStar.Measure measure : nonEmptyMeasures) {
+                levelBitKey.set(measure.getBitPosition());
+            }
+        }
+
+        public void addConstraint(
+            SqlQuery sqlQuery,
+            RolapCube baseCube,
+            AggStar aggStar)
+        {
+            // super handles args
+            super.addConstraint(sqlQuery, baseCube, aggStar);
+
+            if (!nonEmptyMeasures.isEmpty()) {
+                // add non-null measure(s)
+                StringBuilder sb = new StringBuilder();
+                boolean first = true;
+                final boolean useParens = nonEmptyMeasures.size() > 1;
+                if (useParens) {
+                    sb.append("(");
+                }
+                for (RolapStar.Measure measure : nonEmptyMeasures) {
+                    if (first) {
+                        first = false;
+                    }
+                    else {
+                        sb.append(" or ");
+                    }
+                    String expr = SqlConstraintUtils.getColumnExpr(
+                      sqlQuery, aggStar, measure);
+                    sb.append(expr);
+                    sb.append(" is not ");
+                    sb.append(RolapUtil.sqlNullLiteral);
+                }
+                if (useParens) {
+                    sb.append(")");
+                }
+                sqlQuery.addWhere(sb.toString());
+            }
+        }
+
+        protected boolean isJoinRequired() {
+            // even with just one argument still has the context measure
+            return true;
         }
 
         @Override

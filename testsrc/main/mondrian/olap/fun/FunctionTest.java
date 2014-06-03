@@ -17,7 +17,6 @@ import mondrian.test.FoodMartTestCase;
 import mondrian.test.TestContext;
 import mondrian.udf.*;
 import mondrian.util.Bug;
-import mondrian.xmla.PropertyDefinition;
 
 import junit.framework.Assert;
 import junit.framework.ComparisonFailure;
