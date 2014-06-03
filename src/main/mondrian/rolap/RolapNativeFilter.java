@@ -13,6 +13,7 @@ package mondrian.rolap;
 
 import mondrian.mdx.MdxVisitorImpl;
 import mondrian.mdx.MemberExpr;
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
@@ -38,14 +39,16 @@ public class RolapNativeFilter extends RolapNativeSet {
 
     static class FilterConstraint extends SetConstraint {
         Exp filterExpr;
-
+        boolean existing = false;
         public FilterConstraint(
             CrossJoinArg[] args,
             RolapEvaluator evaluator,
-            Exp filterExpr)
+            Exp filterExpr,
+            boolean existing)
         {
             super(args, evaluator, true);
             this.filterExpr = filterExpr;
+            this.existing = existing;
         }
 
         /**
@@ -74,7 +77,7 @@ public class RolapNativeFilter extends RolapNativeSet {
                     }
                 });
             return mustJoin.get()
-                || (getEvaluator().isNonEmpty() && super.isJoinRequired());
+                || (getEvaluator().isNonEmpty() && super.isJoinRequired() || existing);
         }
 
         public void addConstraint(
@@ -147,9 +150,20 @@ public class RolapNativeFilter extends RolapNativeSet {
             return null;
         }
 
+        // Determine if this Filter wraps an Existing function, of so apply
+        // the whole context to the filter.
+        boolean existing = false;
+        Exp arg0 = args[0];
+        if (args[0] instanceof ResolvedFunCall) {
+            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
+                existing = true;
+                arg0 = ((ResolvedFunCall)args[0]).getArg(0);
+            }
+        }
+
         // extract the set expression
         List<CrossJoinArg[]> allArgs =
-            crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
+            crossJoinArgFactory().checkCrossJoinArg(evaluator, arg0);
 
         // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
         // array is the CrossJoin dimensions.  The second array, if any,
@@ -197,7 +211,12 @@ public class RolapNativeFilter extends RolapNativeSet {
 
         final int savepoint = evaluator.savepoint();
         try {
-            overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
+            if (!existing) {
+                overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
+            } else {
+                // exclude the crossjoin args from overriding the context
+                overrideContext(evaluator, new CrossJoinArg[]{}, sql.getStoredMeasure());
+            }
             // Now construct the TupleConstraint that contains both the CJ
             // dimensions and the additional filter on them.
             CrossJoinArg[] combinedArgs = cjArgs;
@@ -211,7 +230,7 @@ public class RolapNativeFilter extends RolapNativeSet {
             }
 
             TupleConstraint constraint =
-                new FilterConstraint(combinedArgs, evaluator, filterExpr);
+                new FilterConstraint(combinedArgs, evaluator, filterExpr, existing);
             return new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
         } finally {
             evaluator.restore(savepoint);

@@ -88,22 +88,30 @@ class FilterFunDef extends FunDefBase {
             call.getArg(0), null, ResultStyle.ITERABLE_LIST_MUTABLELIST);
         BooleanCalc bcalc = compiler.compileBoolean(call.getArg(1));
         Calc[] calcs = new Calc[] {imlcalc, bcalc};
+        boolean existing = false;
+        if (call.getArg(0) instanceof ResolvedFunCall) {
+            if (((ResolvedFunCall)call.getArg(0)).getFunName().equalsIgnoreCase("existing")) {
+                existing = true;
+            }
+        }
 
         // check returned calc ResultStyles
         checkIterListResultStyles(imlcalc);
 
         if (imlcalc.getResultStyle() == ResultStyle.ITERABLE) {
-            return new IterIterCalc(call, calcs);
+            return new IterIterCalc(call, calcs, existing);
         } else if (imlcalc.getResultStyle() == ResultStyle.LIST) {
-            return new ImmutableIterCalc(call, calcs);
+            return new ImmutableIterCalc(call, calcs, existing);
         } else {
-            return new MutableIterCalc(call, calcs);
+            return new MutableIterCalc(call, calcs, existing);
         }
     }
 
     private static abstract class BaseIterCalc extends AbstractIterCalc {
-        protected BaseIterCalc(ResolvedFunCall call, Calc[] calcs) {
+        boolean existing = false;
+        protected BaseIterCalc(ResolvedFunCall call, Calc[] calcs, boolean existing) {
             super(call, calcs);
+            this.existing = existing;
         }
 
         public TupleIterable evaluateIterable(Evaluator evaluator) {
@@ -136,13 +144,19 @@ class FilterFunDef extends FunDefBase {
         protected abstract TupleIterable makeIterable(Evaluator evaluator);
 
         public boolean dependsOn(Hierarchy hierarchy) {
-            return anyDependsButFirst(getCalcs(), hierarchy);
+            if (existing) {
+                // native evaluation would wipe out the context
+                // if we don't depend on everything.
+                return true;
+            } else {
+                return anyDependsButFirst(getCalcs(), hierarchy);
+            }
         }
     }
 
     private static class MutableIterCalc extends BaseIterCalc {
-        MutableIterCalc(ResolvedFunCall call, Calc[] calcs) {
-            super(call, calcs);
+        MutableIterCalc(ResolvedFunCall call, Calc[] calcs, boolean existing) {
+            super(call, calcs, existing);
             assert calcs[0] instanceof ListCalc;
             assert calcs[1] instanceof BooleanCalc;
         }
@@ -178,8 +192,8 @@ class FilterFunDef extends FunDefBase {
     }
 
     private static class ImmutableIterCalc extends BaseIterCalc {
-        ImmutableIterCalc(ResolvedFunCall call, Calc[] calcs) {
-            super(call, calcs);
+        ImmutableIterCalc(ResolvedFunCall call, Calc[] calcs, boolean existing) {
+            super(call, calcs, existing);
             assert calcs[0] instanceof ListCalc;
             assert calcs[1] instanceof BooleanCalc;
         }
@@ -212,8 +226,8 @@ class FilterFunDef extends FunDefBase {
     private static class IterIterCalc
         extends BaseIterCalc
     {
-        IterIterCalc(ResolvedFunCall call, Calc[] calcs) {
-            super(call, calcs);
+        IterIterCalc(ResolvedFunCall call, Calc[] calcs, boolean existing) {
+            super(call, calcs, existing);
             assert calcs[0] instanceof IterCalc;
             assert calcs[1] instanceof BooleanCalc;
         }

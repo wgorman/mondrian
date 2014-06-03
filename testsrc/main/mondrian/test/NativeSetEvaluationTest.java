@@ -2975,6 +2975,89 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 12,334\n");
     }
 
+    public void testNativeCountFilterExistingScenario() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        String mdx =
+            "WITH MEMBER [Measures].[WithExisting] AS Count(Filter(Existing [Product].[Product Name].Members, 1=1))\n"
+            + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
+            + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`,\n"
+            + "    `product_class`.`product_category` as `c2`,\n"
+            + "    `product_class`.`product_subcategory` as `c3`,\n"
+            + "    `product`.`brand_name` as `c4`,\n"
+            + "    `product`.`product_name` as `c5`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q4'\n"
+            + "and\n"
+            + "    `time_by_day`.`month_of_year` = 12\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`,\n"
+            + "    `product_class`.`product_category`,\n"
+            + "    `product_class`.`product_subcategory`,\n"
+            + "    `product`.`brand_name`,\n"
+            + "    `product`.`product_name`\n"
+            + "having\n"
+            + "    (1 = 1)\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `countQuery`";
+
+        if (!useAgg && (MondrianProperties.instance().EnableNativeCount.get()
+            && MondrianProperties.instance().EnableNativeFilter.get()
+            && MondrianProperties.instance().EnableNativeExisting.get()))
+        {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[WithExisting]}\n"
+            + "{[Measures].[WithoutExisting]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997]}\n"
+            + "{[Time].[1997].[Q4].[12]}\n"
+            + "Row #0: 295\n"
+            + "Row #0: 1,560\n"
+            + "Row #1: 294\n"
+            + "Row #1: 1,560\n");
+    }
+
     // Similar to MDX found in this article: http://www.bp-msbi.com/2012/02/what-exists-and-what-is-empty-in-mdx/
     public void _testExistingNonEmptyScenario() {
         propSaver.set(MondrianProperties.instance().EnableNativeCount, false);

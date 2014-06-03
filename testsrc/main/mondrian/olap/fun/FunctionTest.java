@@ -13122,6 +13122,34 @@ Intel platforms):
             + "Row #0: 48,836.21\n");
     }
 
+    /**
+     * This test is failing in the non-native scenario, we need to exclude a Product because it
+     * does not exist / is associated with December.
+     *
+     */
+    public void _testExistingWithSlicer() {
+        propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
+        propSaver.set(MondrianProperties.instance().EnableNativeFilter, false);
+        propSaver.set(MondrianProperties.instance().EnableNativeExisting, false);
+
+        // Example in Adventureworks,
+        // Note that the Existing applies the slicer to the context
+        // WITH MEMBER [Measures].[WithExisting] AS COUNT(Existing [Product].[Product Categories].[All Products].[Accessories].Children)
+        //      MEMBER [Measures].[WithoutExisting] AS COUNT([Product].[Product Categories].[All Products].[Accessories].Children)
+        // select {[Measures].[WithExisting], [Measures].[WithoutExisting]} on 0 from [Adventure Works] where [Date].[Calendar].[Month].&[2007]&[1]
+
+        String mdx =
+             "WITH MEMBER [Measures].[Existing Test 1] as Count(Existing [Product].[Non-Consumable].[Household].[Cleaning Supplies].[Cleaners].[SunSet].Children)"
+             + "SELECT {[Measures].[Existing Test 1]} ON 0 FROM [Sales] WHERE [Time].[1997].[Q4].[12]";
+
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q4].[12]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Existing Test 1]}\n"
+            + "Row #0: 2\n");
+    }
+
     public void testNonEmptyFunSlicer() {
         assertQueryReturns(
             "SELECT\n"
