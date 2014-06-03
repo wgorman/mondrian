@@ -478,7 +478,7 @@ public class SqlConstraintUtils {
      * Get the column expression from the AggStar if provided or the regular
      * table if not, and ensure table is in From
      */
-    private static String getColumnExpr(
+    public static String getColumnExpr(
         SqlQuery sqlQuery,
         AggStar aggStar,
         RolapStar.Column column)

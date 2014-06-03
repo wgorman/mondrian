@@ -1422,6 +1422,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
               + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
               + "and\n"
               + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+              + "and\n"
+              + "    `agg_c_14_sales_fact_1997`.`store_sales` is not null\n"
               + "group by\n"
               + "    `store`.`store_country`,\n"
               + "    `store`.`store_state`,\n"
@@ -1444,6 +1446,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
             + "and\n"
             + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`store_sales` is not null\n"
             + "group by\n"
             + "    `store`.`store_country`,\n"
             + "    `store`.`store_state`,\n"
@@ -1503,6 +1507,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    (`customer`.`gender` = 'F')\n"
             + "and\n"
             + "    (`customer`.`marital_status` = 'S')\n"
+            + "and\n"
+            + "    `agg_l_03_sales_fact_1997`.`store_sales` is not null\n"
             + "group by\n"
             + "    `customer`.`country`,\n"
             + "    `customer`.`state_province`,\n"
@@ -1545,6 +1551,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    (`customer`.`gender` = 'F')\n"
             + "and\n"
             + "    (`customer`.`marital_status` = 'S')\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`store_sales` is not null\n"
             + "group by\n"
             + "    `customer`.`country`,\n"
             + "    `customer`.`state_province`,\n"
@@ -1588,8 +1596,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
                         + "from\n"
                         + "    `store` as `store`,\n"
                         + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`,\n"
+                        + "    `product_class` as `product_class`,\n"
                         + "    `product` as `product`\n"
-                        + "    `product_class` as `product_class`,\n"                        
                         + "where\n"
                         + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
                         + "and\n"
@@ -1976,6 +1984,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `product_class`.`product_family` = 'Non-Consumable'\n"
             + "and\n"
             + "    `customer`.`marital_status` = 'S'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
             + "group by\n"
             + "    `customer`.`customer_id`\n"
             + "order by\n"
@@ -2070,6 +2080,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `product_class`.`product_family` = 'Non-Consumable'\n"
           + "and\n"
           + "    `customer`.`marital_status` = 'S'\n"
+          + "and\n"
+          + "    `sales_fact_1997`.`unit_sales` is not null\n"
           + "group by\n"
           + "    `customer`.`customer_id`\n"
           + "order by\n"
@@ -3059,7 +3071,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     // Similar to MDX found in this article: http://www.bp-msbi.com/2012/02/what-exists-and-what-is-empty-in-mdx/
-    public void _testExistingNonEmptyScenario() {
+    public void testExistingNonEmptyScenario() {
         propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
         propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, true);
         String mdx =
@@ -3078,8 +3090,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 3\n");
         // a slight variation on the NonEmpty function
         mdx =
-            "WITH MEMBER [Measures].[Existing Test 1] AS Count(NonEmpty([Time].[Month].Members, [Measures].[Sales]))\n"
-            + "MEMBER [Measures].[Existing Test 2] AS Count(Existing NonEmpty([Time].[Month].Members, [Measures].[Sales]))\n"
+            "WITH MEMBER [Measures].[Existing Test 1] AS Count(NonEmpty([Time].[Month].Members, {[Measures].[Unit Sales], [Measures].[Store Sales]}))\n"
+            + "MEMBER [Measures].[Existing Test 2] AS Count(Existing NonEmpty([Time].[Month].Members, {[Measures].[Unit Sales], [Measures].[Store Sales]}))\n"
             + "SELECT {[Measures].[Existing Test 1],[Measures].[Existing Test 2]} ON 0, {[Time].[1997].[Q1]} ON 1 FROM [Sales]";
         assertQueryReturns(mdx,
             "Axis #0:\n"
@@ -3091,6 +3103,47 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "{[Time].[1997].[Q1]}\n"
             + "Row #0: 12\n"
             + "Row #0: 3\n");
+        propSaver.set(MondrianProperties.instance().GenerateFormattedSql, true);
+        String sql = isUseAgg()
+            ? "select\n"
+            + "    `agg_c_10_sales_fact_1997`.`the_year` as `c0`,\n"
+            + "    `agg_c_10_sales_fact_1997`.`quarter` as `c1`,\n"
+            + "    `agg_c_10_sales_fact_1997`.`month_of_year` as `c2`\n"
+            + "from\n"
+            + "    `agg_c_10_sales_fact_1997` as `agg_c_10_sales_fact_1997`\n"
+            + "where\n"
+            + "    (`agg_c_10_sales_fact_1997`.`unit_sales` is not null or `agg_c_10_sales_fact_1997`.`store_sales` is not null)\n"
+            + "group by\n"
+            + "    `agg_c_10_sales_fact_1997`.`the_year`,\n"
+            + "    `agg_c_10_sales_fact_1997`.`quarter`,\n"
+            + "    `agg_c_10_sales_fact_1997`.`month_of_year`\n"
+            + "order by\n"
+            + "    ISNULL(`agg_c_10_sales_fact_1997`.`the_year`) ASC, `agg_c_10_sales_fact_1997`.`the_year` ASC,\n"
+            + "    ISNULL(`agg_c_10_sales_fact_1997`.`quarter`) ASC, `agg_c_10_sales_fact_1997`.`quarter` ASC,\n"
+            + "    ISNULL(`agg_c_10_sales_fact_1997`.`month_of_year`) ASC, `agg_c_10_sales_fact_1997`.`month_of_year` ASC"
+            :"select\n"
+            + "    `time_by_day`.`the_year` as `c0`,\n"
+            + "    `time_by_day`.`quarter` as `c1`,\n"
+            + "    `time_by_day`.`month_of_year` as `c2`\n"
+            + "from\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    (`sales_fact_1997`.`unit_sales` is not null or `sales_fact_1997`.`store_sales` is not null)\n"
+            + "group by\n"
+            + "    `time_by_day`.`the_year`,\n"
+            + "    `time_by_day`.`quarter`,\n"
+            + "    `time_by_day`.`month_of_year`\n"
+            + "order by\n"
+            + "    ISNULL(`time_by_day`.`the_year`) ASC, `time_by_day`.`the_year` ASC,\n"
+            + "    ISNULL(`time_by_day`.`quarter`) ASC, `time_by_day`.`quarter` ASC,\n"
+            + "    ISNULL(`time_by_day`.`month_of_year`) ASC, `time_by_day`.`month_of_year` ASC";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql,
+                sql.substring(0, sql.indexOf("where")));
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
     }
 
     /**
