@@ -17,7 +17,9 @@ import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.sql.DataSource;
 
@@ -38,16 +40,18 @@ public class RolapNativeTopCount extends RolapNativeSet {
         Exp orderByExpr;
         boolean ascending;
         Integer topCount;
+        Map<String, String> preEval;
 
         public TopCountConstraint(
             int count,
             CrossJoinArg[] args, RolapEvaluator evaluator,
-            Exp orderByExpr, boolean ascending)
+            Exp orderByExpr, boolean ascending, Map<String, String> preEval)
         {
             super(args, evaluator, true);
             this.orderByExpr = orderByExpr;
             this.ascending = ascending;
             this.topCount = new Integer(count);
+            this.preEval = preEval;
         }
 
         /**
@@ -68,7 +72,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
             if (orderByExpr != null) {
                 RolapNativeSql sql =
                     new RolapNativeSql(
-                        sqlQuery, aggStar, getEvaluator(), null);
+                        sqlQuery, aggStar, getEvaluator(), null, preEval);
                 final String orderBySql =
                     sql.generateTopCountOrderBy(orderByExpr);
                 boolean nullable =
@@ -185,7 +189,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
         SqlQuery sqlQuery = SqlQuery.newQuery(ds, "NativeTopCount");
         RolapNativeSql sql =
             new RolapNativeSql(
-                sqlQuery, null, evaluator, null);
+                sqlQuery, null, evaluator, null, new HashMap<String, String>());
         Exp orderByExpr = null;
         if (args.length == 3) {
             orderByExpr = args[2];
@@ -194,11 +198,19 @@ public class RolapNativeTopCount extends RolapNativeSet {
                 return null;
             }
         }
+
+        if (sql.addlContext.size() > 0 && sql.storedMeasureCount > 1) {
+            // cannot natively evaluate, multiple tuples are possibly at play here.
+            return null;
+        }
+
         LOGGER.debug("using native topcount");
         final int savepoint = evaluator.savepoint();
         try {
             overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-
+            for (Member member : sql.addlContext) {
+                evaluator.setContext(member);
+            }
             CrossJoinArg[] predicateArgs = null;
             if (allArgs.size() == 2) {
                 predicateArgs = allArgs.get(1);
@@ -215,7 +227,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
             }
             TupleConstraint constraint =
                 new TopCountConstraint(
-                    count, combinedArgs, evaluator, orderByExpr, ascending);
+                    count, combinedArgs, evaluator, orderByExpr, ascending, sql.preEvalExprs);
             SetEvaluator sev =
                 new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
             sev.setMaxRows(count);

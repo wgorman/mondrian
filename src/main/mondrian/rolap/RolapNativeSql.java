@@ -11,6 +11,8 @@
 
 package mondrian.rolap;
 
+import mondrian.calc.Calc;
+import mondrian.calc.ExpCompiler;
 import mondrian.mdx.*;
 import mondrian.olap.*;
 import mondrian.olap.type.MemberType;
@@ -20,7 +22,10 @@ import mondrian.rolap.sql.SqlQuery;
 import mondrian.spi.Dialect;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -47,6 +52,10 @@ public class RolapNativeSql {
     final Evaluator evaluator;
     final RolapLevel rolapLevel;
 
+    int storedMeasureCount = 0;
+    final Set<Member> addlContext = new HashSet<Member>();
+    final Map<String, String> preEvalExprs;
+
     /**
      * We remember one of the measures so we can generate
      * the constraints from RolapAggregationManager. Also
@@ -68,6 +77,7 @@ public class RolapNativeSql {
                 return false;
             }
         }
+        storedMeasureCount++;
         this.storedMeasure = m;
         return true;
     }
@@ -164,7 +174,7 @@ public class RolapNativeSql {
      */
     class StoredMeasureSqlCompiler extends MemberSqlCompiler {
 
-        public String compile(Exp exp) {
+        protected RolapStoredMeasure getMeasure(Exp exp) {
             exp = unwind(exp);
             if (!(exp instanceof MemberExpr)) {
                 return null;
@@ -177,7 +187,12 @@ public class RolapNativeSql {
             if (measure.isCalculated()) {
                 return null; // ??
             }
-            if (!saveStoredMeasure(measure)) {
+            return measure;
+        }
+
+        public String compile(Exp exp) {
+            RolapStoredMeasure measure = getMeasure(exp);
+            if (measure == null || !saveStoredMeasure(measure)) {
                 return null;
             }
 
@@ -808,6 +823,119 @@ public class RolapNativeSql {
     }
 
     /**
+     * This compiler should capture a measure and apply the context specified by the tuple.
+     * Note that tests like BasicQueryTest.testDependsOn() demonstrate that only a single
+     * tuple can be used in this context, more than one and there's an issue.
+     */
+    class TupleSqlCompiler extends StoredMeasureSqlCompiler {
+        public String compile(Exp exp) {
+          // first determine if we are in a tuple function
+
+          if (!(exp instanceof FunCall)) {
+              return null;
+          }
+          FunCall fc = (FunCall) exp;
+          if (!"()".equalsIgnoreCase(fc.getFunName())) {
+              return null;
+          }
+          Exp[] args = fc.getArgs();
+          // for now, support regular members and one calculation
+          Exp measureExp = null;
+          for (Exp argExp : args) {
+              if (getMeasure( argExp) != null) {
+                  if (measureExp != null) {
+                      // already found measure, can't support two
+                      return null;
+                  }
+                  measureExp = argExp;
+              } else {
+                  if (!(argExp instanceof MemberExpr)) {
+                      return null;
+                  }
+                  Member member = ((MemberExpr)argExp).getMember();
+                  if (member.isCalculated()) {
+                      return null;
+                  } else {
+                      addlContext.add(member);
+                  }
+              }
+          }
+          return super.compile(measureExp);
+        }
+    }
+
+    /**
+     * This compiler attempts to pre-evaluate static values before pushing down to SQL
+     */
+    class PreEvalSqlCompiler implements SqlCompiler {
+        public boolean supportsExp( Exp exp ) {
+            if (exp instanceof FunCall) {
+                FunCall funcall = (FunCall) exp;
+                if (funcall.getFunName().equalsIgnoreCase("val") && funcall.getArgCount() == 1) {
+                    return supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("CurrentMember")) {
+                    // we need to verify that the current member isn't in the filter section
+                    final RolapCubeDimension dimension;
+                    final Exp dimExpr = ((ResolvedFunCall)funcall).getArg(0);
+                    if (dimExpr instanceof DimensionExpr) {
+                        dimension =
+                            (RolapCubeDimension) evaluator.getCachedResult(
+                                new ExpCacheDescriptor(dimExpr, evaluator));
+                    } else if (dimExpr instanceof HierarchyExpr) {
+                        final RolapCubeHierarchy hierarchy =
+                            (RolapCubeHierarchy) evaluator.getCachedResult(
+                                new ExpCacheDescriptor(dimExpr, evaluator));
+                        dimension = (RolapCubeDimension) hierarchy.getDimension();
+                    } else if (dimExpr instanceof LevelExpr) {
+                        final RolapCubeLevel level =
+                            (RolapCubeLevel) evaluator.getCachedResult(
+                                new ExpCacheDescriptor(dimExpr, evaluator));
+                        dimension = (RolapCubeDimension) level.getDimension();
+                    } else {
+                        return false;
+                    }
+
+                    // If this dimension is being filtered, we can't pre evaluate it.
+                    if (rolapLevel == null
+                        || dimension.equals(rolapLevel.getDimension()))
+                    {
+                      return false;
+                    }
+
+                    return true;
+                } else if (funcall.getFunName().equalsIgnoreCase("Properties") && funcall.getArgCount() == 2) {
+                    if (!(funcall.getArg(1) instanceof Literal)) {
+                        return false;
+                    }
+                    return supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("Name")  && funcall.getArgCount() == 1) {
+                    return supportsExp(funcall.getArg(0));
+                }
+            }
+            return false;
+        }
+
+        public String compile(Exp exp) {
+            if (!supportsExp(exp)) {
+                return null;
+            }
+            // Evaluate this expression and turn it into an appropriate Value.
+            if (preEvalExprs.containsKey(exp.toString())) {
+                return preEvalExprs.get(exp.toString());
+            }
+            ExpCompiler compiler = evaluator.getQuery().createCompiler();
+            Calc calc = compiler.compileScalar(exp, true);
+            Object results = calc.evaluate(evaluator);
+            preEvalExprs.put(exp.toString(), results.toString());
+            return results.toString();
+        }
+
+        public String toString() {
+            return "PreEvalSqlCompiler";
+        }
+    }
+
+    /**
      * Creates a RolapNativeSql.
      *
      * @param sqlQuery the query which is needed for different SQL dialects -
@@ -817,17 +945,21 @@ public class RolapNativeSql {
         SqlQuery sqlQuery,
         AggStar aggStar,
         Evaluator evaluator,
-        RolapLevel rolapLevel)
+        RolapLevel rolapLevel,
+        Map<String, String> preEvalExprs)
     {
         this.sqlQuery = sqlQuery;
         this.rolapLevel = rolapLevel;
         this.evaluator = evaluator;
         this.dialect = sqlQuery.getDialect();
         this.aggStar = aggStar;
+        this.preEvalExprs = preEvalExprs;
 
         numericCompiler = new CompositeSqlCompiler();
         booleanCompiler = new CompositeSqlCompiler();
 
+        numericCompiler.add( new PreEvalSqlCompiler() );
+        numericCompiler.add( new TupleSqlCompiler() );
         numericCompiler.add(new NumberSqlCompiler());
         numericCompiler.add(new StoredMeasureSqlCompiler());
         numericCompiler.add(new CalculatedMemberSqlCompiler(numericCompiler));

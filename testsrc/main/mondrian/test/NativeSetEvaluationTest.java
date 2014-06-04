@@ -1927,6 +1927,77 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "Row #0: 131,558\n");
     }
 
+    public void testNativeFilterWithTupleAndVal() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        String mdx =
+            "WITH MEMBER [Gender].[All Gender].[60] AS [Gender].[All Gender], solve_order=10\n"
+            + "   MEMBER [Measures].[Sales Filtered] AS SUM(Filter(EXISTING [Product].[Product Name].Members, ([Gender].[All Gender], [Measures].[Unit Sales]) > Val([Gender].CurrentMember.Name)), [Measures].[Unit Sales]), solve_order=20\n"
+            + "SELECT {[Measures].[Sales Filtered]} on 0 FROM [Sales] WHERE ([Time].[1997].[Q1], [Gender].[All Gender].[60])";
+
+        String mysqlQuery =
+            "select\n"
+            + "    sum(`m1`)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`,\n"
+            + "    `product_class`.`product_category` as `c2`,\n"
+            + "    `product_class`.`product_subcategory` as `c3`,\n"
+            + "    `product`.`brand_name` as `c4`,\n"
+            + "    `product`.`product_name` as `c5`,\n"
+            + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q1'\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`,\n"
+            + "    `product_class`.`product_category`,\n"
+            + "    `product_class`.`product_subcategory`,\n"
+            + "    `product`.`brand_name`,\n"
+            + "    `product`.`product_name`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 60.0)\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `sumQuery`";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(getTestContext(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1], [Gender].[All Gender].[60]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Sales Filtered]}\n"
+            + "Row #0: 8,050\n");
+    }
+
     /**
      * This tests a scenario where a calculated member still allows nonempty
      * native evaluation with a literal.
