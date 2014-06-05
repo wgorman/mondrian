@@ -139,6 +139,11 @@ public class FormatTest extends TestCase {
         checkNumbers(
             "Yes/No",      "Yes",      "Yes",       "No",       "Yes",     "No",
             locale);
+
+        // case insensitive
+        checkNumbers(
+            "percent",     "600.00%",  "-600.00%",  "0.00%",    "60.00%",   "",
+            locale);
     }
 
     private void checkNumbers(

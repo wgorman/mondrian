@@ -1964,7 +1964,7 @@ public class Format {
 
         static {
             for (MacroToken macroToken : values()) {
-                MAP.put(macroToken.token, macroToken);
+                MAP.put(macroToken.token.toLowerCase(), macroToken);
             }
         }
 
@@ -1986,7 +1986,10 @@ public class Format {
         final String description;
 
         static String expand(FormatLocale locale, String formatString) {
-            final MacroToken macroToken = MAP.get(formatString);
+            if (formatString == null || formatString.length() == 0) {
+                return formatString;
+            }
+            final MacroToken macroToken = MAP.get(formatString.toLowerCase());
             if (macroToken == null) {
                 return formatString;
             }
