@@ -35,6 +35,10 @@ public class Vba {
     private static final DateFormatSymbols DATE_FORMAT_SYMBOLS =
         new DateFormatSymbols(Locale.getDefault());
 
+    private static final Pattern valHex = Pattern.compile("[0-9a-fA-F]*");
+    private static final Pattern valInt = Pattern.compile("[0-7]*");
+    private static final Pattern valFloat = Pattern.compile("-?[0-9]*[.]?[0-9]*");
+
     // Conversion
 
     @FunctionName("CBool")
@@ -351,23 +355,20 @@ public class Vba {
         // international applications, use CDbl instead to convert a string to
         // a number.
 
-        string = string.replaceAll("\\s", ""); // remove all whitespace
+        string = Util.replace(string, "\\s", ""); // remove all whitespace
         if (string.startsWith("&H")) {
             string = string.substring(2);
-            Pattern p = Pattern.compile("[0-9a-fA-F]*");
-            Matcher m = p.matcher(string);
+            Matcher m = valHex.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 16);
         } else if (string.startsWith("&O")) {
             string = string.substring(2);
-            Pattern p = Pattern.compile("[0-7]*");
-            Matcher m = p.matcher(string);
+            Matcher m = valInt.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 8);
         } else {
             // find the first number
-            Pattern p = Pattern.compile("-?[0-9]*[.]?[0-9]*");
-            Matcher m = p.matcher(string);
+            Matcher m = valFloat.matcher(string);
             m.find();
             return Double.parseDouble(m.group());
         }
