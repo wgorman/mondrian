@@ -38,6 +38,7 @@ public class Vba {
     private static final Pattern valHex = Pattern.compile("[0-9a-fA-F]*");
     private static final Pattern valInt = Pattern.compile("[0-7]*");
     private static final Pattern valFloat = Pattern.compile("-?[0-9]*[.]?[0-9]*");
+    private static final Pattern whitespace = Pattern.compile("\\s");
 
     // Conversion
 
@@ -355,7 +356,7 @@ public class Vba {
         // international applications, use CDbl instead to convert a string to
         // a number.
 
-        string = Util.replace(string, "\\s", ""); // remove all whitespace
+        string = whitespace.matcher(string).replaceAll(""); // remove all whitespace
         if (string.startsWith("&H")) {
             string = string.substring(2);
             Matcher m = valHex.matcher(string);
