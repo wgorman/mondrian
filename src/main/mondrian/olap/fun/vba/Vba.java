@@ -35,10 +35,10 @@ public class Vba {
     private static final DateFormatSymbols DATE_FORMAT_SYMBOLS =
         new DateFormatSymbols(Locale.getDefault());
 
-    private static final Pattern valHex = Pattern.compile("[0-9a-fA-F]*");
-    private static final Pattern valInt = Pattern.compile("[0-7]*");
-    private static final Pattern valFloat = Pattern.compile("-?[0-9]*[.]?[0-9]*");
-    private static final Pattern whitespace = Pattern.compile("\\s");
+    private static final Pattern VAL_HEX_PATTERN = Pattern.compile("[0-9a-fA-F]*");
+    private static final Pattern VAL_INT_PATTERN = Pattern.compile("[0-7]*");
+    private static final Pattern VAL_FLOAT_PATTERN = Pattern.compile("-?[0-9]*[.]?[0-9]*");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s");
 
     // Conversion
 
@@ -356,20 +356,20 @@ public class Vba {
         // international applications, use CDbl instead to convert a string to
         // a number.
 
-        string = whitespace.matcher(string).replaceAll(""); // remove all whitespace
+        string = WHITESPACE_PATTERN.matcher(string).replaceAll(""); // remove all whitespace
         if (string.startsWith("&H")) {
             string = string.substring(2);
-            Matcher m = valHex.matcher(string);
+            Matcher m = VAL_HEX_PATTERN.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 16);
         } else if (string.startsWith("&O")) {
             string = string.substring(2);
-            Matcher m = valInt.matcher(string);
+            Matcher m = VAL_INT_PATTERN.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 8);
         } else {
             // find the first number
-            Matcher m = valFloat.matcher(string);
+            Matcher m = VAL_FLOAT_PATTERN.matcher(string);
             m.find();
             return Double.parseDouble(m.group());
         }
