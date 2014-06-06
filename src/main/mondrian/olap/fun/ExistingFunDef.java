@@ -50,7 +50,7 @@ public class ExistingFunDef extends FunDefBase {
 
     public Calc compileCall(final ResolvedFunCall call, ExpCompiler compiler) {
         final IterCalc setArg = compiler.compileIter(call.getArg(0));
-        // final Type myType = call.getArg(0).getType();
+         final Type myType = call.getArg(0).getType();
 
         return new AbstractListCalc(call, new Calc[] {setArg}) {
             public boolean dependsOn(Hierarchy hierarchy) {
@@ -58,8 +58,9 @@ public class ExistingFunDef extends FunDefBase {
                 // Note, this is used by native evaluation.
                 // otherwise the native evaluator will override the current
                 // context to the default.
-                return true;
-                // return myType.usesHierarchy(hierarchy, false);
+//                return true;
+                boolean argsDepend = super.dependsOn(hierarchy);
+                return argsDepend || myType.usesHierarchy(hierarchy, false);
             }
 
             public TupleList evaluateList(Evaluator evaluator) {
