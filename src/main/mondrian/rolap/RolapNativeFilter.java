@@ -13,7 +13,6 @@ package mondrian.rolap;
 
 import mondrian.mdx.MdxVisitorImpl;
 import mondrian.mdx.MemberExpr;
-import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
@@ -160,12 +159,12 @@ public class RolapNativeFilter extends RolapNativeSet {
         // the whole context to the filter.
         boolean existing = false;
         Exp arg0 = args[0];
-        if (args[0] instanceof ResolvedFunCall) {
-            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
-                existing = true;
-                arg0 = ((ResolvedFunCall)args[0]).getArg(0);
-            }
-        }
+//        if (args[0] instanceof ResolvedFunCall) {
+//            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
+//                existing = true;
+//                arg0 = ((ResolvedFunCall)args[0]).getArg(0);
+//            }
+//        }
 
         // extract the set expression
         List<CrossJoinArg[]> allArgs =
