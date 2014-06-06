@@ -174,7 +174,6 @@ public class VbaTest extends TestCase {
     public void testCDbl() {
         assertEquals(1.0, Vba.cDbl(1));
         assertEquals(1.4, Vba.cDbl(1.4));
-        // CInt rounds to the nearest even number
         assertEquals(1.5, Vba.cDbl(1.5));
         assertEquals(2.5, Vba.cDbl(2.5));
         assertEquals(1.6, Vba.cDbl(1.6));
@@ -183,6 +182,9 @@ public class VbaTest extends TestCase {
         assertEquals(-1.6, Vba.cDbl(-1.6));
         assertEquals(Double.MAX_VALUE, Vba.cDbl(Double.MAX_VALUE));
         assertEquals(Double.MIN_VALUE, Vba.cDbl(Double.MIN_VALUE));
+        assertEquals(1.0, Vba.cDbl("1"));
+        assertEquals(1.4, Vba.cDbl("1.4"));
+        assertEquals(-1.4, Vba.cDbl("-1.4"));
         try {
             Object o = Vba.cDbl("a");
             fail("expected error, got " + o);
