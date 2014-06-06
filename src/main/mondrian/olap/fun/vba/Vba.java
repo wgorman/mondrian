@@ -11,6 +11,8 @@ package mondrian.olap.fun.vba;
 import mondrian.olap.InvalidArgumentException;
 import mondrian.olap.Util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,6 +36,9 @@ public class Vba {
 
     private static final DateFormatSymbols DATE_FORMAT_SYMBOLS =
         new DateFormatSymbols(Locale.getDefault());
+
+    private static final String CURRENCY_SYMBOL =
+        Currency.getInstance(Locale.getDefault()).getSymbol();
 
     private static final Pattern VAL_HEX_PATTERN = Pattern.compile("[0-9a-fA-F]*");
     private static final Pattern VAL_INT_PATTERN = Pattern.compile("[0-7]*");
@@ -123,6 +128,30 @@ public class Vba {
             final String s = String.valueOf(expression);
             return Double.valueOf(s);
         }
+    }
+
+    @FunctionName("CCur")
+    @Signature("CCur(expression)")
+    @Description(
+        "Returns an expression that has been converted to a Variant of subtype "
+        + "Double rounded to 4 decimal places.")
+    public static double cCur(Object expression) throws ParseException {
+        BigDecimal bd;
+        if (expression instanceof Number) {
+            bd = new BigDecimal(((Number)expression).doubleValue());
+        } else {
+            String s = String.valueOf(expression);
+            s = WHITESPACE_PATTERN.matcher(s).replaceAll(""); // remove whitespaces
+            NumberFormat format = s.contains(CURRENCY_SYMBOL)
+                ? NumberFormat.getCurrencyInstance()
+                : NumberFormat.getNumberInstance();
+            if (format instanceof DecimalFormat) {
+                ((DecimalFormat)format).setParseBigDecimal(true);
+            }
+            Number result = format.parse(s);
+            bd = result instanceof BigDecimal ? (BigDecimal)result : new BigDecimal(result.doubleValue());
+        }
+        return bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
     }
 
     @FunctionName("CInt")

@@ -193,6 +193,18 @@ public class VbaTest extends TestCase {
         }
     }
 
+    public void testCCur() throws ParseException {
+        assertEquals(1.0, Vba.cCur(1));
+        assertEquals(1.4, Vba.cCur("1.4"));
+        assertEquals(1.4, Vba.cCur("$1.4"));
+        assertEquals(-1.4, Vba.cCur(-1.4));
+        assertEquals(-1.4, Vba.cCur("($1.4)"));
+        assertEquals(1000000.0, Vba.cCur("1,000,000.0000"));
+        assertEquals(12345.6, Vba.cCur("$ 1,2345.6 "));
+        assertEquals(1.1122, Vba.cCur(1.112233));
+        assertEquals(1.1122, Vba.cCur(1.112151));
+    }
+
     public void testHex() {
         assertEquals("0", Vba.hex(0));
         assertEquals("1", Vba.hex(1));
