@@ -78,13 +78,14 @@ public class NonEmptyFunDef extends FunDefBase {
         {
             @Override
             public boolean dependsOn(Hierarchy hierarchy) {
-                boolean depends = super.dependsOn(hierarchy);
-                // we depend on the slicer if not overrding it
-                // if we don't report this SimplifyEvaluator
-                // will reset the context
-                return depends
-                    || (slicerType != null
-                        && slicerType.usesHierarchy(hierarchy, false));
+                return true;
+//                boolean depends = super.dependsOn(hierarchy);
+//                // we depend on the slicer if not overrding it
+//                // if we don't report this SimplifyEvaluator
+//                // will reset the context
+//                return depends
+//                    || (slicerType != null
+//                        && slicerType.usesHierarchy(hierarchy, false));
             }
 
             public TupleList evaluateList(Evaluator evaluator) {
@@ -93,17 +94,17 @@ public class NonEmptyFunDef extends FunDefBase {
                     // empty args can be stripped at the source for some cases
                     // when is it ok to set nonempty?
 
-                    // remove slicer members overridden by args
-                    for (Member member
-                        : ((RolapEvaluator) evaluator).getSlicerMembers())
-                    {
-                        if (argsType.usesHierarchy(
-                                member.getHierarchy(), true))
-                        {
-                            evaluator.setContext(
-                                member.getHierarchy().getAllMember());
-                        }
-                    }
+//                    // remove slicer members overridden by args
+//                    for (Member member
+//                        : ((RolapEvaluator) evaluator).getSlicerMembers())
+//                    {
+//                        if (argsType.usesHierarchy(
+//                                member.getHierarchy(), true))
+//                        {
+//                            evaluator.setContext(
+//                                member.getHierarchy().getAllMember());
+//                        }
+//                    }
 
                     // attempt native
                     NativeEvaluator nativeEvaluator =
