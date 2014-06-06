@@ -23,6 +23,7 @@ import mondrian.olap.Level;
 import mondrian.olap.Member;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
+import mondrian.olap.Util;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.CrossJoinArg;
 import mondrian.rolap.sql.DescendantsCrossJoinArg;
@@ -139,7 +140,7 @@ public class RolapNativeSum extends RolapNativeSet {
             if (cardinality <= 1) { // change to a reasonable cardinality limit.
               return null;
             }
-            SumConstraint sumConstraint = new SumConstraint(eval.getConstraint(), null, evaluator, false, measure);
+            SumConstraint sumConstraint = new SumConstraint(eval.getConstraint(), new CrossJoinArg[0], evaluator, false, measure);
             eval.setConstraint(sumConstraint);
         } else {
             List<CrossJoinArg[]> allArgs =
@@ -155,7 +156,9 @@ public class RolapNativeSum extends RolapNativeSet {
             final int savepoint = evaluator.savepoint();
             try {
                 overrideContext(evaluator, allArgs.get(0), null);
-                SumConstraint sumConstraint = new SumConstraint(null, allArgs.get(0), evaluator, false, measure); 
+                SumConstraint sumConstraint = new SumConstraint(null,
+                    Util.appendArrays(allArgs.get(0), allArgs.size() == 2 ? allArgs.get(1) : new CrossJoinArg[0]),
+                    evaluator, false, measure); 
                 eval = new SetEvaluator(allArgs.get(0), evaluator.getSchemaReader(), sumConstraint);
             } finally {
                 evaluator.restore(savepoint);
@@ -163,7 +166,7 @@ public class RolapNativeSum extends RolapNativeSet {
         }
 
         if (eval != null) {
-            LOGGER.debug("using native count");  
+            LOGGER.debug("using native sum");  
         }
         return eval;
     }
