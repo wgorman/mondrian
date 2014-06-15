@@ -34,6 +34,7 @@ import junit.framework.Assert;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -761,6 +762,12 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #0: 300\n");
     }
 
+    /**
+     * Note: due to AggregateFunDef.AggregateCalc.optimizeTupleList()
+     * used in RolapResult not handling disjoint scenarios where all members of
+     * a parent are referenced, this result is actually invalid and needs
+     * resolved.
+     */
     public void testNativeFilterWithCompoundSlicer() {
         boolean filter = prop.EnableNativeFilter.get();
         prop.EnableNativeFilter.set(true);
@@ -1845,9 +1852,8 @@ public class ManyToManyTest  extends CsvDBTestCase {
         mlist[1] = b;
         mlist[2] = c;
 
-        TupleList newList = new ListTupleList(
-            mlist.length,
-            new ArrayList<Member>());
+        final Set<List<Member>> newList =
+                new LinkedHashSet<List<Member>>();
 
         List<List<List<Member>>> newMembersList =
             new ArrayList<List<List<Member>>>();
@@ -1866,10 +1872,9 @@ public class ManyToManyTest  extends CsvDBTestCase {
         cSet.add(cSetList2);
         newMembersList.add(cSet);
         newMembersList.add(bSet);
-        final Set<String> dedupeSet = new HashSet<String>();
 
         TestManyToManyUtil.buildCartesianProduct(
-            newMembersList, newList, mlist, dedupeSet);
+            newMembersList, newList, mlist);
 
         TestContext.assertEqualsVerbose(
             "[[A, B, C, F, G, D], [A, B, C, H, I, D], [A, B, C, F, G, E], "
@@ -1880,10 +1885,9 @@ public class ManyToManyTest  extends CsvDBTestCase {
         newMembersList.clear();
         newMembersList.add(bSet);
         newMembersList.add(cSet);
-        dedupeSet.clear();
 
         TestManyToManyUtil.buildCartesianProduct(
-            newMembersList, newList, mlist, dedupeSet);
+            newMembersList, newList, mlist);
 
         // test newList
         TestContext.assertEqualsVerbose(
@@ -1899,12 +1903,11 @@ public class ManyToManyTest  extends CsvDBTestCase {
     static class TestManyToManyUtil extends ManyToManyUtil {
         public static void buildCartesianProduct(
             List<List<List<Member>>> newMembersList,
-            TupleList newList,
-            Member[] mlist,
-            final Set<String> dedupeSet)
+            Set<List<Member>> newList,
+            Member[] mlist)
         {
             ManyToManyUtil.buildCartesianProduct(
-                newMembersList, newList, mlist, dedupeSet);
+                newMembersList, newList, mlist);
         }
     }
 

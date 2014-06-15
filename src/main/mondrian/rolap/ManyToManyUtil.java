@@ -12,6 +12,7 @@ package mondrian.rolap;
 import mondrian.calc.ResultStyle;
 import mondrian.calc.TupleCursor;
 import mondrian.calc.TupleList;
+import mondrian.calc.impl.DelegatingTupleList;
 import mondrian.calc.impl.ListTupleList;
 import mondrian.mdx.LevelExpr;
 import mondrian.mdx.ResolvedFunCall;
@@ -28,8 +29,10 @@ import mondrian.olap.type.MemberType;
 import mondrian.olap.type.SetType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -54,9 +57,8 @@ public class ManyToManyUtil {
      */
     protected static void buildCartesianProduct(
         List<List<List<Member>>> newMembersList,
-        TupleList newList,
-        Member[] mlist,
-        final Set<String> dedupeSet
+        Set<List<Member>> newList,
+        Member[] mlist
         )
     {
         List<List<Member>> totalmembers = new ArrayList<List<Member>>();
@@ -89,24 +91,12 @@ public class ManyToManyUtil {
                         for (int j = 1; j <= m.size(); j++) {
                           mlist[mlist.length - j] = m.get(m.size() - j);
                         }
-                        // check for duplicates
-                        String tupleKey = generateTupleKey(mlist);
-                        if (!dedupeSet.contains(tupleKey)) {
-                            newList.addTuple(mlist);
-                            dedupeSet.add(tupleKey);
-                        }
+                        // using a set checks for duplicates
+                        newList.add(new ArrayList(Arrays.asList(mlist)));
                     }
                 }
             }
         }
-    }
-
-    private static String generateTupleKey(Member mlist[]) {
-        StringBuilder sb = new StringBuilder();
-        for (Member m : mlist) {
-          sb.append(m.getUniqueName() + ":");
-        }
-        return sb.toString();
     }
 
     /**
@@ -260,6 +250,7 @@ public class ManyToManyUtil {
         Evaluator evaluator,
         TupleList tupleList)
     {
+
         // first determine if many to many members are present in the tuple
         // list, we evaluate the first tuple.
         boolean m2m = false;
@@ -293,13 +284,11 @@ public class ManyToManyUtil {
             return tupleList;
         }
 
-        TupleList newList =
-            new ListTupleList(
-                tupleList.getArity() + totalLevels,
-                new ArrayList<Member>());
+        final Set<List<Member>> newList =
+                new LinkedHashSet<List<Member>>();
+
         final TupleCursor cursor = tupleList.tupleCursor();
         Member mlist[] = new Member[cursor.getArity() + totalLevels];
-        final Set<String> dedupeSet = new HashSet<String>();
 
         // for each tuple, lookup the list of members for each m2m member,
         // and then perform a cartesian product on those m2m values
@@ -329,9 +318,11 @@ public class ManyToManyUtil {
                 }
             }
             // build cartesian product of new members list
-            buildCartesianProduct(newMembersList, newList, mlist, dedupeSet);
+            buildCartesianProduct(newMembersList, newList, mlist);
         } // for each tuple
-        return newList;
+        return new DelegatingTupleList(
+            cursor.getArity() + totalLevels,
+                new ArrayList<List<Member>>(newList));
     }
 
     /**
