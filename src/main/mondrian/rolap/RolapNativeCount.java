@@ -163,6 +163,7 @@ public class RolapNativeCount extends RolapNativeSet {
         if (eval != null) {
             LOGGER.debug("using native count");  
         }
+        evaluator.setInlineSubqueryNecessary(true);
         return eval;
     }
 

@@ -208,6 +208,7 @@ public class RolapNativeTopCount extends RolapNativeSet {
         final int savepoint = evaluator.savepoint();
         try {
             overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
+            evaluator.setInlineSubqueryNecessary(true);
             for (Member member : sql.addlContext) {
                 evaluator.setContext(member);
             }

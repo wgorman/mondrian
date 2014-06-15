@@ -232,6 +232,7 @@ public class RolapNativeFilter extends RolapNativeSet {
             for (Member m : sql.addlContext) {
                 evaluator.setContext(m);
             }
+            evaluator.setInlineSubqueryNecessary(true);
 
             // Now construct the TupleConstraint that contains both the CJ
             // dimensions and the additional filter on them.

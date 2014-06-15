@@ -714,7 +714,7 @@ public class RolapHierarchy extends HierarchyBase {
             subRelation = getRelation();
         }
         if (subRelation == getRelation()) {
-            table.addToFrom(query, failIfExists, true, true);
+            table.addToFrom(query, failIfExists, true);
         } else {
             boolean tableAdded =
                 query.addFrom(

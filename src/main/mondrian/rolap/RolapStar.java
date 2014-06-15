@@ -1803,14 +1803,6 @@ public class RolapStar {
             return false;
         }
 
-        public void addToFrom(
-            SqlQuery query,
-            boolean failIfExists,
-            boolean joinToParent)
-        {
-          addToFrom(query, failIfExists, joinToParent, false);
-        }
-
         /**
          * Adds this table to the FROM clause of a query, and also, if
          * <code>joinToParent</code>, any join condition.
@@ -1824,18 +1816,17 @@ public class RolapStar {
         public void addToFrom(
             SqlQuery query,
             boolean failIfExists,
-            boolean joinToParent,
-            boolean distinctSubQuery)
+            boolean joinToParent)
         {
             // may need to add this to a distinct sub-query vs. the main query, depending on parent
-            String subqueryAlias = distinctSubQuery ? getSubQueryAlias() : null;
+            String subqueryAlias = query.getEnableDistinctSubquery() ? getSubQueryAlias() : null;
             // if we are part of a subquery, we need to deal with that.
             query.addFrom(relation, alias, failIfExists, subqueryAlias);
 
             Util.assertTrue((parent == null) == (joinCondition == null));
             if (joinToParent) {
                 if (parent != null) {
-                    parent.addToFrom(query, failIfExists, joinToParent, distinctSubQuery);
+                    parent.addToFrom(query, failIfExists, joinToParent);
                 }
                 if (joinCondition != null) {
                     if (subqueryAlias != null && !wrapInDistinctSubselect) {
@@ -1853,7 +1844,7 @@ public class RolapStar {
                 // query as well. this is used by many to many dims
                 if (addlParents != null) {
                     for (Table table : addlParents) {
-                        table.addToFrom(query,  failIfExists, joinToParent, distinctSubQuery);
+                        table.addToFrom(query,  failIfExists, joinToParent);
                     }
                     // also add any additional join conditions
                     if (addlJoinConditions != null) {

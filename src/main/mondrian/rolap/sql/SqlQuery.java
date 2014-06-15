@@ -85,6 +85,7 @@ public class SqlQuery {
     private final ClauseList groupingFunctions;
     private Integer offset;
     private Integer limit;
+    private boolean enableDistinctSubquery;
 
     private final List<SqlStatement.Type> types =
         new ArrayList<SqlStatement.Type>();
@@ -179,6 +180,19 @@ public class SqlQuery {
 
     public void setDistinct(final boolean distinct) {
         this.distinct = distinct;
+    }
+
+    /**
+     * Informs processes that call various methods how to interact
+     * with the SQL Query related to many to many dimensions.
+     * @return
+     */
+    public boolean getEnableDistinctSubquery() {
+      return enableDistinctSubquery;
+    }
+
+    public void setEnableDistinctSubquery(boolean enableDistinctSubquery) {
+      this.enableDistinctSubquery = enableDistinctSubquery;
     }
 
     /**

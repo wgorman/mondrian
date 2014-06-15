@@ -81,7 +81,7 @@ public class MemberColumnPredicate extends ValueColumnPredicate {
 
     public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
         final RolapStar.Column column = getConstrainedColumn();
-        if (column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
+        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
             // this will probably need to move into it's own separate "M2M Member" subclass.
             String expr = column.generateExprString(sqlQuery);
 

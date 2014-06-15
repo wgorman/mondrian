@@ -16,7 +16,6 @@ import mondrian.olap.*;
 import mondrian.olap.fun.AggregateFunDef;
 import mondrian.olap.fun.ParenthesesFunDef;
 import mondrian.resource.MondrianResource;
-import mondrian.rolap.RolapResult.CompoundSlicerRolapMember;
 import mondrian.rolap.RolapStar.Column;
 import mondrian.rolap.RolapStar.Table;
 import mondrian.rolap.agg.*;
@@ -81,10 +80,10 @@ public class SqlConstraintUtils {
         }
         RolapEvaluator rEvaluator = (RolapEvaluator) evaluator;
         // decide if we should use the tuple-based version instead
-        TupleList slicerTuple = rEvaluator.getOptimizedSlicerTuples();
-        if (slicerTuple != null && slicerTuple.size() > 0 && (
-            SqlConstraintUtils.isDisjointTuple( slicerTuple ) ||
-            rEvaluator.isMultiLevelSlicerTuple()))
+        TupleList slicerTuples = rEvaluator.getOptimizedSlicerTuples(baseCube);
+        if (slicerTuples != null && slicerTuples.size() > 0 && (
+            SqlConstraintUtils.isDisjointTuple(slicerTuples)
+            || rEvaluator.isMultiLevelSlicerTuple()))
         {
             LOG.warn("Using tuple-based native slicer.");
             addContextConstraintTuples(
@@ -93,7 +92,8 @@ public class SqlConstraintUtils {
                 (RolapEvaluator) evaluator,
                 baseCube,
                 restrictMemberTypes,
-                request);
+                request,
+                slicerTuples);
             return;
         }
 
@@ -112,7 +112,8 @@ public class SqlConstraintUtils {
             String expr = getColumnExpr(sqlQuery, aggStar, column);
             String subquery = null;
             // TODO: Support Agg Tables for M2M scenario
-            if (aggStar == null) {
+            if (aggStar == null
+                && sqlQuery.getEnableDistinctSubquery()) {
               subquery = column.getTable().getSubQueryAlias();
             }
 
@@ -175,7 +176,7 @@ public class SqlConstraintUtils {
                     }
                     // if done, no op
                 } else {
-// TODO: Add Subquery component to this
+                    // TODO: Add Subquery component to this
                     // column not constrained by slicer
                     addSimpleColumnConstraint(sqlQuery, column, expr, value, subquery);
                 }
@@ -207,9 +208,9 @@ public class SqlConstraintUtils {
         RolapEvaluator evaluator,
         RolapCube baseCube,
         boolean restrictMemberTypes,
-        final CellRequest request)
+        final CellRequest request,
+        TupleList slicerTuples)
     {
-        TupleList slicerTuples = getSlicerTuple(evaluator);
         assert slicerTuples != null;
         assert slicerTuples.size() > 0;
 
@@ -227,7 +228,13 @@ public class SqlConstraintUtils {
             if (!slicerBitKey.get(column.getBitPosition())) {
                 // column not constrained by tupleSlicer
                 String expr = getColumnExpr(sqlQuery, aggStar, column);
-                addSimpleColumnConstraint(sqlQuery, column, expr, value, column.getTable().getSubQueryAlias());
+                addSimpleColumnConstraint(
+                    sqlQuery,
+                    column,
+                    expr,
+                    value,
+                    sqlQuery.getEnableDistinctSubquery()
+                        ? column.getTable().getSubQueryAlias() : null);
             }
             // ok to ignore otherwise, using optimizedSlicerTuples
             // that shouldn't have overridden tuples
@@ -275,9 +282,6 @@ public class SqlConstraintUtils {
         return new OrPredicate(tupleListPredicate);
     }
 
-    public static TupleList getSlicerTuple(RolapEvaluator evaluator) {
-        return evaluator.getOptimizedSlicerTuples();
-    }
     public static boolean isDisjointTuple(TupleList tupleList) {
         // This assumes the same level for each hierarchy;
         // won't work if the level restriction is eliminated
@@ -367,7 +371,11 @@ public class SqlConstraintUtils {
             RolapStar.Column column =
                 getLevelColumn(level, baseCube, aggStar, sqlQuery, subqueryMap);
             ((RolapCubeLevel) level).getBaseStarKeyColumn(baseCube);
-            memberList.add(new MemberColumnPredicate(column, currMember, subqueryMap));
+            if (sqlQuery.getEnableDistinctSubquery()) {
+                memberList.add(new MemberColumnPredicate(column, currMember, subqueryMap));
+            } else {
+                memberList.add(new MemberColumnPredicate(column, currMember, null));
+            }
             // TODO
             // multiInExpr optimization only kicking in when even levels, right
             // order doesn't seem to help
@@ -422,19 +430,23 @@ public class SqlConstraintUtils {
                 }
             };
         } else {
-            if (column.getTable().getSubQueryAlias() != null) {
+            if (column.getTable().getSubQueryAlias() != null
+                && sqlQuery.getEnableDistinctSubquery())
+            {
                 // we're dealing with a m2m dimension, we need to create the query in a new context
                 SqlQuery subSqlQuery = new SqlQuery(sqlQuery.getDialect());
+                subSqlQuery.setEnableDistinctSubquery(true);
                 subSqlQuery.correlatedSubquery = true;
-                column.getTable().addToFrom( subSqlQuery, false, true, true);
+                column.getTable().addToFrom(subSqlQuery, false, true);
                 // this step adds then immediately removes the subquery from the parent,
                 // leaving the possible multi-join paths to the subquery for inclusion
                 // in the And/Or Predicate part of the SQL statement
-                column.getTable().addToFrom(sqlQuery, false, true, true);
+                column.getTable().addToFrom(sqlQuery, false, true);
                 sqlQuery.subqueries.remove(column.getTable().getSubQueryAlias());
+                sqlQuery.subwhereExpr.remove(column.getTable().getSubQueryAlias());
                 subqueryMap.put(column.getTable().getSubQueryAlias(), subSqlQuery);
             } else {
-                column.getTable().addToFrom(sqlQuery, false, true, true);
+                column.getTable().addToFrom(sqlQuery, false, true);
             }
             return column;
         }
@@ -493,7 +505,7 @@ public class SqlConstraintUtils {
             expr = aggColumn.generateExprString(sqlQuery);
         } else {
             RolapStar.Table table = column.getTable();
-            table.addToFrom(sqlQuery, false, true, true);
+            table.addToFrom(sqlQuery, false, true);
             expr = column.generateExprString(sqlQuery);
         }
         return expr;

@@ -102,6 +102,8 @@ public class RolapEvaluator implements Evaluator {
     // extra info on slicer tuples (temp)
     private boolean disjointSlicerTuple;
     private boolean multiLevelSlicerTuple;
+    // true if we need valid results from the native evaluator or if this is just a non-empty tuple evaluator.
+    private boolean inlineSubqueryNecessary = false;
     private boolean nativeEnabled;
     private Member[] nonAllMembers;
     private int commandCount;
@@ -164,6 +166,7 @@ public class RolapEvaluator implements Evaluator {
         slicerTuples = parent.slicerTuples;
         disjointSlicerTuple = parent.disjointSlicerTuple;
         multiLevelSlicerTuple = parent.multiLevelSlicerTuple;
+        inlineSubqueryNecessary = parent.inlineSubqueryNecessary;
         commands = new Object[10];
         commands[0] = Command.SAVEPOINT; // sentinel
         commandCount = 1;
@@ -547,9 +550,14 @@ public class RolapEvaluator implements Evaluator {
      * Returns an optimized list of tuples related to the slicer based on the current evaluator.
      * This function removes overridden compound slicer members from the tuple list.
      *
+     * TODO: Add Virtual Cube test cases, demonstrating unrelated dimensions.
+     * TODO: Test various Tuple List sizes - tuples sizes that are bigger and smaller than list size
+     *
+     * @param baseCube if this is a virtual cube, remove the unrelated tuples from the slicer.
+     *
      * @return optimized slicer tuple list
      */
-    public final TupleList getOptimizedSlicerTuples() {
+    public final TupleList getOptimizedSlicerTuples(RolapCube baseCube) {
         // removes members in the tuple list that are no longer compound.
         // for each member in the tuple, see if the evaluator is still set to the
         // current member
@@ -567,6 +575,15 @@ public class RolapEvaluator implements Evaluator {
                 toRemove++;
                 removeMember[i] = true;
             }
+            // Remove unrelated dimensions from slicer as well
+            if (!removeMember[i] && baseCube != null) {
+                RolapLevel l = (RolapLevel)slicerTuples.get(0).get(i).getLevel();
+                RolapCubeLevel lvl = baseCube.findBaseCubeLevel(l);
+                if (lvl == null) {
+                    toRemove++;
+                    removeMember[i] = true;
+                }
+            }
         }
         if (toRemove == slicerTuples.getArity()) {
           return null;
@@ -576,7 +593,7 @@ public class RolapEvaluator implements Evaluator {
             final Set<List<Member>> processedTuples =
                 new LinkedHashSet<List<Member>>(slicerTuples.size());
             for (List<Member> tuple : slicerTuples) {
-                List<Member> tupleCopy = new ArrayList<Member>(slicerTuples.size() - toRemove);
+                List<Member> tupleCopy = new ArrayList<Member>(slicerTuples.getArity() - toRemove);
                 for (int j = 0; j < tuple.size(); j++) {
                     final Member member = tuple.get(j);
                     if (!removeMember[j]) {
@@ -586,7 +603,7 @@ public class RolapEvaluator implements Evaluator {
                 processedTuples.add(tupleCopy);
             }
             return new DelegatingTupleList(
-                slicerTuples.size() - toRemove,
+                slicerTuples.getArity() - toRemove,
                 new ArrayList<List<Member>>(
                     processedTuples));
         }
@@ -1148,6 +1165,34 @@ public class RolapEvaluator implements Evaluator {
         }
     }
 
+    /**
+     * This is called by various native evaluation paths to specify if inline
+     * subqueries are necessary.
+     *
+     * @param inlineSubqueryNecessary
+     */
+    public final void setInlineSubqueryNecessary(boolean inlineSubqueryNecessary) {
+        if (inlineSubqueryNecessary != this.inlineSubqueryNecessary) {
+            ensureCommandCapacity(commandCount + 2);
+            commands[commandCount++] = this.inlineSubqueryNecessary;
+            commands[commandCount++] = Command.SET_INLINE_SUBQUERY_NECESSARY;
+            this.inlineSubqueryNecessary = inlineSubqueryNecessary;
+        }
+    }
+
+    /**
+     * This method is used by native evaluation to determine if an inline
+     * subquery related to many to many dimensions is necessary.  When doing a
+     * regular non empty tuple determination, this is not necessary.  When
+     * calculating any numbers, such as filters, top count, count, or sum, we
+     * must use inline subqueries.
+     *
+     * @return true if inline subquery is necessary.
+     */
+    public final boolean isInlineSubqueryNecessary() {
+        return inlineSubqueryNecessary;
+    }
+
     public final RuntimeException newEvalException(Object context, String s) {
         return FunUtil.newEvalException((FunDef) context, s);
     }
@@ -1427,6 +1472,13 @@ public class RolapEvaluator implements Evaluator {
             @Override
             void execute(RolapEvaluator evaluator) {
                 evaluator.nonEmpty =
+                    (Boolean) evaluator.commands[--evaluator.commandCount];
+            }
+        },
+        SET_INLINE_SUBQUERY_NECESSARY(1) {
+            @Override
+            void execute(RolapEvaluator evaluator) {
+                evaluator.inlineSubqueryNecessary =
                     (Boolean) evaluator.commands[--evaluator.commandCount];
             }
         },

@@ -336,9 +336,15 @@ public class RolapResult extends ResultBase {
                             new DummyExp(query.slicerCalc.getType()))
                         {
                             public Object evaluate(Evaluator evaluator) {
-                                TupleList list = AbstractAggregateFunDef.processUnrelatedDimensions(((RolapEvaluator)evaluator).getOptimizedSlicerTuples(), evaluator);
+                                TupleList list = AbstractAggregateFunDef.
+                                    processUnrelatedDimensions(
+                                        ((RolapEvaluator)evaluator).
+                                        getOptimizedSlicerTuples(null),
+                                        evaluator);
                                 for (Member member : prevSlicerMembers) {
-                                    if (evaluator.getContext(member.getHierarchy()) instanceof CompoundSlicerRolapMember) {
+                                    if (evaluator.getContext(member.getHierarchy())
+                                        instanceof CompoundSlicerRolapMember)
+                                    {
                                         evaluator.setContext(member);
                                     }
                                 }

@@ -97,7 +97,7 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                 // this is a funky dimension -- ignore for now
                 continue;
             }
-            table.addToFrom(sqlQuery, false, true, true);
+            table.addToFrom(sqlQuery, false, true);
 
             String expr = column.generateExprString(sqlQuery);
             String subquery = column.getTable().getSubQueryAlias();
@@ -109,7 +109,7 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                 sqlQuery);
             if (!where.equals("true")) {
                 if (subquery != null) {
-                  sqlQuery.getSubQuery(subquery).addWhere(where);
+                    sqlQuery.getSubQuery(subquery).addWhere(where);
                 } else {
                     sqlQuery.addWhere(where);
                 }
@@ -198,7 +198,7 @@ public abstract class AbstractQuerySpec implements QuerySpec {
 
     public Pair<String, List<SqlStatement.Type>> generateSqlQuery() {
         SqlQuery sqlQuery = newSqlQuery();
-
+        sqlQuery.setEnableDistinctSubquery(true);
         int k = getDistinctMeasureCount();
         final Dialect dialect = sqlQuery.getDialect();
         final Map<String, String> groupingSetsAliases;
@@ -366,17 +366,27 @@ public abstract class AbstractQuerySpec implements QuerySpec {
     protected void extraPredicates(SqlQuery sqlQuery) {
         List<StarPredicate> predicateList = getPredicateList();
         for (StarPredicate predicate : predicateList) {
+            Set<String> subquerySet = new HashSet<String>();
             for (RolapStar.Column column
                 : predicate.getConstrainedColumnList())
             {
                 final RolapStar.Table table = column.getTable();
                 table.addToFrom(sqlQuery, false, true);
+                subquerySet.add( column.getTable().getSubQueryAlias());
             }
+            if (subquerySet.size() != 1) {
+              throw new UnsupportedOperationException("Invaloid number of subqueries found for this predicate");
+            }
+            String subquery = subquerySet.iterator().next();
             StringBuilder buf = new StringBuilder();
             predicate.toSql(sqlQuery, buf);
             final String where = buf.toString();
             if (!where.equals("true")) {
-                sqlQuery.addWhere(where);
+                if (subquery != null) {
+                    sqlQuery.getSubQuery(subquery).addWhere(where);
+                } else {
+                    sqlQuery.addWhere(where);
+                }
             }
         }
     }
