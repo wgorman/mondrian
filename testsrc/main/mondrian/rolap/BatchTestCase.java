@@ -26,8 +26,10 @@ import org.eigenbase.util.property.IntegerProperty;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
@@ -476,7 +478,8 @@ public class BatchTestCase extends FoodMartTestCase {
             // Create a dummy DataSource which will throw a 'bomb' if it is
             // asked to execute a particular SQL statement, but will otherwise
             // behave exactly the same as the current DataSource.
-            RolapUtil.setHook(new TriggerHook(trigger));
+            TriggerHook hook = new TriggerHook(trigger);
+            RolapUtil.setHook(hook);
             Bomb bomb = null;
             try {
                 if (bypassSchemaCache) {
@@ -508,7 +511,7 @@ public class BatchTestCase extends FoodMartTestCase {
                 }
             } else {
                 if (bomb == null) {
-                    fail("expected query [" + sql + "] did not occur");
+                    fail("expected query [" + sql + "] did not occur in [" + hook.sqlQueries.toString() + "]");
                 }
                 assertEquals(
                     replaceQuotes(
@@ -1077,7 +1080,7 @@ public class BatchTestCase extends FoodMartTestCase {
 
     private static class TriggerHook implements RolapUtil.ExecuteQueryHook {
         private final String trigger;
-
+        public Set<String> sqlQueries = new HashSet<String>();
         public TriggerHook(String trigger) {
             this.trigger =
                 trigger
@@ -1104,6 +1107,7 @@ public class BatchTestCase extends FoodMartTestCase {
         }
 
         public void onExecuteQuery(String sql) {
+            sqlQueries.add("[" + sql + "]");
             if (matchTrigger(sql)) {
                 throw new Bomb(sql);
             }
