@@ -6420,12 +6420,19 @@ TODO: see above
             if (adjustedLevelDepth == 0) {
                 row.set(ParentLevel.name, 0);
             } else {
-                row.set(ParentLevel.name, adjustedLevelDepth - 1);
                 final Member parentMember = member.getParentMember();
                 if (parentMember != null) {
                     row.set(
                         ParentUniqueName.name,
                         getFullUniqueName(hierarchy, parentMember));
+                    // may be ragged
+                    row.set(
+                        ParentLevel.name,
+                        parentMember.getLevel().getDepth());
+                }
+                else {
+                    // TODO should we still set the parent level?
+                    row.set(ParentLevel.name, adjustedLevelDepth - 1);
                 }
             }
 
