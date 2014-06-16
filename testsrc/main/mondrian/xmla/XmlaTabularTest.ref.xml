@@ -849,9 +849,8 @@ from [Sales]
 ]]>
         </Resource>
     </TestCase>
-    
-        <!-- TODO -->
-      <TestCase name="testTabularRagged">
+
+    <TestCase name="testTabularRagged">
         <Resource name="request">
             <![CDATA[
 <soapenv:Envelope
@@ -949,6 +948,6 @@ from [Sales Ragged]
     </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>
     ]]>
-    </Resource>
+        </Resource>
     </TestCase>
 </Root>
