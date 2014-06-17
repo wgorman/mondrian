@@ -34,6 +34,7 @@ import mondrian.olap.Util;
 import mondrian.olap.ValidatorImpl;
 import mondrian.olap.fun.DescendantsFunDef;
 import mondrian.olap.fun.DescendantsFunDef.Flag;
+import mondrian.olap.fun.AggregateFunDef;
 import mondrian.olap.fun.FunUtil;
 import mondrian.olap.fun.LevelMembersFunDef;
 import mondrian.resource.MondrianResource;
@@ -162,7 +163,7 @@ public class CalculatedCellUtil {
                   }
                   ret.currentCellCalcs.add(calc);
                   final Calc calcVal = eval.root.getCompiled(calc.cellExp, true, null);
-                  RolapCellCalculation calcObj = new RolapCellCalculation(calcVal, calc.solve_order);
+                  RolapCellCalculation calcObj = new RolapCellCalculation(calcVal, calc.solve_order, calc.cellExp);
                   // adds the cell calculation to the evaluator.
                   eval.addCalculation(calcObj, true);
                   ret.newCellCalcs.add(calcObj);
@@ -178,10 +179,13 @@ public class CalculatedCellUtil {
     static class RolapCellCalculation implements RolapCalculation {
         int calcSolveOrder;
         Calc calcVal;
+        Boolean containsAggregateFunction = null;
+        Exp cellExp;
         
-        public RolapCellCalculation(Calc calcVal, int calcSolveOrder) {
+        public RolapCellCalculation(Calc calcVal, int calcSolveOrder, Exp cellExp) {
             this.calcVal = calcVal;
             this.calcSolveOrder = calcSolveOrder;
+            this.cellExp = cellExp;
         }
         
         public void setContextIn( RolapEvaluator evaluator ) {
@@ -207,8 +211,37 @@ public class CalculatedCellUtil {
         }
     
         public boolean containsAggregateFunction() {
-            throw new UnsupportedOperationException();
-        }
+          // searching for agg functions is expensive, so cache result
+          if (containsAggregateFunction == null) {
+              containsAggregateFunction =
+                  foundAggregateFunction(cellExp);
+          }
+          return containsAggregateFunction;
+      }
+
+      /**
+       * Returns whether an expression contains a call to an aggregate
+       * function such as "Aggregate" or "Sum".
+       *
+       * @param exp Expression
+       * @return Whether expression contains a call to an aggregate function.
+       */
+      private static boolean foundAggregateFunction(Exp exp) {
+          if (exp instanceof ResolvedFunCall) {
+              ResolvedFunCall resolvedFunCall = (ResolvedFunCall) exp;
+              if (resolvedFunCall.getFunDef() instanceof AggregateFunDef) {
+                  return true;
+              } else {
+                  for (Exp argExp : resolvedFunCall.getArgs()) {
+                      if (foundAggregateFunction(argExp)) {
+                          return true;
+                      }
+                  }
+              }
+          }
+          return false;
+      }
+
     };
     
     /**
@@ -309,7 +342,7 @@ public class CalculatedCellUtil {
         public SchemaReader getSchemaReader() {
             return reader;
         }
-        protected void defineParameter( Parameter param ) {        
+        protected void defineParameter(Parameter param) {
         }
     }
 
