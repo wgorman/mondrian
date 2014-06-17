@@ -117,10 +117,11 @@ class MondrianOlap4jMember
     }
 
     public MondrianOlap4jMember getParentMember() {
-        final mondrian.olap.Member parentMember = member.getParentMember();
+        final mondrian.olap.Member parentMember = getParentMemberSkipHidden();
         if (parentMember == null) {
             return null;
         }
+
         final RolapConnection conn =
             olap4jSchema.olap4jCatalog.olap4jDatabaseMetaData
                 .olap4jConnection.getMondrianConnection2();
@@ -139,6 +140,14 @@ class MondrianOlap4jMember
             return null;
         }
         return new MondrianOlap4jMember(olap4jSchema, parentMember);
+    }
+
+    private mondrian.olap.Member getParentMemberSkipHidden() {
+        mondrian.olap.Member parentMember = member.getParentMember();
+        while (parentMember != null && parentMember.isHidden()) {
+            parentMember = parentMember.getParentMember();
+        }
+        return parentMember;
     }
 
     public Level getLevel() {

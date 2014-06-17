@@ -2678,10 +2678,9 @@ public class XmlaHandler {
             while (member != null && member.getDepth() > depth) {
                 member = member.getParentMember();
             }
-
-            // TODO: Need to add support for ragged hierarchies.
-            if (member == null) {
-              return;
+            if (member == null || member.getDepth() < depth) {
+                // no parent or passed target depth
+                return;
             }
 
             final Object propertyValue = member.getPropertyValue(property);

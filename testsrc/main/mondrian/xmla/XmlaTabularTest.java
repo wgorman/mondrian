@@ -54,6 +54,10 @@ public class XmlaTabularTest extends XmlaBaseTestCase {
         executeMDX();
     }
 
+    public void testTabularRagged() throws Exception {
+        executeMDX();
+    }
+
     private void executeMDX() throws Exception {
         String requestType = "EXECUTE";
         doTest(
