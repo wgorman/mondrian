@@ -5217,7 +5217,7 @@ public class NonEmptyTest extends BatchTestCase {
 
         final TestContext context =
             TestContext.instance().withSchema(schema);
-
+        context.flushSchemaCache();
         // The filter condition does not require a join to the fact table.
         assertQuerySql(context, query, patterns);
         assertQuerySql(context.withRole("Role1"), query, patterns);
@@ -5398,7 +5398,7 @@ public class NonEmptyTest extends BatchTestCase {
 
         final TestContext context =
             TestContext.instance().withSchema(schema);
-
+        context.flushSchemaCache();
         // The filter condition does not require a join to the fact table.
         assertQuerySql(context, query, patterns);
         assertQuerySql(context.withRole("Role1"), query, patterns);

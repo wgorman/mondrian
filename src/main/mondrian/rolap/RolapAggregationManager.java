@@ -13,9 +13,11 @@
 
 package mondrian.rolap;
 
+import mondrian.calc.TupleList;
 import mondrian.olap.*;
 import mondrian.olap.fun.VisualTotalsFunDef.VisualTotalMember;
 import mondrian.resource.MondrianResource;
+import mondrian.rolap.RolapStar.Column;
 import mondrian.rolap.agg.*;
 
 import java.util.*;
@@ -611,7 +613,7 @@ public abstract class RolapAggregationManager {
      * </blockquote>
      *
      * <p>The caller of this method will translate this representation into
-     * appropriate SQL form. For exmaple, if the underlying DB supports multi
+     * appropriate SQL form. For example, if the underlying DB supports multi
      * value IN-list, the second group will turn into this predicate:
      *
      * <blockquote>
@@ -638,6 +640,7 @@ public abstract class RolapAggregationManager {
         List<StarPredicate> compoundPredicateList =
             new ArrayList<StarPredicate> ();
         for (List<RolapCubeMember[]> group : compoundGroupMap.values()) {
+
             /*
              * e.g.
              * {[USA].[CA], [Canada].[BC]}
@@ -663,6 +666,15 @@ public abstract class RolapAggregationManager {
                             compoundGroupPredicate.or(tuplePredicate);
                     }
                 }
+                
+            }
+
+            if (compoundGroupPredicate != null
+                && compoundGroupPredicate instanceof OrPredicate)
+            {
+                // try to go for a column-based approach if full crossjoin
+                compoundGroupPredicate =
+                    toColumnPredicates(compoundGroupPredicate, group.size());
             }
 
             if (compoundGroupPredicate != null) {
@@ -683,6 +695,59 @@ public abstract class RolapAggregationManager {
         }
 
         return compoundPredicate;
+    }
+
+    /**
+     * Convert a full crossjoin tuple-based predicate to a column-based one
+     */
+    private static StarPredicate toColumnPredicates(
+        final StarPredicate predicate, final int nbrRows)
+    {
+        HashMap<RolapStar.Column, Set<StarColumnPredicate>> map =
+            new HashMap<RolapStar.Column, Set<StarColumnPredicate>>();
+        extractColumnPredicates(predicate, map);
+        List<StarPredicate> predicates = new ArrayList<StarPredicate>(map.size());
+        // convert to column in (val0..valn)
+        int columnCardinalities = 1;
+        for (Map.Entry<RolapStar.Column, Set<StarColumnPredicate>> entry : map.entrySet()) {
+            Set<StarColumnPredicate> columnPredicates = entry.getValue();
+            columnCardinalities *= columnPredicates.size();
+            ArrayList<StarColumnPredicate> list =
+                new ArrayList<StarColumnPredicate>(columnPredicates.size());
+            list.addAll(columnPredicates);
+            predicates.add(new ListColumnPredicate(entry.getKey(), list));
+        }
+        if (columnCardinalities > nbrRows) {
+            // may not be a total crossjoin at column level
+            // return original
+            return predicate;
+        }
+        return new AndPredicate(predicates);
+    }
+
+    /**
+     * extract all distinct ValueColumnPredicate instances and map by column
+     */
+    private static void extractColumnPredicates(
+        StarPredicate predicate,
+        HashMap<Column, Set<StarColumnPredicate>> map)
+    {
+        if (predicate instanceof ListPredicate) {
+            ListPredicate listPredicate = (ListPredicate) predicate;
+            for (StarPredicate childPredicate : listPredicate.getChildren()) {
+                extractColumnPredicates(childPredicate, map);
+            }
+        } else if (predicate instanceof ValueColumnPredicate) {
+            ValueColumnPredicate valuePredicate =
+                (ValueColumnPredicate) predicate;
+            Set<StarColumnPredicate> list =
+                map.get(valuePredicate.getConstrainedColumn());
+            if (list == null) {
+                list = new HashSet<StarColumnPredicate>();
+                map.put(valuePredicate.getConstrainedColumn(), list);
+            }
+            list.add(valuePredicate);
+        }
     }
 
     private static StarPredicate makeCompoundPredicateForMember(
