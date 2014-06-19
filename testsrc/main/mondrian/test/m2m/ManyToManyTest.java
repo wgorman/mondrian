@@ -611,9 +611,10 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Axis #1:\n"
             + "{[Gender].[Male]}\n"
             + "Row #0: 300\n");
-        /*
-         AggregateFunDef.AggregateCalc.optimizeTupleList() used in RolapResult does not handle disjoint scenarios,
-         Causing this scenario to fail.
+
+         // AggregateFunDef.AggregateCalc.optimizeTupleList() used in RolapResult does not
+         // handle disjoint scenarios, causing this scenario to fail without an extra
+         // location in the dataset that isn't referenced in this MDX query.
          context.assertQueryReturns(
             "select Filter([Gender].[Gender].Members, [Measures].[Spending]<= 325) on columns\n"
             + "from [GenderYearSpending] where {([Category].[Category 2014], [Location].[San Francisco]),([Category].[Category 2013], [Location].[Orlando])}",
@@ -623,7 +624,6 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Axis #1:\n"
             + "{[Gender].[Male]}\n"
             + "Row #0: 325\n");
-         */
     }
 
     public void testMultiJoinM2MScenariosWithView() {
@@ -655,7 +655,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         // between category, year, and gender.  In the first example, category
         // is the joining dimension.  In the second example, gender and year
         // are the joining dimensions.
-        /*
+
         context.assertQueryReturns(
             "select NON EMPTY {[Category].Members} on columns\n"
             + "from [CategorySpending] where {([Gender].[Female],[Year].[2014])}",
@@ -668,7 +668,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #0: 1,750\n"
             + "Row #0: 1,025\n"
             + "Row #0: 725\n");
-*/
+
         context.assertQueryReturns(
             "select NON EMPTY {[Category].Members} on columns\n"
             + "from [GenderYearSpending] where {([Gender].[Female],[Year].[2014])}",
@@ -765,8 +765,8 @@ public class ManyToManyTest  extends CsvDBTestCase {
     /**
      * Note: due to AggregateFunDef.AggregateCalc.optimizeTupleList()
      * used in RolapResult not handling disjoint scenarios where all members of
-     * a parent are referenced, this result is actually invalid and needs
-     * resolved.
+     * a parent are referenced, without the Day 3 member this result would return
+     * invalid results.
      */
     public void testNativeFilterWithCompoundSlicer() {
         boolean filter = prop.EnableNativeFilter.get();
@@ -783,8 +783,14 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Amount]}\n"
             + "Axis #2:\n"
+            + "{[Account].[Mark]}\n"
             + "{[Account].[Mark-Paul]}\n"
-            + "Row #0: 100\n");
+            + "{[Account].[Mark-Robert]}\n"
+            + "{[Account].[Paul]}\n"
+            + "Row #0: 100\n"
+            + "Row #1: 100\n"
+            + "Row #2: 100\n"
+            + "Row #3: 105\n");
 
         prop.EnableNativeFilter.set(filter);
     }

@@ -77,7 +77,7 @@ public class SqlQuery {
 
     private final ClauseList select;
     private final FromClauseList from;
-    private final ClauseList where;
+    public final ClauseList where;
     private final ClauseList groupBy;
     private final ClauseList having;
     private final ClauseList orderBy;
@@ -336,6 +336,9 @@ public class SqlQuery {
     // TODO: Clean up access to these methods, now used in
     // SqlConstraintUtils to do some compound tuple many to many processing.
     public Map<String, SqlQuery> subqueries = new HashMap<String, SqlQuery>();
+    // Separate the subqueries from the correlated subqueries so they both can exist in a single
+    // query.
+    public Map<String, SqlQuery> correlatedSubqueries = new HashMap<String, SqlQuery>();
     public Map<String, List<String>> subwhereExpr = new HashMap<String, List<String>>();
     public boolean correlatedSubquery = false;
     public boolean addFrom(
@@ -345,11 +348,15 @@ public class SqlQuery {
         final String subquery)
     {
         if (subquery != null) {
-            SqlQuery subq = subqueries.get(subquery);
+            SqlQuery subq = getSubQuery(subquery);
             if (subq == null) {
                 subq = new SqlQuery(dialect, generateFormattedSql );
                 subq.setDistinct(true);
-                subqueries.put(subquery, subq);
+                if (correlatedSubquery) {
+                    correlatedSubqueries.put(subquery, subq);
+                } else {
+                    subqueries.put(subquery, subq);
+                }
             }
             return subq.addFrom(relation, alias, failIfExists, null);
         } else {
@@ -558,7 +565,11 @@ public class SqlQuery {
     }
 
     public SqlQuery getSubQuery(String subQueryAlias) {
-      return subqueries.get(subQueryAlias);
+      if (correlatedSubquery) {
+          return correlatedSubqueries.get(subQueryAlias);
+      } else {
+          return subqueries.get(subQueryAlias);
+      }
     }
 
     /**
@@ -629,11 +640,11 @@ public class SqlQuery {
     }
 
     public void addWhere(final String expression, String subquery) {
-      if (subquery != null) {
-        subqueries.get(subquery).addWhere(expression);
-      } else {
-        addWhere(expression);
-      }
+        if (subquery != null) {
+            getSubQuery(subquery).addWhere(expression);
+        } else {
+            addWhere(expression);
+        }
     }
 
     public void addSubWhere(final RolapStar.Condition joinCondition, final String subquery) {
@@ -755,26 +766,25 @@ public class SqlQuery {
         select.toBuffer(buf, generateFormattedSql, prefix, first, ", ", "", "");
         groupingFunctionsToBuffer(buf, prefix);
 
-        if (subqueries.size() > 0 && !correlatedSubquery) {
-          FromClauseList newfrom = from.clone();
-          for (String alias : subqueries.keySet()) {
-            SqlQuery subquery = subqueries.get( alias );
-            StringBuilder subbuf = new StringBuilder();
-            subbuf.setLength(0);
-            subbuf.append('(');
-            subbuf.append(subquery.toString());
-            subbuf.append(')');
-            if (dialect.allowsAs()) {
-              subbuf.append(" as ");
-            } else {
-              subbuf.append(' ');
+        if (subqueries.size() > 0) {
+            FromClauseList newfrom = from.clone();
+            for (String alias : subqueries.keySet()) {
+                SqlQuery subquery = subqueries.get( alias );
+                StringBuilder subbuf = new StringBuilder();
+                subbuf.setLength(0);
+                subbuf.append('(');
+                subbuf.append(subquery.toString());
+                subbuf.append(')');
+                if (dialect.allowsAs()) {
+                    subbuf.append(" as ");
+                } else {
+                    subbuf.append(' ');
+                }
+                dialect.quoteIdentifier(alias, subbuf);
+                newfrom.add(subbuf.toString());
             }
-            dialect.quoteIdentifier(alias, subbuf);
-            newfrom.add(subbuf.toString());
-          }
-          newfrom.toBuffer(
-              buf, generateFormattedSql, prefix, " from ", ", ", "", "");
-          
+            newfrom.toBuffer(
+                buf, generateFormattedSql, prefix, " from ", ", ", "", "");
         } else {
           from.toBuffer(
               buf, generateFormattedSql, prefix, " from ", ", ", "", "");
@@ -782,7 +792,7 @@ public class SqlQuery {
 
         // generate correlated sub queries if necessary for
         // many to many dimensions
-        if (subqueries.size() > 0 && subwhereExpr.size() > 0) {
+        if (correlatedSubqueries.size() > 0 && subwhereExpr.size() > 0) {
             ClauseList newWhere = (ClauseList)where.clone();
             for (String subquery : subwhereExpr.keySet()) {
                 StringBuilder subbuf = new StringBuilder();
@@ -795,7 +805,7 @@ public class SqlQuery {
                     subbuf.append(keys.get(i));
                 }
                 subbuf.append(") IN (");
-                subbuf.append(subqueries.get( subquery ).toString());
+                subbuf.append(correlatedSubqueries.get(subquery).toString());
                 subbuf.append(")");
                 newWhere.add(subbuf.toString());
             }

@@ -23,7 +23,6 @@ import java.util.Map;
  */
 public class MemberColumnPredicate extends ValueColumnPredicate {
     private final RolapMember member;
-    private final Map<String, SqlQuery> subqueryMap;
     /**
      * Creates a MemberColumnPredicate
      *
@@ -33,13 +32,11 @@ public class MemberColumnPredicate extends ValueColumnPredicate {
     public MemberColumnPredicate(RolapStar.Column column, RolapMember member) {
         super(column, member.getKey());
         this.member = member;
-        this.subqueryMap = null;
     }
 
     public MemberColumnPredicate(RolapStar.Column column, RolapMember member, Map<String, SqlQuery> subqueryMap) {
-        super(column, member.getKey());
+        super(column, member.getKey(), subqueryMap);
         this.member = member;
-        this.subqueryMap = subqueryMap;
     }
     // for debug
     public String toString() {
@@ -79,46 +76,6 @@ public class MemberColumnPredicate extends ValueColumnPredicate {
         return new MemberColumnPredicate(column, member);
     }
 
-    public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
-        final RolapStar.Column column = getConstrainedColumn();
-        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
-            // this will probably need to move into it's own separate "M2M Member" subclass.
-            String expr = column.generateExprString(sqlQuery);
-
-            // TODO: Support Multi-Level M2M, at the moment this assumes one level.  Need to push this up a layer,
-            // probably implementing a ManyToManyColumnPredicate of some sort.  Some early code was added
-            // to AndPredicate to start thinking about this scenario.
-
-            StringBuilder sb = new StringBuilder();
-            sb.append(expr);
-            Object key = getValue();
-            if (key == RolapUtil.sqlNullValue) {
-                sb.append(" is null");
-            } else {
-                sb.append(" = ");
-                sqlQuery.getDialect().quote(sb, key, column.getDatatype());
-            }
-            // The "sb" predicate needs added to the subquery, not the main one.  we need access 
-            // to the foreign key where clause element to model this correctly
-            SqlQuery query = subqueryMap.get(column.getTable().getSubQueryAlias());
-            buf.append("(");
-            List<String> keys = query.subwhereExpr.get(column.getTable().getSubQueryAlias());
-            for (int i = 0; i < keys.size(); i++) {
-                if (i != 0) {
-                    buf.append(",");
-                }
-                buf.append(keys.get(i));
-            }
-            query.subqueries.get(column.getTable().getSubQueryAlias()).addWhere(sb.toString());
-            // TODO: If the dialect can't support the IN subquery scenario, then we can't
-            // nativize.  We'll need a check in the Native layer for this.
-            buf.append(") IN (");
-            buf.append(query.subqueries.get(column.getTable().getSubQueryAlias()).toString());
-            buf.append(")");
-        } else {
-            super.toSql(sqlQuery, buf);
-        }
-    }
 }
 
 // End MemberColumnPredicate.java

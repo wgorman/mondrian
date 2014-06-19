@@ -331,6 +331,19 @@ public class RolapResult extends ResultBase {
 
                     final List<Member> prevSlicerMembers = new ArrayList<Member>();
 
+                    boolean calcMembersInPlay = false;
+                    iterateOverTuples:
+                    for (List<Member> members : tupleList) {
+                        for (Member member : members) {
+                            if (member.isCalculated()) {
+                              calcMembersInPlay = true;
+                              break iterateOverTuples;
+                            }
+                        }
+                    }
+
+                    final boolean pushdownAgg = !calcMembersInPlay;
+
                     final Calc calcCached =
                         new GenericCalc(
                             new DummyExp(query.slicerCalc.getType()))
@@ -349,7 +362,7 @@ public class RolapResult extends ResultBase {
                                     }
                                 }
                                 return AggregateFunDef.AggregateCalc.aggregate(
-                                    valueCalc, evaluator, list);
+                                    valueCalc, evaluator, list, pushdownAgg);
                             }
                             // depend on the full evaluation context
                             public boolean dependsOn(Hierarchy hierarchy) {

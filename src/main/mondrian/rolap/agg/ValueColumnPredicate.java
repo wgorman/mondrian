@@ -13,6 +13,8 @@ import mondrian.rolap.*;
 import mondrian.rolap.sql.SqlQuery;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A constraint which requires a column to have a particular value.
@@ -25,7 +27,17 @@ public class ValueColumnPredicate
     implements Comparable
 {
     private final Object value;
+    protected Map<String, SqlQuery> subqueryMap;
 
+
+    public ValueColumnPredicate(
+        RolapStar.Column constrainedColumn,
+        Object value,
+        Map<String, SqlQuery> subqueryMap)
+    {
+        this(constrainedColumn, value);
+        this.subqueryMap = subqueryMap;
+    }
     /**
      * Creates a column constraint.
      *
@@ -42,6 +54,13 @@ public class ValueColumnPredicate
         assert value != null;
         assert ! (value instanceof StarColumnPredicate);
         this.value = value;
+    }
+
+    /**
+     * The subquery map is used for many to many inline SQL query usecases.
+     */
+    public void setSubqueryMap(Map<String, SqlQuery> subqueryMap) {
+      this.subqueryMap = subqueryMap;
     }
 
     /**
@@ -151,13 +170,54 @@ public class ValueColumnPredicate
     public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
         final RolapStar.Column column = getConstrainedColumn();
         String expr = column.generateExprString(sqlQuery);
-        buf.append(expr);
-        Object key = getValue();
-        if (key == RolapUtil.sqlNullValue) {
-            buf.append(" is null");
+        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
+            // this will probably need to move into it's own separate "M2M Member" subclass.
+
+            // TODO: Support Multi-Level M2M, at the moment this assumes one level.  Need to push this up a layer,
+            // probably implementing a ManyToManyColumnPredicate of some sort.  Some early code was added
+            // to AndPredicate to start thinking about this scenario.
+
+            StringBuilder sb = new StringBuilder();
+            sb.append(expr);
+            Object key = getValue();
+            if (key == RolapUtil.sqlNullValue) {
+                sb.append(" is null");
+            } else {
+                sb.append(" = ");
+                sqlQuery.getDialect().quote(sb, key, column.getDatatype());
+            }
+            // The "sb" predicate needs added to the subquery, not the main one.  we need access 
+            // to the foreign key where clause element to model this correctly
+            SqlQuery query = subqueryMap.get(column.getTable().getSubQueryAlias());
+            buf.append("(");
+            List<String> keys = query.subwhereExpr.get(column.getTable().getSubQueryAlias());
+            for (int i = 0; i < keys.size(); i++) {
+                if (i != 0) {
+                    buf.append(",");
+                }
+                buf.append(keys.get(i));
+            }
+            query.getSubQuery(column.getTable().getSubQueryAlias()).addWhere(sb.toString());
+
+            // TODO: If the dialect can't support the IN subquery scenario, then we can't
+            // nativize.  We'll need a check in the Native layer for this.
+            buf.append(") IN (");
+            buf.append(query.getSubQuery(column.getTable().getSubQueryAlias()).toString());
+            buf.append(")");
+
+            // remove the where clause just created so other predicates can apply their own
+            // constraints.
+            // TODO: support query.clone() instead of this approach.
+            ((List)query.getSubQuery(column.getTable().getSubQueryAlias()).where).remove(sb.toString());
         } else {
-            buf.append(" = ");
-            sqlQuery.getDialect().quote(buf, key, column.getDatatype());
+            buf.append(expr);
+            Object key = getValue();
+            if (key == RolapUtil.sqlNullValue) {
+                buf.append(" is null");
+            } else {
+                buf.append(" = ");
+                sqlQuery.getDialect().quote(buf, key, column.getDatatype());
+            }
         }
     }
 

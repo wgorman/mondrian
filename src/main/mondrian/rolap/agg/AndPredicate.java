@@ -130,16 +130,12 @@ public class AndPredicate extends ListPredicate {
                         inListRHSBitKey.clear(
                             columnPred.getConstrainedColumn().getBitPosition());
                     }
-                    if (predicate instanceof MemberColumnPredicate) {
-                        MemberColumnPredicate memberPred =
-                            ((MemberColumnPredicate) predicate);
-                        if (((RolapCubeHierarchy)memberPred.getMember().getHierarchy()).getManyToManyHierarchies() != null) {
+                    if (columnPred.getConstrainedColumn().getTable().getSubQueryAlias() != null) {
                             // for now, revert to full AND approach, but
                             // could get fancy similar to the null and do something like:
                             // (D, E) IN (SELECT... WHERE A=1) AND (B, C) IN (1, 2)
                             // Where D and E are the foreign keys to the many to many dimension
                             inListRHSBitKey.clear();
-                        }
                     }
                     // else do nothing because this column predicate can be
                     // translated to IN

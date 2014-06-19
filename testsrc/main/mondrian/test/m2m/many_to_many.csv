@@ -36,9 +36,10 @@
 ## TableName: m2m_dim_date
 ## ColumnNames: id_date,nm_date
 ## ColumnTypes: INTEGER,VARCHAR(20)
-## NosOfRows: 2
+## NosOfRows: 3
 1,Day 1
 2,Day 2
+3,Day 3
 ## TableName: m2m_fact_balance
 ## ColumnNames: id_account,id_date,amount
 ## ColumnTypes: INTEGER,INTEGER,INTEGER
@@ -104,9 +105,10 @@
 ## TableName: m2m_spending_location_dim
 ## ColumnNames: id_location,nm_location
 ## ColumnTypes: INTEGER,VARCHAR(20)
-## NosOfRows: 2
+## NosOfRows: 3
 1,San Francisco
 2,Orlando
+3,Cincinnati
 ## TableName: m2m_spending_category_dim
 ## ColumnNames: id_category,nm_category
 ## ColumnTypes: INTEGER,VARCHAR(30)

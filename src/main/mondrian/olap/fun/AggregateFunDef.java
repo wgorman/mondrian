@@ -17,6 +17,7 @@ import mondrian.olap.*;
 import mondrian.olap.Role.RollupPolicy;
 import mondrian.rolap.ManyToManyUtil;
 import mondrian.rolap.RolapAggregator;
+import mondrian.rolap.RolapCubeHierarchy;
 import mondrian.rolap.RolapEvaluator;
 
 import org.eigenbase.util.property.IntegerProperty;
@@ -93,7 +94,7 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
             try {
                 TupleList list = evaluateCurrentList(listCalc, evaluator);
                 if (member != null) evaluator.setContext(member);
-                return aggregate(calc, evaluator, list);
+                return aggregate(calc, evaluator, list, false);
             } finally {
                 evaluator.getTiming().markEnd(TIMING_NAME);
             }
@@ -112,7 +113,8 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
         public static Object aggregate(
             Calc calc,
             Evaluator evaluator,
-            TupleList tupleList)
+            TupleList tupleList,
+            boolean pushdownAggregation)
         {
             Aggregator aggregator =
                 (Aggregator) evaluator.getProperty(
@@ -128,7 +130,7 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
                     null,
                     "Don't know how to rollup aggregator '" + aggregator + "'");
             }
-            if (aggregator != RolapAggregator.DistinctCount) {
+            if (!shouldPushdownAggregation(pushdownAggregation, aggregator, tupleList)) {
                 tupleList =
                     ManyToManyUtil.processManyToManyMembers(
                         evaluator, tupleList);
@@ -144,8 +146,8 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
                 }
             }
 
-            // All that follows is logic for distinct count. It's not like the
-            // other aggregators.
+            // All that follows is logic for distinct count and aggregations
+            // with many to many members.
             if (tupleList.size() == 0) {
                 return DoubleNull;
             }
@@ -180,11 +182,45 @@ public class AggregateFunDef extends AbstractAggregateFunDef {
             // the members together, then evaluate the collection of
             // members all at once. To do this, we postpone evaluation,
             // and create a lambda function containing the members.
+
+            // TODO: Note, this doesn't support Aggregating calculated Members.
+            // We should write tests demonstrating distinct count failing in 
+            // this scenario.
+
             Evaluator evaluator2 =
                 evaluator.pushAggregation(tupleList);
             // cancel nonEmpty context
             evaluator2.setNonEmpty(false);
             return evaluator2.evaluateCurrent();
+        }
+
+        /**
+         * We should push down aggregations for distinct counts and
+         * for slicers that contain many to many dimensions to avoid
+         * large slicers due to many to many use cases.
+         */
+        private static boolean shouldPushdownAggregation(boolean pushdownAggregation, Aggregator aggregator, TupleList tupleList) {
+          if (aggregator == RolapAggregator.DistinctCount) {
+              return true;
+          }
+          if (!pushdownAggregation) {
+              return false;
+          }
+          // if Many to Many Dimensions are at play, push down the aggregation
+          if (tupleList.size() > 0) {
+              for (Member member : tupleList.get(0)) {
+                  if (member.getHierarchy() instanceof RolapCubeHierarchy) {
+                      if (((RolapCubeHierarchy)member.getHierarchy())
+                          .getManyToManyHierarchies() != null
+                          && ((RolapCubeHierarchy)member.getHierarchy())
+                          .getManyToManyHierarchies().size() > 0)
+                      {
+                        return true;
+                      }
+                  }
+              }
+          }
+          return false;
         }
 
         /**

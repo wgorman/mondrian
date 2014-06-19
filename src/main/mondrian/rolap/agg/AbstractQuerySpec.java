@@ -196,9 +196,32 @@ public abstract class AbstractQuerySpec implements QuerySpec {
         return false;
     }
 
+    /**
+     * Determines if there are any Or Predicates specified.
+     *
+     * TODO: This check can optimize the query by also seeing'
+     * if the OrPredicate has more than an AND predicate
+     * within it.
+     */
+    private boolean hasOrPredicate(StarPredicate parent) {
+        if (parent instanceof ListPredicate) {
+            for (StarPredicate pred : ((ListPredicate)parent).getChildren()) {
+                if (hasOrPredicate(pred)) {
+                    return true;
+                }
+            }
+        }
+        if (parent instanceof OrPredicate) {
+            // TODO: Also check to see if there are AndPredicates within the OrPredicate
+            return true;
+        }
+        return false;
+    }
+
     public Pair<String, List<SqlStatement.Type>> generateSqlQuery() {
         SqlQuery sqlQuery = newSqlQuery();
         sqlQuery.setEnableDistinctSubquery(true);
+
         int k = getDistinctMeasureCount();
         final Dialect dialect = sqlQuery.getDialect();
         final Map<String, String> groupingSetsAliases;
@@ -364,20 +387,58 @@ public abstract class AbstractQuerySpec implements QuerySpec {
      * @param sqlQuery Query
      */
     protected void extraPredicates(SqlQuery sqlQuery) {
+        // TODO: These may need to be added as m2m columns vs. regular columns.
+        Map<String, SqlQuery> subqueryMap = new HashMap<String, SqlQuery>();
         List<StarPredicate> predicateList = getPredicateList();
+
+        // Note, this option is only necessary during
+        // disjoint tuple use cases, there may be other M2M
+        // members at play that are use the regular distinct query approach
+        // TODO: Address hybrid scenario!
+        if (predicateList.size() > 0) {
+            // only do this if there are ORs in the predicate list and more 
+            // than one member in the tuple.
+            for (StarPredicate pred : predicateList) {
+                if (hasOrPredicate(pred)) {
+                    sqlQuery.correlatedSubquery = true;
+                }
+            }
+        }
+
         for (StarPredicate predicate : predicateList) {
             Set<String> subquerySet = new HashSet<String>();
             for (RolapStar.Column column
                 : predicate.getConstrainedColumnList())
             {
                 final RolapStar.Table table = column.getTable();
-                table.addToFrom(sqlQuery, false, true);
-                subquerySet.add( column.getTable().getSubQueryAlias());
+                if (column.getTable().getSubQueryAlias() != null
+                    && sqlQuery.getEnableDistinctSubquery() && sqlQuery.correlatedSubquery)
+                {
+                    // we're dealing with a m2m dimension, we need to create the query in a new context
+                    SqlQuery subSqlQuery = new SqlQuery(sqlQuery.getDialect());
+                    subSqlQuery.setEnableDistinctSubquery(true);
+                    subSqlQuery.correlatedSubquery = true;
+                    column.getTable().addToFrom(subSqlQuery, false, true);
+                    // this step adds then immediately removes the subquery from the parent,
+                    // leaving the possible multi-join paths to the subquery for inclusion
+                    // in the And/Or Predicate part of the SQL statement
+                    column.getTable().addToFrom(sqlQuery, false, true);
+                    sqlQuery.subqueries.remove(column.getTable().getSubQueryAlias());
+                    sqlQuery.subwhereExpr.remove(column.getTable().getSubQueryAlias());
+                    subqueryMap.put(column.getTable().getSubQueryAlias(), subSqlQuery);
+                } else {
+                    table.addToFrom(sqlQuery, false, true);
+                    subquerySet.add(column.getTable().getSubQueryAlias());
+                }
             }
-            if (subquerySet.size() != 1) {
-              throw new UnsupportedOperationException("Invaloid number of subqueries found for this predicate");
+            if (subquerySet.size() > 1) {
+                throw new UnsupportedOperationException(
+                    "Invalid number of subqueries found for this predicate");
             }
-            String subquery = subquerySet.iterator().next();
+            // only go into correlated subquery mode
+            // during this portion of the sql generation.
+            applySubqueryMap(predicate, subqueryMap);
+            String subquery = subquerySet.size() > 0 ? subquerySet.iterator().next() : null;
             StringBuilder buf = new StringBuilder();
             predicate.toSql(sqlQuery, buf);
             final String where = buf.toString();
@@ -388,6 +449,22 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                     sqlQuery.addWhere(where);
                 }
             }
+            // reset back to previous state, so that cache keys generate the same always.
+            applySubqueryMap(predicate, null);
+            sqlQuery.correlatedSubquery = false;
+        }
+    }
+
+    /**
+     * Traverse the predicates and apply the subquery map to the value column predicates.
+     */
+    private void applySubqueryMap(StarPredicate predicate, Map<String, SqlQuery> subqueryMap) {
+        if (predicate instanceof ListPredicate) {
+            for (StarPredicate child : ((ListPredicate)predicate).getChildren()) {
+                applySubqueryMap(child, subqueryMap);
+            }
+        } else if (predicate instanceof ValueColumnPredicate) {
+            ((ValueColumnPredicate)predicate).setSubqueryMap(subqueryMap);
         }
     }
 
