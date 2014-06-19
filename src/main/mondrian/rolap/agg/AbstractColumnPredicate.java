@@ -24,6 +24,7 @@ import java.util.*;
 public abstract class AbstractColumnPredicate implements StarColumnPredicate {
     protected final RolapStar.Column constrainedColumn;
     private BitKey constrainedColumnBitKey;
+    protected Map<String, SqlQuery> subqueryMap;
 
     /**
      * Creates an AbstractColumnPredicate.
@@ -47,6 +48,13 @@ public abstract class AbstractColumnPredicate implements StarColumnPredicate {
 
     public List<RolapStar.Column> getConstrainedColumnList() {
         return Collections.singletonList(constrainedColumn);
+    }
+
+    /**
+     * The subquery map is used for many to many inline SQL query usecases.
+     */
+    public void setSubqueryMap(Map<String, SqlQuery> subqueryMap) {
+      this.subqueryMap = subqueryMap;
     }
 
     public BitKey getConstrainedColumnBitKey() {

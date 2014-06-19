@@ -27,7 +27,6 @@ public class ValueColumnPredicate
     implements Comparable
 {
     private final Object value;
-    protected Map<String, SqlQuery> subqueryMap;
 
 
     public ValueColumnPredicate(
@@ -54,13 +53,6 @@ public class ValueColumnPredicate
         assert value != null;
         assert ! (value instanceof StarColumnPredicate);
         this.value = value;
-    }
-
-    /**
-     * The subquery map is used for many to many inline SQL query usecases.
-     */
-    public void setSubqueryMap(Map<String, SqlQuery> subqueryMap) {
-      this.subqueryMap = subqueryMap;
     }
 
     /**
@@ -171,7 +163,7 @@ public class ValueColumnPredicate
         final RolapStar.Column column = getConstrainedColumn();
         String expr = column.generateExprString(sqlQuery);
         if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
-            // this will probably need to move into it's own separate "M2M Member" subclass.
+            // this will probably need to move into its own separate "M2M Member" subclass.
 
             // TODO: Support Multi-Level M2M, at the moment this assumes one level.  Need to push this up a layer,
             // probably implementing a ManyToManyColumnPredicate of some sort.  Some early code was added

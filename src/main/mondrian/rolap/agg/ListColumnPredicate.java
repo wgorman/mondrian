@@ -307,12 +307,56 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
     }
 
     public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
+
         List<StarColumnPredicate> predicates = getPredicates();
         if (predicates.size() == 1) {
             predicates.get(0).toSql(sqlQuery, buf);
             return;
         }
 
+        final RolapStar.Column column = getConstrainedColumn();
+        String expr = column.generateExprString(sqlQuery);
+        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
+            // this will probably need to move into its own separate "M2M Member" subclass.
+            // Note this is about the same exact logic in ValueColumnPredicate.
+
+            // TODO: Support Multi-Level M2M, at the moment this assumes one level.  Need to push this up a layer,
+            // probably implementing a ManyToManyColumnPredicate of some sort.  Some early code was added
+            // to AndPredicate to start thinking about this scenario.
+
+            StringBuilder sb = new StringBuilder();
+            toSqlGenExpr(sqlQuery, sb);
+
+            // The "sb" predicate needs added to the subquery, not the main one.  we need access 
+            // to the foreign key where clause element to model this correctly
+            SqlQuery query = subqueryMap.get(column.getTable().getSubQueryAlias());
+            buf.append("(");
+            List<String> keys = query.subwhereExpr.get(column.getTable().getSubQueryAlias());
+            for (int i = 0; i < keys.size(); i++) {
+                if (i != 0) {
+                    buf.append(",");
+                }
+                buf.append(keys.get(i));
+            }
+            query.getSubQuery(column.getTable().getSubQueryAlias()).addWhere(sb.toString());
+
+            // TODO: If the dialect can't support the IN subquery scenario, then we can't
+            // nativize.  We'll need a check in the Native layer for this.
+            buf.append(") IN (");
+            buf.append(query.getSubQuery(column.getTable().getSubQueryAlias()).toString());
+            buf.append(")");
+
+            // remove the where clause just created so other predicates can apply their own
+            // constraints.
+            // TODO: support query.clone() instead of this approach.
+            ((List)query.getSubQuery(column.getTable().getSubQueryAlias()).where).remove(sb.toString());
+        } else {
+            toSqlGenExpr(sqlQuery, buf);
+        }
+    }
+
+    public void toSqlGenExpr(SqlQuery sqlQuery, StringBuilder buf) {
+        List<StarColumnPredicate> predicates = getPredicates();
         int notNullCount = 0;
         final RolapStar.Column column = getConstrainedColumn();
         final String expr = column.generateExprString(sqlQuery);

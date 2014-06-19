@@ -762,6 +762,29 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #0: 300\n");
     }
 
+    public void testSlicerCrossjoinOptimization() {
+        boolean filter = prop.EnableNativeFilter.get();
+        prop.EnableNativeFilter.set(true);
+        TestContext context = createTestContext();
+        context.assertQueryReturns(
+            "Select\n"
+            + "[Measures].[Amount] on columns,\n"
+            + "Filter([Account].[All Accounts].Children, [Measures].[Amount] < 200) on rows\n"
+            + "From [M2M] WHERE CrossJoin({[Date].[All Dates].[Day 1], [Date].[All Dates].[Day 2]}, {[Customer].[All Customers].[Mark], [Customer].[All Customers].[Paul]})\n",
+            "Axis #0:\n"
+            + "{[Date].[Day 1], [Customer].[Mark]}\n"
+            + "{[Date].[Day 1], [Customer].[Paul]}\n"
+            + "{[Date].[Day 2], [Customer].[Mark]}\n"
+            + "{[Date].[Day 2], [Customer].[Paul]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Amount]}\n"
+            + "Axis #2:\n"
+            + "{[Account].[Mark-Paul]}\n"
+            + "Row #0: 100\n");
+        prop.EnableNativeFilter.set(filter);
+    }
+
+    
     /**
      * Note: due to AggregateFunDef.AggregateCalc.optimizeTupleList()
      * used in RolapResult not handling disjoint scenarios where all members of
@@ -878,6 +901,37 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #3: 205\n"
             + "Row #4: 205\n");
         prop.SsasCompatibleNaming.set(compat);
+    }
+
+    public void testMultiLevelSlicerCrossjoinOptimization() {
+        TestContext context = createMultiLevelTestContext(false);
+        final String mdx =
+            "Select\n"
+            + "{[Measures].[Amount]} on columns,\n"
+            + "{[Account].[Account].Members} on rows\n"
+            + "From [M2M] WHERE CrossJoin({[Date].[All Dates].[Day 1],[Date].[All Dates].[Day 2]}, {[Customer].[All Customers].[San Francisco], [Customer].[All Customers].[Orlando].[Paul]})\n";
+        context.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Date].[Day 1], [Customer].[San Francisco]}\n"
+            + "{[Date].[Day 1], [Customer].[Orlando].[Paul]}\n"
+            + "{[Date].[Day 2], [Customer].[San Francisco]}\n"
+            + "{[Date].[Day 2], [Customer].[Orlando].[Paul]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Amount]}\n"
+            + "Axis #2:\n"
+            + "{[Account].[One Person].[Luke]}\n"
+            + "{[Account].[One Person].[Mark]}\n"
+            + "{[Account].[One Person].[Paul]}\n"
+            + "{[Account].[One Person].[Robert]}\n"
+            + "{[Account].[Two People].[Mark-Paul]}\n"
+            + "{[Account].[Two People].[Mark-Robert]}\n"
+            + "Row #0: 205\n"
+            + "Row #1: 205\n"
+            + "Row #2: 205\n"
+            + "Row #3: \n"
+            + "Row #4: 100\n"
+            + "Row #5: 205\n");
     }
 
     public void testMultiLevelQueries() {

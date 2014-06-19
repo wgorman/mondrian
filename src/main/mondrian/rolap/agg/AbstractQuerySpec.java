@@ -432,26 +432,55 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                 }
             }
             if (subquerySet.size() > 1) {
-                throw new UnsupportedOperationException(
-                    "Invalid number of subqueries found for this predicate");
-            }
-            // only go into correlated subquery mode
-            // during this portion of the sql generation.
-            applySubqueryMap(predicate, subqueryMap);
-            String subquery = subquerySet.size() > 0 ? subquerySet.iterator().next() : null;
-            StringBuilder buf = new StringBuilder();
-            predicate.toSql(sqlQuery, buf);
-            final String where = buf.toString();
-            if (!where.equals("true")) {
-                if (subquery != null) {
-                    sqlQuery.getSubQuery(subquery).addWhere(where);
-                } else {
+                // in this scenario, we have an And(List), and need to bundle the 
+                // non M2M items in a single group and generate the where clauses of 
+                // the M2M groups separately.
+                AndPredicate pred = (AndPredicate) predicate;
+                List<StarPredicate> regPreds = new ArrayList<StarPredicate>();
+                for (StarPredicate child : pred.getChildren()) {
+                    List<RolapStar.Column> columnList = child.getConstrainedColumnList();
+                    if (columnList.size() != 1) {
+                        throw new UnsupportedOperationException(
+                        "Invalid number of subqueries found for this predicate");
+                    }
+                    if (columnList.get(0).getTable().getSubQueryAlias() != null) {
+                        // add to subquery
+                        StringBuilder buf = new StringBuilder();
+                        child.toSql(sqlQuery, buf);
+                        final String where = buf.toString();
+                        if (!where.equals("true")) {
+                            sqlQuery.getSubQuery(columnList.get(0).getTable().getSubQueryAlias()).addWhere(where);
+                        }
+                    } else {
+                        regPreds.add(child);
+                    }
+                }
+                AndPredicate andPred = new AndPredicate(regPreds);
+                StringBuilder buf = new StringBuilder();
+                andPred.toSql(sqlQuery, buf);
+                final String where = buf.toString();
+                if (!where.equals("true")) {
                     sqlQuery.addWhere(where);
                 }
+            } else {
+                // only go into correlated subquery mode
+                // during this portion of the sql generation.
+                applySubqueryMap(predicate, subqueryMap);
+                String subquery = subquerySet.size() > 0 ? subquerySet.iterator().next() : null;
+                StringBuilder buf = new StringBuilder();
+                predicate.toSql(sqlQuery, buf);
+                final String where = buf.toString();
+                if (!where.equals("true")) {
+                    if (subquery != null) {
+                        sqlQuery.getSubQuery(subquery).addWhere(where);
+                    } else {
+                        sqlQuery.addWhere(where);
+                    }
+                }
+                // reset back to previous state, so that cache keys generate the same always.
+                applySubqueryMap(predicate, null);
+                sqlQuery.correlatedSubquery = false;
             }
-            // reset back to previous state, so that cache keys generate the same always.
-            applySubqueryMap(predicate, null);
-            sqlQuery.correlatedSubquery = false;
         }
     }
 
@@ -463,8 +492,12 @@ public abstract class AbstractQuerySpec implements QuerySpec {
             for (StarPredicate child : ((ListPredicate)predicate).getChildren()) {
                 applySubqueryMap(child, subqueryMap);
             }
-        } else if (predicate instanceof ValueColumnPredicate) {
-            ((ValueColumnPredicate)predicate).setSubqueryMap(subqueryMap);
+        } else if (predicate instanceof ListColumnPredicate) {
+            for (StarPredicate child : ((ListColumnPredicate)predicate).getPredicates()) {
+                applySubqueryMap(child, subqueryMap);
+            }
+        } else if (predicate instanceof AbstractColumnPredicate) {
+            ((AbstractColumnPredicate)predicate).setSubqueryMap(subqueryMap);
         }
     }
 
