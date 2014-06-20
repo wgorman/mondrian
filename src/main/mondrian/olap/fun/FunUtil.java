@@ -427,6 +427,10 @@ public class FunUtil extends Util {
                     if (member == null) {
                         break;
                     }
+                    // No Need to calculate all member.
+                    if (member.isAll()) {
+                        break;
+                    }
                     if (mapMemberToValue.containsKey(member)) {
                         break;
                     }
