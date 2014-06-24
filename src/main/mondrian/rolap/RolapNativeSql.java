@@ -703,6 +703,9 @@ public class RolapNativeSql {
                 if (m.isMeasure()) {
                     if (!m.isCalculated() || SqlConstraintUtils.isSupportedCalculatedMember(m)) {
                           rs.measureFound = true;
+                          if (m instanceof RolapStoredMeasure) {
+                              saveStoredMeasure((RolapStoredMeasure)m);
+                          }
                     }
                 } else {
                     if (m.isAll()) {

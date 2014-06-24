@@ -1086,8 +1086,6 @@ public class RolapResult extends ResultBase {
         RolapEvaluator evaluator = slicerEvaluator.push();
         if (contextEvaluator != null && contextEvaluator.isEvalAxes()) {
             evaluator.setEvalAxes(true);
-            evaluator.setContext(contextEvaluator.getMembers());
-            evaluator.setSlicerTuples(((RolapEvaluator)contextEvaluator).getSlicerTuples());
         }
 
         final int savepoint = evaluator.savepoint();
