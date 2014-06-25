@@ -162,7 +162,10 @@ public class ValueColumnPredicate
     public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
         final RolapStar.Column column = getConstrainedColumn();
         String expr = column.generateExprString(sqlQuery);
-        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
+        if (sqlQuery.correlatedSubquery && subqueryMap != null
+            && column.getTable() != null
+            && column.getTable().getSubQueryAlias() != null)
+        {
             // this will probably need to move into its own separate "M2M Member" subclass.
 
             // TODO: Support Multi-Level M2M, at the moment this assumes one level.  Need to push this up a layer,

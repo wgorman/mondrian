@@ -832,7 +832,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
           + "Axis #2:\n"
           + "{[Account].[Mark-Paul]}\n"
           + "Row #0: 100\n");
-  }
+    }
 
     public void testNativeTopCount() {
         boolean topcount = prop.EnableNativeTopCount.get();
@@ -1007,6 +1007,22 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "Row #2: 200\n"
             + "Row #2: 200\n"
             + "Row #2: 200\n");
+    }
+
+    public void testMultiLevelSlicerPredicateOptimization() {
+      TestContext context = createMultiHierarchyTestContext();
+      context.assertQueryReturns(
+          "Select\n"
+          + "{[Measures].[Amount]} on columns\n"
+          + "From [M2M] WHERE CrossJoin({[Account].[One Person], [Account].[Two People].[Mark-Paul]}, {[Customer].[Orlando].[Paul], [Customer].[San Francisco].[Mark]})\n",
+          "Axis #0:\n"
+          + "{[Account].[One Person], [Customer].[Orlando].[Paul]}\n"
+          + "{[Account].[One Person], [Customer].[San Francisco].[Mark]}\n"
+          + "{[Account].[Two People].[Mark-Paul], [Customer].[Orlando].[Paul]}\n"
+          + "{[Account].[Two People].[Mark-Paul], [Customer].[San Francisco].[Mark]}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[Amount]}\n"
+          + "Row #0: 510\n");
     }
 
     public void testMultiHierarchyQueries() {

@@ -496,7 +496,8 @@ public abstract class AbstractQuerySpec implements QuerySpec {
             for (StarPredicate child : ((ListColumnPredicate)predicate).getPredicates()) {
                 applySubqueryMap(child, subqueryMap);
             }
-        } else if (predicate instanceof AbstractColumnPredicate) {
+        }
+        if (predicate instanceof AbstractColumnPredicate) {
             ((AbstractColumnPredicate)predicate).setSubqueryMap(subqueryMap);
         }
     }

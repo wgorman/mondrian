@@ -15,6 +15,8 @@ import mondrian.rolap.sql.SqlQuery;
 
 import java.util.*;
 
+import javax.management.Query;
+
 /**
  * Predicate which is the union of a list of predicates, each of which applies
  * to the same, single column. It evaluates to
@@ -316,7 +318,10 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
 
         final RolapStar.Column column = getConstrainedColumn();
         String expr = column.generateExprString(sqlQuery);
-        if (subqueryMap != null && column.getTable() != null && column.getTable().getSubQueryAlias() != null) {
+        if (sqlQuery.correlatedSubquery && subqueryMap != null
+            && column.getTable() != null
+            && column.getTable().getSubQueryAlias() != null)
+        {
             // this will probably need to move into its own separate "M2M Member" subclass.
             // Note this is about the same exact logic in ValueColumnPredicate.
 
