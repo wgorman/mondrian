@@ -9,8 +9,10 @@
 */
 package mondrian.rolap;
 
+import mondrian.olap.Dimension;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
+import mondrian.olap.Hierarchy;
 import mondrian.olap.Level;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
@@ -22,6 +24,7 @@ import mondrian.rolap.sql.SqlQuery;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 public class RolapNativeExisting extends RolapNativeSet {
@@ -53,15 +56,6 @@ public class RolapNativeExisting extends RolapNativeSet {
             crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
 
         if (failedCjArg(allArgs)) {
-//            if (args[0] instanceof ResolvedFunCall) {
-//                // could be a sql-pushable that isn't a cjarg,
-//                // we should be able to work with that
-//                NativeEvaluator delegatingEvaluator =
-//                  getDelegatingEvaluator(evaluator, (ResolvedFunCall) args[0]);
-//                if (delegatingEvaluator != null) {
-//                    return delegatingEvaluator;
-//                }
-//            }
             alertNonNative(evaluator, fun, args[0]);
             return null;
         }
@@ -70,7 +64,8 @@ public class RolapNativeExisting extends RolapNativeSet {
             return null;
         }
         final CrossJoinArg[] contextPredicateArgs =
-            getContextArgs(cjArgs, evaluator, restrictMemberTypes());
+            getContextArgsByDim(cjArgs, evaluator, restrictMemberTypes());
+//TODO testing            getContextArgs(cjArgs, evaluator, restrictMemberTypes());
         if (contextPredicateArgs == null) {
             alertNonNative(evaluator, fun, args[0]);
         }
@@ -84,13 +79,6 @@ public class RolapNativeExisting extends RolapNativeSet {
             combinedArgs,
             evaluator);
         return createNativeEvaluator(evaluator, cjArgs, constraint);
-//        LOGGER.debug("native EXISTING");
-//        RolapEvaluator setEvaluator = evaluator.push();
-//        overrideContext(setEvaluator, cjArgs, null);
-//        return new SetEvaluator(
-//            cjArgs,
-//            setEvaluator.getSchemaReader(),
-//            constraint);
     }
 
     public SetEvaluator createNativeEvaluator(
@@ -107,41 +95,8 @@ public class RolapNativeExisting extends RolapNativeSet {
             constraint);
     }
 
-//    public NativeEvaluator getDelegatingEvaluator(
-//        RolapEvaluator evaluator,
-//        ResolvedFunCall innerCall)
-//    {
-//        NativeEvaluator eval = evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
-//            evaluator, innerCall.getFunDef(), innerCall.getArgs());
-//        if (eval instanceof SetEvaluator) {
-//            SetEvaluator setEval = (SetEvaluator) eval;
-//            if (setEval.getArgs() != null
-//                && setEval.getConstraint() instanceof SetConstraint)
-//            {
-//                SetConstraint setConstraint =
-//                    (SetConstraint) setEval.getConstraint();
-//                final CrossJoinArg[] contextPredicateArgs =
-//                    getContextArgs(
-//                        setEval.getArgs(),
-//                        evaluator,
-//                        restrictMemberTypes());
-//                if (contextPredicateArgs != null) {
-//                    DelegatingExistingConstraint constraint =
-//                        new DelegatingExistingConstraint(
-//                            setEval.getArgs(),
-//                            contextPredicateArgs,
-//                            evaluator,
-//                            setConstraint, true);
-//                    LOGGER.debug("delegate EXISTING");
-//                    return createNativeEvaluator(evaluator, setEval.getArgs(), constraint);
-//                }
-//            }
-//        }
-//        return null;
-//    }
-
     /**
-     * 
+     * FIXME: change to use dimensions
      * @param cjArgs
      * @param evaluator
      * @param restrictMemberTypes
@@ -177,6 +132,59 @@ public class RolapNativeExisting extends RolapNativeSet {
             new CrossJoinArg[contextPredicates.size()]);
     }
 
+    /**
+     * Get all context members from the same dimensions as the provided cjArgs
+     */
+    public static CrossJoinArg[] getContextArgsByDim(
+      CrossJoinArg[] cjArgs,
+      RolapEvaluator evaluator,
+      boolean restrictMemberTypes)
+    {
+        ArrayList<CrossJoinArg> contextPredicates =
+            new ArrayList<CrossJoinArg>();
+        HashSet<Dimension> processedDims = new HashSet<Dimension>();
+        for (CrossJoinArg cjArg : cjArgs) {
+            // get each relevant context member
+            RolapLevel level = cjArg.getLevel();
+            if (level != null) {
+                Dimension dimension = level.getHierarchy().getDimension();
+                if (!processedDims.add(dimension)) {
+                    // avoid repeated contextMembers
+                    continue;
+                }
+                for (RolapMember contextMember
+                    : getContext(evaluator, dimension))
+                {
+                    if (!contextMember.isAll()) {
+                        CrossJoinArg predicate =
+                            MemberListCrossJoinArg.create(
+                                evaluator,
+                                Collections.singletonList(contextMember),
+                                restrictMemberTypes, false);
+                        if (predicate == null){ 
+                            return null;
+                        }
+                        contextPredicates.add(predicate);
+                    }
+                }
+            }
+        }
+        return contextPredicates.toArray(
+            new CrossJoinArg[contextPredicates.size()]);
+    }
+
+    private static List<RolapMember> getContext(
+        RolapEvaluator evaluator,
+        Dimension dim)
+    {
+        Hierarchy[] dimHierarchies = dim.getHierarchies();
+        List<RolapMember> contextMembers =
+            new ArrayList<RolapMember>(dimHierarchies.length);
+        for(Hierarchy hierarchy : dimHierarchies) {
+            contextMembers.add(evaluator.getContext(hierarchy));
+        }
+        return contextMembers;
+    }
 
     private static class ExistingConstraint extends SetConstraint {
         // only need the context
@@ -208,48 +216,6 @@ public class RolapNativeExisting extends RolapNativeSet {
           }
       }
     }
-
-//    static class DelegatingExistingConstraint extends SetConstraint {
-//        private SetConstraint delegatingConstraint;
-//        private CrossJoinArg[] contextPredicates;
-//
-//        DelegatingExistingConstraint(
-//            CrossJoinArg[] cjArgs,
-//            CrossJoinArg[] context,
-//            RolapEvaluator evaluator,
-//            SetConstraint inner,
-//            boolean strict)
-//        {
-//            super(cjArgs, evaluator, strict);
-//            assert inner != null;
-//            this.delegatingConstraint = inner;
-//            this.contextPredicates = context;
-//        }
-//        @Override
-//        public void addConstraint(
-//            SqlQuery sqlQuery,
-//            RolapCube baseCube,
-//            AggStar aggStar)
-//        {
-//            delegatingConstraint.addConstraint(sqlQuery, baseCube, aggStar);
-//            for (CrossJoinArg arg : contextPredicates) {
-//                arg.addConstraint(sqlQuery, baseCube, aggStar);
-//            }
-//        }
-//
-//        @Override
-//        protected boolean isJoinRequired() {
-//            return delegatingConstraint.isJoinRequired();
-//        }
-//
-//        @Override
-//        public Object getCacheKey() {
-//            ArrayList<Object> key = new ArrayList<Object>(2); 
-//            key.add(delegatingConstraint.getCacheKey());
-//            key.add(args);
-//            return key;
-//        }
-//    }
 
 }
 // End RolapNativeExisting.java

@@ -155,7 +155,7 @@ public class CrossJoinArgFactory {
                 return null;
             }
             CrossJoinArg[] contextPredicates =
-                RolapNativeExisting.getContextArgs(
+                RolapNativeExisting.getContextArgsByDim(
                     existingArgs.get(0),
                     evaluator,
                     exclude);
