@@ -50,7 +50,7 @@ public class DimensionType implements Type {
     }
 
     public boolean usesDimension(Dimension dimension, boolean definitely) {
-        // REVIEW: Should be '!definitely'?
+        //TODO REVIEW: Should be '!definitely'?
         return this.dimension == dimension
             || (definitely && this.dimension == null);
     }

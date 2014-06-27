@@ -13,7 +13,6 @@
 
 package mondrian.rolap;
 
-import mondrian.calc.TupleList;
 import mondrian.olap.*;
 import mondrian.olap.fun.VisualTotalsFunDef.VisualTotalMember;
 import mondrian.resource.MondrianResource;

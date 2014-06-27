@@ -1838,7 +1838,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
      * Found an issue with Native Filter NonEmpty behavior... Need to log a JIRA
      */
     public void testFilterNonEmptyCrossJoin() {
-        // UNCOMMENT TO SEE PASSING: MondrianProperties.instance().EnableNativeFilter.set( false );
         String mdx =
             "select Filter(NonEmptyCrossJoin([Time].[Year].Members, [Product].[All Products].Children), 1=1) on 0 from [Sales]";
         assertQueryReturns(
@@ -3151,6 +3150,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
             + "MEMBER [Measures].[ExistingNonEmpty] AS Count(Filter(NonEmpty( Existing [Product].[Product Name].Members), 1=1))\n"
             + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting], [Measures].[ExistingNonEmpty]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+        //TODO sql
 //        "WITH MEMBER [Measures].[WithExisting] AS Count(Filter(NonEmpty(Existing [Product].[Product Name].Members), 1=1))\n"
 //        + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
 //        + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
@@ -3231,18 +3231,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #1: 295\n"
             + "Row #1: 1,560\n"
             + "Row #1: 294\n"); //existing+nonempty
-//            "Axis #0:\n"
-//            + "{[Product].[Non-Consumable]}\n"
-//            + "Axis #1:\n"
-//            + "{[Measures].[WithExisting]}\n"
-//            + "{[Measures].[WithoutExisting]}\n"
-//            + "Axis #2:\n"
-//            + "{[Time].[1997]}\n"
-//            + "{[Time].[1997].[Q4].[12]}\n"
-//            + "Row #0: 295\n"
-//            + "Row #0: 1,560\n"
-//            + "Row #1: 294\n" // or 295?
-//            + "Row #1: 1,560\n");
     }
 
     public void testNativeFilterNoMeasureUnconstrained() {
@@ -3268,29 +3256,10 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 5,021\n");
     }
 
-    
-    public void testExistingNonEmptyScenarioPART() {
-  //    propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
-      propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, false);
-      String mdx =
-          "WITH MEMBER [Measures].[Existing Test 1] AS Count(NonEmpty([Time].[Month].Members))\n"
-          //+ "MEMBER [Measures].[Existing Test 2] AS Count(Existing NonEmpty([Time].[Month].Members))\n"
-          + "SELECT {[Measures].[Existing Test 1]} ON 0, {[Time].[1997].[Q1]} ON 1 FROM [Sales]";
-      assertQueryReturns(mdx,
-          "Axis #0:\n"
-          + "{}\n"
-          + "Axis #1:\n"
-          + "{[Measures].[Existing Test 1]}\n"
-          //+ "{[Measures].[Existing Test 2]}\n"
-          + "Axis #2:\n"
-          + "{[Time].[1997].[Q1]}\n"
-          + "Row #0: 12\n");
-//          + "Row #0: 3\n");
-    }
     // Similar to MDX found in this article: http://www.bp-msbi.com/2012/02/what-exists-and-what-is-empty-in-mdx/
     public void testExistingNonEmptyScenario() {
-//        propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
-        propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, true);
+        //        propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
+        //propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, true);
         String mdx =
             "WITH MEMBER [Measures].[Existing Test 1] AS Count(NonEmpty([Time].[Month].Members))\n"
             + "MEMBER [Measures].[Existing Test 2] AS Count(Existing NonEmpty([Time].[Month].Members))\n"
@@ -3420,6 +3389,51 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "Row #0: 40\n"
           + "Row #1: 40\n"
           + "Row #1: 40\n");
+    }
+
+    public void testExistingDiffHierarchySameDim() {
+        // test existing constraining a set by a member in a different
+        // hierarchy in the same dimension
+        String mdx = "WITH MEMBER [Measures].[Count Existing]"
+          + " AS Count( existing [Time.Weekly].[Week].Members)\n"
+          + "SELECT {[Measures].[Count Existing]} ON 0,\n"
+          + " {[Time].[1997].[Q2]} ON 1\n"
+          + " FROM [Sales]";
+        // 14 weeks overlap with Q2, from week 15 (30/Mar - 05/Apr)
+        // to week 28 (29/Jun - 05/Jul)
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+           // + "{[Measures].[Count All]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Row #0: 14\n");
+        //TODO sql
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        String mySql = "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `time_by_day`.`the_year` as `c0`,\n"
+            + "    `time_by_day`.`week_of_year` as `c1`\n"
+            + "from\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    (`time_by_day`.`quarter` = 'Q2' and `time_by_day`.`the_year` = 1997)\n"
+            + "group by\n"
+            + "    `time_by_day`.`the_year`,\n"
+            + "    `time_by_day`.`week_of_year`\n"
+            + "order by\n"
+            + "    ISNULL(`time_by_day`.`the_year`) ASC, `time_by_day`.`the_year` ASC,\n"
+            + "    ISNULL(`time_by_day`.`week_of_year`) ASC, `time_by_day`.`week_of_year` ASC) as `countQuery`";
+
     }
 
     /**
