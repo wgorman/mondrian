@@ -146,6 +146,31 @@ public class CrossJoinArgFactory {
         if ("NativizeSet".equalsIgnoreCase(fun.getName()) && args.length == 1) {
             return checkCrossJoinArg(evaluator, args[0], returnAny, true);
         }
+        if ("Existing".equalsIgnoreCase(fun.getName())
+            && MondrianProperties.instance().EnableNativeExisting.get())
+        {
+            List<CrossJoinArg[]> existingArgs =
+                checkCrossJoinArg(evaluator, args[0], returnAny, true);
+            if (existingArgs == null) {
+                return null;
+            }
+            CrossJoinArg[] contextPredicates =
+                RolapNativeExisting.getContextArgsByDim(
+                    existingArgs.get(0),
+                    evaluator,
+                    exclude);
+            if (contextPredicates == null) {
+                return null;
+            }
+            allArgs = new ArrayList<CrossJoinArg[]>(2);
+            allArgs.add(existingArgs.get(0));
+            if (existingArgs.size() > 1) {
+                contextPredicates =
+                    Util.appendArrays(existingArgs.get(1), contextPredicates);
+            }
+            allArgs.add(contextPredicates);
+            return allArgs;
+        }
         if ("AddCalculatedMembers".equalsIgnoreCase(fun.getName()) && args.length == 1) {
            allArgs = checkCrossJoinArg(evaluator, args[0], returnAny, true);
            // Now check to see if any of the "All Args" list contain calculated members.

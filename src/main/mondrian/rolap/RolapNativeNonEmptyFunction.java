@@ -184,7 +184,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
 
             NativeEvaluator nativeEvaluator =
                 new SetEvaluator(returnArgs, schemaReader, constraint);
-            RolapUtil.SQL_LOGGER.debug("NonEmpty() going native");
+            LOGGER.debug("NonEmpty() going native");
             return nativeEvaluator;
         } finally {
             evaluator.restore(savepoint);

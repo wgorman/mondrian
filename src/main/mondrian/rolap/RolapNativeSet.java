@@ -118,7 +118,7 @@ public abstract class RolapNativeSet extends RolapNative {
             }
         }
 
-        private boolean levelIsOnBaseCube(
+        protected boolean levelIsOnBaseCube(
             final RolapCube baseCube, final RolapLevel level)
         {
             return baseCube.findBaseCubeHierarchy(level.getHierarchy()) != null;

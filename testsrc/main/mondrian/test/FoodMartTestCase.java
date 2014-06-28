@@ -36,6 +36,11 @@ public class FoodMartTestCase extends TestCase {
      */
     protected final PropertySaver propSaver = new PropertySaver();
 
+    protected static final String TimeWeekly =
+      MondrianProperties.instance().SsasCompatibleNaming.get()
+          ? "[Time].[Weekly]"
+          : "[Time.Weekly]";
+
     public FoodMartTestCase(String name) {
         super(name);
     }

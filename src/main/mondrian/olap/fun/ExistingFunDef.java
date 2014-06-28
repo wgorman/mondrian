@@ -17,7 +17,9 @@ import mondrian.calc.TupleCollections;
 import mondrian.calc.TupleIterable;
 import mondrian.calc.TupleList;
 import mondrian.calc.impl.AbstractListCalc;
+import mondrian.calc.impl.UnaryTupleList;
 import mondrian.mdx.ResolvedFunCall;
+import mondrian.olap.Dimension;
 import mondrian.olap.Evaluator;
 import mondrian.olap.Exp;
 import mondrian.olap.Hierarchy;
@@ -27,11 +29,21 @@ import mondrian.olap.Validator;
 import mondrian.olap.type.Type;
 import mondrian.rolap.ManyToManyUtil;
 import mondrian.rolap.RolapEvaluator;
+import mondrian.rolap.RolapHierarchy;
+import mondrian.rolap.RolapNativeExisting;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+/**
+ * Existing keyword limits a set to what exists within the current context, ie
+ * as if context members of the same dimension as the set were in the slicer.
+ */
 public class ExistingFunDef extends FunDefBase {
 
     static final ExistingFunDef instance = new ExistingFunDef();
@@ -50,7 +62,7 @@ public class ExistingFunDef extends FunDefBase {
 
     public Calc compileCall(final ResolvedFunCall call, ExpCompiler compiler) {
         final IterCalc setArg = compiler.compileIter(call.getArg(0));
-        // final Type myType = call.getArg(0).getType();
+         final Type myType = call.getArg(0).getType();
 
         return new AbstractListCalc(call, new Calc[] {setArg}) {
             public boolean dependsOn(Hierarchy hierarchy) {
@@ -58,8 +70,9 @@ public class ExistingFunDef extends FunDefBase {
                 // Note, this is used by native evaluation.
                 // otherwise the native evaluator will override the current
                 // context to the default.
-                return true;
-                // return myType.usesHierarchy(hierarchy, false);
+                boolean argsDepend = super.dependsOn(hierarchy);
+                return argsDepend
+                    || myType.usesDimension(hierarchy.getDimension(), false);
             }
 
             public TupleList evaluateList(Evaluator evaluator) {
@@ -75,40 +88,101 @@ public class ExistingFunDef extends FunDefBase {
                 if (nativeEvaluator != null) {
                     return (TupleList) nativeEvaluator.execute(ResultStyle.LIST);
                 } else {
-                  TupleIterable setTuples = setArg.evaluateIterable(evaluator);
-  
-                  TupleList result =
-                      TupleCollections.createList(setTuples.getArity());
-                  List<Member> contextMembers =
-                      Arrays.asList(evaluator.getMembers());
-  
-                  List<Hierarchy> argDims = null;
-                  List<Hierarchy> contextDims = getHierarchies(contextMembers);
-  
-                  for (List<Member> tuple : setTuples) {
-                      if (argDims == null) {
-                          argDims = getHierarchies(tuple);
-                      }
-                      if (existsInTuple(tuple, contextMembers,
-                          argDims, contextDims, evaluator))
-                      {
-                          result.add(tuple);
-                      }
-                  }
-                  return result;
+                    TupleIterable setTuples = setArg.evaluateIterable(evaluator);
+
+                    TupleList result =
+                        TupleCollections.createList(setTuples.getArity());
+                    List<Member> contextMembers =
+                        Arrays.asList(evaluator.getMembers());
+
+                    List<Hierarchy> argDims = null;
+                    List<Hierarchy> contextDims = getHierarchies(contextMembers, false);
+
+                    for (List<Member> tuple : setTuples) {
+                        if (argDims == null) {
+                            argDims = getHierarchies(tuple, false);
+                        }
+                        if (existsInTuple(tuple, contextMembers,
+                            argDims, contextDims, evaluator))
+                        {
+                            result.add(tuple);
+                        }
+                    }
+                    // include different hierarchies from the same dimension
+                    return postFilterDiffHierarchies(
+                        (RolapEvaluator) evaluator,
+                        argDims,
+                        getHierarchies(contextMembers, true),
+                        result,
+                        new UnaryTupleList(contextMembers));
               }
             }
         };
     }
 
-    private static List<Hierarchy> getHierarchies(final List<Member> members)
+    private static List<Hierarchy> getHierarchies(final List<Member> members, boolean removeAlls)
     {
         List<Hierarchy> hierarchies = new ArrayList<Hierarchy>(members.size());
         for (Member member : members) {
-            hierarchies.add(member.getHierarchy());
+            if (!removeAlls || !member.isAll()) {
+                hierarchies.add(member.getHierarchy());
+            }
         }
         return hierarchies;
     }
+//
+    private static TupleList postFilterDiffHierarchies(
+        RolapEvaluator evaluator,
+        List<Hierarchy> leftHierarchies, 
+        List<Hierarchy> rightHierarchies,
+        TupleList leftTuples,
+        TupleList contextMembers)
+    {
+        Map<Dimension, Set<Hierarchy>> leftDims =
+            getDimensionHierarchies(leftHierarchies);
+        //TODO: remove all mbrs
+        Map<Dimension, Set<Hierarchy>> rightDims =
+          getDimensionHierarchies(rightHierarchies);
+        for (Dimension dim : leftDims.keySet()) {
+            Set<Hierarchy> left = leftDims.get(dim);
+            Set<Hierarchy> right = rightDims.get(dim);
+            // if different hierarchies from same dim, we need to apply special
+            // handling
+            if (right != null
+                && (left.size() > 1 || right.size() > 1 || !left.equals(right)))
+            {
+                for (Hierarchy hierarchyLeft : left) {
+                    for (Hierarchy hierarchyRight : right) {
+                        if (!hierarchyLeft.equals(hierarchyRight)) {
+                          // TODO: hierarchies must have same tables
+                          leftTuples =
+                              RolapNativeExisting
+                                  .postFilterExistingRelatedHierarchies(
+                                      evaluator,
+                                      (RolapHierarchy) hierarchyLeft, leftTuples,
+                                      (RolapHierarchy) hierarchyRight, contextMembers);
+                        }
+                    }
+                }
+            }
+        }
+        return leftTuples;
+    }
 
+    private static Map<Dimension, Set<Hierarchy>> getDimensionHierarchies(
+        List<Hierarchy> hierarchies)
+    {
+        Map<Dimension, Set<Hierarchy>> dims =
+            new HashMap<Dimension, Set<Hierarchy>>();
+        for (Hierarchy hierarchy: hierarchies) {
+            Set<Hierarchy> list = dims.get(hierarchy.getDimension());
+            if (list == null) {
+                list = new HashSet<Hierarchy>();
+                dims.put(hierarchy.getDimension(), list);
+            }
+            list.add(hierarchy);
+        }
+        return dims;
+    }
 }
 // End ExistingFunDef.java

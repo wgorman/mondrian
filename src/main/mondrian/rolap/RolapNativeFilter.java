@@ -13,7 +13,6 @@ package mondrian.rolap;
 
 import mondrian.mdx.MdxVisitorImpl;
 import mondrian.mdx.MemberExpr;
-import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
@@ -160,12 +159,12 @@ public class RolapNativeFilter extends RolapNativeSet {
         // the whole context to the filter.
         boolean existing = false;
         Exp arg0 = args[0];
-        if (args[0] instanceof ResolvedFunCall) {
-            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
-                existing = true;
-                arg0 = ((ResolvedFunCall)args[0]).getArg(0);
-            }
-        }
+//        if (args[0] instanceof ResolvedFunCall) {
+//            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
+//                existing = true;
+//                arg0 = ((ResolvedFunCall)args[0]).getArg(0);
+//            }
+//        }
 
         // extract the set expression
         List<CrossJoinArg[]> allArgs =
@@ -217,7 +216,6 @@ public class RolapNativeFilter extends RolapNativeSet {
             return null;
         }
 
-        LOGGER.debug("using native filter");
 
         final int savepoint = evaluator.savepoint();
         try {
@@ -257,13 +255,45 @@ public class RolapNativeFilter extends RolapNativeSet {
                 }
             }
 
-            TupleConstraint constraint =
+            SetConstraint constraint =
                 new FilterConstraint(combinedArgs, evaluator, filterExpr, existing, sql.preEvalExprs);
+            // constraint may still fail
+            if (!isValidFilterConstraint(constraint, evaluator, combinedArgs)) {
+                return null;
+            }
+            LOGGER.debug("using native filter");
             return new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
         } finally {
             evaluator.restore(savepoint);
         }
+
     }
+
+    /**
+     * Check if the need to avoid joining with the fact table is compatible
+     * with member constraints to get the right results.<br/>
+     * A proper solution would involve changing how joins can be handled in
+     * {@link SqlConstraintUtils}, until then we better bail out.
+     */
+    private static boolean isValidFilterConstraint(
+      SetConstraint filterConstraint,
+      RolapEvaluator evaluator,
+      CrossJoinArg[] combinedArgs)
+    {
+        // in this situation any CrossJoinArg constraints will be skipped
+        // to prevent fact table join and non-empty results (MONDRIAN-1133,1694)
+        // this may cause wrong results for args with member constraints
+        if (!evaluator.isNonEmpty() && !filterConstraint.isJoinRequired()) {
+            // known constraining args have members, but this might change
+            for (CrossJoinArg cjArg : combinedArgs) {
+                if (cjArg.getMembers() != null) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
 }
 
 // End RolapNativeFilter.java

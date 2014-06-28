@@ -1837,8 +1837,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     /**
      * Found an issue with Native Filter NonEmpty behavior... Need to log a JIRA
      */
-    public void _testFilterNonEmptyCrossJoin() {
-        // UNCOMMENT TO SEE PASSING: MondrianProperties.instance().EnableNativeFilter.set( false );
+    public void testFilterNonEmptyCrossJoin() {
         String mdx =
             "select Filter(NonEmptyCrossJoin([Time].[Year].Members, [Product].[All Products].Children), 1=1) on 0 from [Sales]";
         assertQueryReturns(
@@ -2249,10 +2248,10 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
             + "and\n"
             + "    `agg_c_14_sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+//            + "and\n"
+//            + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
             + "and\n"
-            + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "    (`product_class`.`product_family` = 'Drink')\n"
             + "group by\n"
             + "    `product_class`.`product_family`,\n"
             + "    `product_class`.`product_department`,\n"
@@ -2277,18 +2276,18 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "from\n"
             + "    `product` as `product`,\n"
             + "    `product_class` as `product_class`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`\n"
+            //+ "    `time_by_day` as `time_by_day`\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
             + "where\n"
             + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
             + "and\n"
             + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+//            + "and\n"
+//            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+//            + "and\n"
+//            + "    `time_by_day`.`the_year` = 1997\n"
             + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "    (`product_class`.`product_family` = 'Drink')\n"
             + "group by\n"
             + "    `product_class`.`product_family`,\n"
             + "    `product_class`.`product_department`,\n"
@@ -2304,7 +2303,8 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
             + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC";
         SqlPattern mysqlPattern =
-            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery,
+              mysqlQuery.substring(0, mysqlQuery.indexOf("where")));
         assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
     }
 
@@ -3058,16 +3058,12 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 12,334\n");
     }
 
-    public void testNativeCountFilterExistingScenario() {
-        final boolean useAgg =
-            MondrianProperties.instance().UseAggregates.get()
-            && MondrianProperties.instance().ReadAggregates.get();
-        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
-
+    public void testNativeCountNonEmptyExisting() {
         String mdx =
-            "WITH MEMBER [Measures].[WithExisting] AS Count(Filter(Existing [Product].[Product Name].Members, 1=1))\n"
-            + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
-            + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+            "WITH MEMBER [Measures].[WithExisting] AS Count(NonEmpty(Existing [Product].[Product Name].Members))\n"
+            + " MEMBER [Measures].[WithoutExisting] AS Count(NonEmpty([Product].[Product Name].Members))\n"
+            + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting]} ON 0,\n"
+            + " { [Time].[1997].[Q4].[12], [Time].[1997]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
 
         String mysqlQuery =
             "select\n"
@@ -3098,7 +3094,9 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "and\n"
             + "    `time_by_day`.`month_of_year` = 12\n"
             + "and\n"
-            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+            + "    (`product_class`.`product_family` = 'Non-Consumable')\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
             + "group by\n"
             + "    `product_class`.`product_family`,\n"
             + "    `product_class`.`product_department`,\n"
@@ -3106,8 +3104,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `product_class`.`product_subcategory`,\n"
             + "    `product`.`brand_name`,\n"
             + "    `product`.`product_name`\n"
-            + "having\n"
-            + "    (1 = 1)\n"
             + "order by\n"
             + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
             + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
@@ -3115,17 +3111,19 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
             + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
             + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `countQuery`";
-
-        if (!useAgg && (MondrianProperties.instance().EnableNativeCount.get()
+        if (!isUseAgg() && (MondrianProperties.instance().EnableNativeCount.get()
             && MondrianProperties.instance().EnableNativeFilter.get()
             && MondrianProperties.instance().EnableNativeExisting.get()))
         {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
             getTestContext().flushSchemaCache();
             SqlPattern mysqlPattern =
-                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+                new SqlPattern(
+                    Dialect.DatabaseProduct.MYSQL,
+                    mysqlQuery,
+                    null);
             assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
         }
-
         assertQueryReturns(mdx,
             "Axis #0:\n"
             + "{[Product].[Non-Consumable]}\n"
@@ -3133,18 +3131,135 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "{[Measures].[WithExisting]}\n"
             + "{[Measures].[WithoutExisting]}\n"
             + "Axis #2:\n"
+            + "{[Time].[1997].[Q4].[12]}\n"
+            + "{[Time].[1997]}\n"
+            + "Row #0: 294\n"
+            + "Row #0: 1,558\n"
+            + "Row #1: 295\n"
+            + "Row #1: 1,559\n");
+  }
+
+    public void testNativeCountFilterExistingScenario() {
+//        final boolean useAgg =
+//            MondrianProperties.instance().UseAggregates.get()
+//            && MondrianProperties.instance().ReadAggregates.get();
+//        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        String mdx =
+            "WITH MEMBER [Measures].[WithExisting] AS Count(Filter(Existing [Product].[Product Name].Members, 1=1))\n"
+            + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
+            + "MEMBER [Measures].[ExistingNonEmpty] AS Count(Filter(NonEmpty( Existing [Product].[Product Name].Members), 1=1))\n"
+            + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting], [Measures].[ExistingNonEmpty]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+        //TODO sql
+//        "WITH MEMBER [Measures].[WithExisting] AS Count(Filter(NonEmpty(Existing [Product].[Product Name].Members), 1=1))\n"
+//        + "MEMBER [Measures].[WithoutExisting] AS Count(Filter([Product].[Product Name].Members, 1=1))\n"
+//        + "SELECT {[Measures].[WithExisting], [Measures].[WithoutExisting]} ON 0, {[Time].[1997], [Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+//        String mysqlQuery =
+//            "select\n"
+//            + "    COUNT(*)\n"
+//            + "from\n"
+//            + "    (select\n"
+//            + "    `product_class`.`product_family` as `c0`,\n"
+//            + "    `product_class`.`product_department` as `c1`,\n"
+//            + "    `product_class`.`product_category` as `c2`,\n"
+//            + "    `product_class`.`product_subcategory` as `c3`,\n"
+//            + "    `product`.`brand_name` as `c4`,\n"
+//            + "    `product`.`product_name` as `c5`\n"
+//            + "from\n"
+//            + "    `product` as `product`,\n"
+//            + "    `product_class` as `product_class`,\n"
+//            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+//            + "    `time_by_day` as `time_by_day`\n"
+//            + "where\n"
+//            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+//            + "and\n"
+//            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+//            + "and\n"
+//            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+//            + "and\n"
+//            + "    `time_by_day`.`the_year` = 1997\n"
+//            + "and\n"
+//            + "    `time_by_day`.`quarter` = 'Q4'\n"
+//            + "and\n"
+//            + "    `time_by_day`.`month_of_year` = 12\n"
+//            + "and\n"
+//            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+//            + "group by\n"
+//            + "    `product_class`.`product_family`,\n"
+//            + "    `product_class`.`product_department`,\n"
+//            + "    `product_class`.`product_category`,\n"
+//            + "    `product_class`.`product_subcategory`,\n"
+//            + "    `product`.`brand_name`,\n"
+//            + "    `product`.`product_name`\n"
+//            + "having\n"
+//            + "    (1 = 1)\n"
+//            + "order by\n"
+//            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+//            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
+//            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
+//            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
+//            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
+//            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `countQuery`";
+        // filter no longer nativizable
+//        if (!useAgg && (MondrianProperties.instance().EnableNativeCount.get()
+//            && MondrianProperties.instance().EnableNativeFilter.get()
+//            && MondrianProperties.instance().EnableNativeExisting.get()))
+//        {
+//            getTestContext().flushSchemaCache();
+//            SqlPattern mysqlPattern =
+//                new SqlPattern(
+//                    Dialect.DatabaseProduct.MYSQL,
+//                    mysqlQuery,
+////                    null);
+//                    mysqlQuery.substring(0, mysqlQuery.indexOf("from")));
+//            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+//        }
+
+        assertQueryReturns(mdx,
+          "Axis #0:\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[WithExisting]}\n"
+            + "{[Measures].[WithoutExisting]}\n"
+            + "{[Measures].[ExistingNonEmpty]}\n"
+            + "Axis #2:\n"
             + "{[Time].[1997]}\n"
             + "{[Time].[1997].[Q4].[12]}\n"
             + "Row #0: 295\n"
             + "Row #0: 1,560\n"
-            + "Row #1: 294\n"
-            + "Row #1: 1,560\n");
+            + "Row #0: 295\n"
+            + "Row #1: 295\n"
+            + "Row #1: 1,560\n"
+            + "Row #1: 294\n"); //existing+nonempty
+    }
+
+    public void testNativeFilterNoMeasureUnconstrained() {
+        // Native filter would return wrong results when no measure in filter
+        // and its arguments need member constraints
+        String mdx =
+          "WITH MEMBER [Measures].[AggNC] AS Aggregate( [Product].[Non-Consumable].Children )\n"
+          + "MEMBER [Measures].[AggNCFilter] AS Aggregate(Filter( [Product].[Non-Consumable].Children, 1=1 ))\n"
+          + "MEMBER [Measures].[AggNCFilterCJ] AS Aggregate(Filter( CrossJoin({[Product].[Non-Consumable]}, {[Gender].[All Gender].Children}), 1=1 ))\n"
+          + "SELECT {[Measures].[AggNC],[Measures].[AggNCFilter], [Measures].[AggNCFilterCJ]} ON 0,"
+          + " {[Time].[1997].[Q4].[12]} ON 1 FROM [Sales]";
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[AggNC]}\n"
+            + "{[Measures].[AggNCFilter]}\n"
+            + "{[Measures].[AggNCFilterCJ]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q4].[12]}\n"
+            + "Row #0: 5,021\n"
+            + "Row #0: 5,021\n"
+            + "Row #0: 5,021\n");
     }
 
     // Similar to MDX found in this article: http://www.bp-msbi.com/2012/02/what-exists-and-what-is-empty-in-mdx/
     public void testExistingNonEmptyScenario() {
-        propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
-        propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, true);
+        //        propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
+        //propSaver.set(MondrianProperties.instance().EnableNativeNonEmptyFunction, true);
         String mdx =
             "WITH MEMBER [Measures].[Existing Test 1] AS Count(NonEmpty([Time].[Month].Members))\n"
             + "MEMBER [Measures].[Existing Test 2] AS Count(Existing NonEmpty([Time].[Month].Members))\n"
@@ -3215,6 +3330,110 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql,
                 sql.substring(0, sql.indexOf("where")));
         assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+    }
+
+    public void testExistingCrossJoin() {
+        String mdx = "WITH MEMBER [Measures].[ProductMonthSum]"
+            + " AS Sum(Existing CrossJoin([Product].[Product Name].Members, [Time].[Month].Members))\n"
+            + "SELECT {[Measures].[ProductMonthSum]} ON 0,\n"
+            + " {([Product].[Food].[Snacks].[Candy],[Time].[1997].[Q1].[1])} ON 1\n"
+            + " FROM [Sales]";
+        String result =
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[ProductMonthSum]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Snacks].[Candy], [Time].[1997].[Q1].[1]}\n"
+            + "Row #0: 549\n";
+        assertQueryReturns(mdx, result);
+        mdx = "WITH MEMBER [Measures].[ProductMonthSum]"
+            + " AS Sum( CrossJoin( Existing[Product].[Product Name].Members, Existing [Time].[Month].Members))\n"
+            + "SELECT {[Measures].[ProductMonthSum]} ON 0,\n"
+            + " {([Product].[Food].[Snacks].[Candy],[Time].[1997].[Q1].[1])} ON 1\n"
+            + " FROM [Sales]";
+        assertQueryReturns(mdx, result);
+        mdx = "WITH MEMBER [Measures].[ProductMonthSum]"
+            + " AS Sum( CrossJoin( Existing [Product].[Product Name].Members, Existing [Time].[Month].Members))\n"
+            + "SELECT {[Measures].[ProductMonthSum]} ON 0,\n"
+            + " {([Product].[Food].[Snacks].[Candy])} ON 1\n"
+            + " FROM [Sales] where [Time].[1997].[Q1].[1]";
+        result = "Axis #0:\n"
+            + "{[Time].[1997].[Q1].[1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[ProductMonthSum]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Snacks].[Candy]}\n"
+            + "Row #0: 549\n";
+        assertQueryReturns(mdx, result);
+    }
+
+    public void _testExistingEmptyCount() {
+      // the 2 empty candy in q1 are not counted
+      String mdx = "WITH MEMBER [Measures].[Count Existing]"
+          + " AS Count( existing CrossJoin( [Product].[Product Name].Members, [Time].[Month].Members))\n"
+          + " MEMBER [Measures].[With Exists] AS Count(Exists( CrossJoin([Product].[Product Name].Members, [Time].[Month].Members) , ([Product].CurrentMember, [Time].CurrentMember)) )"
+          + "SELECT {[Measures].[Count Existing], [Measures].[With Exists]} ON 0,\n"
+          + " {([Product].[Food].[Snacks].[Candy],[Time].[1997].[Q1].[1]), ([Product].[Food].[Snacks].[Candy],[Time].[1997].[Q1].[2])} ON 1\n"
+          + " FROM [Sales]";
+      assertQueryReturns(mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[Count Existing]}\n"
+          + "{[Measures].[With Exists]}\n"
+          + "Axis #2:\n"
+          + "{[Product].[Food].[Snacks].[Candy], [Time].[1997].[Q1].[1]}\n"
+          + "{[Product].[Food].[Snacks].[Candy], [Time].[1997].[Q1].[2]}\n"
+          + "Row #0: 40\n"
+          + "Row #0: 40\n"
+          + "Row #1: 40\n"
+          + "Row #1: 40\n");
+    }
+
+    public void testExistingDiffHierarchySameDim() {
+        // test existing constraining a set by a member in a different
+        // hierarchy in the same dimension
+        String mdx = "WITH MEMBER [Measures].[Count Existing]"
+          + " AS Count( existing [Time.Weekly].[Week].Members)\n"
+          + "SELECT {[Measures].[Count Existing]} ON 0,\n"
+          + " {[Time].[1997].[Q2]} ON 1\n"
+          + " FROM [Sales]";
+        // 14 weeks overlap with Q2, from week 15 (30/Mar - 05/Apr)
+        // to week 28 (29/Jun - 05/Jul)
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+           // + "{[Measures].[Count All]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Row #0: 14\n");
+        //TODO sql
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        String mySql = "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `time_by_day`.`the_year` as `c0`,\n"
+            + "    `time_by_day`.`week_of_year` as `c1`\n"
+            + "from\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    (`time_by_day`.`quarter` = 'Q2' and `time_by_day`.`the_year` = 1997)\n"
+            + "group by\n"
+            + "    `time_by_day`.`the_year`,\n"
+            + "    `time_by_day`.`week_of_year`\n"
+            + "order by\n"
+            + "    ISNULL(`time_by_day`.`the_year`) ASC, `time_by_day`.`the_year` ASC,\n"
+            + "    ISNULL(`time_by_day`.`week_of_year`) ASC, `time_by_day`.`week_of_year` ASC) as `countQuery`";
+
     }
 
     /**

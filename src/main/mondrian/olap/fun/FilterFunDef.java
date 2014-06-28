@@ -89,11 +89,12 @@ class FilterFunDef extends FunDefBase {
         BooleanCalc bcalc = compiler.compileBoolean(call.getArg(1));
         Calc[] calcs = new Calc[] {imlcalc, bcalc};
         boolean existing = false;
-        if (call.getArg(0) instanceof ResolvedFunCall) {
-            if (((ResolvedFunCall)call.getArg(0)).getFunName().equalsIgnoreCase("existing")) {
-                existing = true;
-            }
-        }
+        // CJArg should now handle this case
+//        if (call.getArg(0) instanceof ResolvedFunCall) {
+//            if (((ResolvedFunCall)call.getArg(0)).getFunName().equalsIgnoreCase("existing")) {
+//                existing = true;
+//            }
+//        }
 
         // check returned calc ResultStyles
         checkIterListResultStyles(imlcalc);

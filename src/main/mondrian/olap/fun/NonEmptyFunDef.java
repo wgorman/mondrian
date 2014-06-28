@@ -25,11 +25,8 @@ import mondrian.olap.FunDef;
 import mondrian.olap.Hierarchy;
 import mondrian.olap.Member;
 import mondrian.olap.NativeEvaluator;
-import mondrian.olap.QueryAxis;
 import mondrian.olap.type.MemberType;
 import mondrian.olap.type.TupleType;
-import mondrian.olap.type.Type;
-import mondrian.rolap.RolapEvaluator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,26 +62,12 @@ public class NonEmptyFunDef extends FunDefBase {
             typeList.toArray(new MemberType[typeList.size()]);
         // must form valid tuples
         TupleType.checkHierarchies(types);
-        // for hierarchy usage check
-        final TupleType argsType = new TupleType(types);
-        QueryAxis slicer = compiler.getValidator().getQuery().getSlicerAxis();
-        final Type slicerType =
-            (slicer != null)
-                ? slicer.getSet().getType()
-                : null;
-
         return new AbstractListCalc(
             call, new Calc[] {arg1Calc, arg2Calc}, false)
         {
             @Override
             public boolean dependsOn(Hierarchy hierarchy) {
-                boolean depends = super.dependsOn(hierarchy);
-                // we depend on the slicer if not overrding it
-                // if we don't report this SimplifyEvaluator
-                // will reset the context
-                return depends
-                    || (slicerType != null
-                        && slicerType.usesHierarchy(hierarchy, false));
+                return true;
             }
 
             public TupleList evaluateList(Evaluator evaluator) {
@@ -92,18 +75,6 @@ public class NonEmptyFunDef extends FunDefBase {
                  try {
                     // empty args can be stripped at the source for some cases
                     // when is it ok to set nonempty?
-
-                    // remove slicer members overridden by args
-                    for (Member member
-                        : ((RolapEvaluator) evaluator).getSlicerMembers())
-                    {
-                        if (argsType.usesHierarchy(
-                                member.getHierarchy(), true))
-                        {
-                            evaluator.setContext(
-                                member.getHierarchy().getAllMember());
-                        }
-                    }
 
                     // attempt native
                     NativeEvaluator nativeEvaluator =

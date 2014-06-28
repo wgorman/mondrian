@@ -86,11 +86,6 @@ public class FunctionTest extends FoodMartTestCase {
         + "   [Product].[All Products].[Drink].[Alcoholic Beverages]."
         + "[Beer and Wine].[Beer].[Good].[Good Imported Beer])";
 
-    private static final String TimeWeekly =
-        MondrianProperties.instance().SsasCompatibleNaming.get()
-            ? "[Time].[Weekly]"
-            : "[Time.Weekly]";
-
     // ~ Constructors ----------------------------------------------------------
 
     /**
@@ -13124,7 +13119,7 @@ Intel platforms):
     /**
      * This test is failing in the non-native scenario, we need to exclude a Product because it
      * does not exist / is associated with December.
-     *
+     * TODO: this may actually be right
      */
     public void _testExistingWithSlicer() {
         propSaver.set(MondrianProperties.instance().EnableNativeCount, false);
@@ -13147,6 +13142,27 @@ Intel platforms):
             + "Axis #1:\n"
             + "{[Measures].[Existing Test 1]}\n"
             + "Row #0: 2\n");
+    }
+
+    public void testExistingDiffHierarchySameDim() {
+        // test existing constraining a set by a member in a different
+        // hierarchy in the same dimension
+        String mdx = "WITH MEMBER [Measures].[Count Existing]"
+          + " AS Count( existing except([Time.Weekly].[Week].Members, {}))\n"
+          + "SELECT {[Measures].[Count Existing]} ON 0,\n"
+          + " {[Time].[1997].[Q2]} ON 1\n"
+          + " FROM [Sales]";
+        // 14 weeks overlap with Q2, from week 15 (30/Mar - 05/Apr)
+        // to week 28 (29/Jun - 05/Jul)
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+           // + "{[Measures].[Count All]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Row #0: 14\n");
     }
 
     public void testNonEmptyFunSlicer() {
