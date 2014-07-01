@@ -32,6 +32,8 @@ import mondrian.rolap.RolapEvaluator;
 import mondrian.rolap.RolapHierarchy;
 import mondrian.rolap.RolapNativeExisting;
 
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -40,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
 /**
  * Existing keyword limits a set to what exists within the current context, ie
  * as if context members of the same dimension as the set were in the slicer.
@@ -47,6 +50,8 @@ import java.util.Set;
 public class ExistingFunDef extends FunDefBase {
 
     static final ExistingFunDef instance = new ExistingFunDef();
+    private static final Logger LOGGER =
+        Logger.getLogger(ExistingFunDef.class);
 
     protected ExistingFunDef() {
       super(
@@ -86,17 +91,19 @@ public class ExistingFunDef extends FunDefBase {
                         manyToManyEval,
                         this);
                 if (nativeEvaluator != null) {
-                    return (TupleList) nativeEvaluator.execute(ResultStyle.LIST);
+                    return (TupleList)
+                        nativeEvaluator.execute(ResultStyle.LIST);
                 } else {
-                    TupleIterable setTuples = setArg.evaluateIterable(evaluator);
-
+                    TupleIterable setTuples =
+                        setArg.evaluateIterable(evaluator);
                     TupleList result =
                         TupleCollections.createList(setTuples.getArity());
                     List<Member> contextMembers =
                         Arrays.asList(evaluator.getMembers());
 
                     List<Hierarchy> argDims = null;
-                    List<Hierarchy> contextDims = getHierarchies(contextMembers, false);
+                    List<Hierarchy> contextDims =
+                        getHierarchies(contextMembers, false);
 
                     for (List<Member> tuple : setTuples) {
                         if (argDims == null) {
@@ -115,12 +122,14 @@ public class ExistingFunDef extends FunDefBase {
                         getHierarchies(contextMembers, true),
                         result,
                         new UnaryTupleList(contextMembers));
-              }
+                }
             }
         };
     }
 
-    private static List<Hierarchy> getHierarchies(final List<Member> members, boolean removeAlls)
+    private static List<Hierarchy> getHierarchies(
+        final List<Member> members,
+        boolean removeAlls)
     {
         List<Hierarchy> hierarchies = new ArrayList<Hierarchy>(members.size());
         for (Member member : members) {
@@ -130,37 +139,48 @@ public class ExistingFunDef extends FunDefBase {
         }
         return hierarchies;
     }
-//
+
+    /**
+     * Members can be constrained by members of a different hierarchy in the
+     * same dimension.
+     */
     private static TupleList postFilterDiffHierarchies(
         RolapEvaluator evaluator,
-        List<Hierarchy> leftHierarchies, 
+        List<Hierarchy> leftHierarchies,
         List<Hierarchy> rightHierarchies,
         TupleList leftTuples,
         TupleList contextMembers)
     {
         Map<Dimension, Set<Hierarchy>> leftDims =
             getDimensionHierarchies(leftHierarchies);
-        //TODO: remove all mbrs
         Map<Dimension, Set<Hierarchy>> rightDims =
           getDimensionHierarchies(rightHierarchies);
         for (Dimension dim : leftDims.keySet()) {
             Set<Hierarchy> left = leftDims.get(dim);
             Set<Hierarchy> right = rightDims.get(dim);
-            // if different hierarchies from same dim, we need to apply special
-            // handling
+            // if different hierarchies from same dimension, members have to be
+            // re-fetched with the sql constraints
             if (right != null
                 && (left.size() > 1 || right.size() > 1 || !left.equals(right)))
             {
-                for (Hierarchy hierarchyLeft : left) {
-                    for (Hierarchy hierarchyRight : right) {
-                        if (!hierarchyLeft.equals(hierarchyRight)) {
-                          // TODO: hierarchies must have same tables
-                          leftTuples =
-                              RolapNativeExisting
-                                  .postFilterExistingRelatedHierarchies(
-                                      evaluator,
-                                      (RolapHierarchy) hierarchyLeft, leftTuples,
-                                      (RolapHierarchy) hierarchyRight, contextMembers);
+                for (Hierarchy hierLeft : left) {
+                    for (Hierarchy hierRight : right) {
+                        if (!hierLeft.equals(hierRight)) {
+                            RolapHierarchy rhLeft = (RolapHierarchy) hierLeft;
+                            RolapHierarchy rhRight = (RolapHierarchy) hierRight;
+                            if (checkHierarchiesForExisting(rhLeft, rhRight)) {
+                                leftTuples =
+                                    RolapNativeExisting
+                                        .postFilterExistingRelatedHierarchies(
+                                            evaluator,
+                                            rhLeft, leftTuples,
+                                            rhRight, contextMembers);
+                            } else {
+                                LOGGER.error(String.format(
+                                    "Hierarchy '%s' could not be constrained by same dimension hierarchy '%s'. Only same-table hierarchies are supported by Existing.",
+                                    rhLeft.getUniqueName(),
+                                    rhRight.getUniqueName()));
+                            }
                         }
                     }
                 }
@@ -169,12 +189,19 @@ public class ExistingFunDef extends FunDefBase {
         return leftTuples;
     }
 
+    private static boolean checkHierarchiesForExisting(
+        RolapHierarchy hierarchy1,
+        RolapHierarchy hierarchy2)
+    {
+        return hierarchy1.getRelation().equals(hierarchy2.getRelation());
+    }
+
     private static Map<Dimension, Set<Hierarchy>> getDimensionHierarchies(
         List<Hierarchy> hierarchies)
     {
         Map<Dimension, Set<Hierarchy>> dims =
             new HashMap<Dimension, Set<Hierarchy>>();
-        for (Hierarchy hierarchy: hierarchies) {
+        for (Hierarchy hierarchy : hierarchies) {
             Set<Hierarchy> list = dims.get(hierarchy.getDimension());
             if (list == null) {
                 list = new HashSet<Hierarchy>();

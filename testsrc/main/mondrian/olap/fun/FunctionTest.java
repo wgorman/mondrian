@@ -13159,7 +13159,6 @@ Intel platforms):
             + "{}\n"
             + "Axis #1:\n"
             + "{[Measures].[Count Existing]}\n"
-           // + "{[Measures].[Count All]}\n"
             + "Axis #2:\n"
             + "{[Time].[1997].[Q2]}\n"
             + "Row #0: 14\n");
