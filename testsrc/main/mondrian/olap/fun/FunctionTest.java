@@ -9586,6 +9586,12 @@ public class FunctionTest extends FoodMartTestCase {
             + "[Gender].[M]");
     }
 
+    public void testStrToMemberAcceptsConstrained() {
+        assertAxisReturns(
+            "StrToMember('[Time].[1997].[Q2]', CONSTRAINED)",
+            "[Time].[1997].[Q2]");
+    }
+
     public void testStrToSetDupDimensionsFails() {
         assertAxisThrows(
             "StrToSet("

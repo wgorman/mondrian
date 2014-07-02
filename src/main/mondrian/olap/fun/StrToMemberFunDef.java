@@ -1,12 +1,11 @@
 /*
-* This software is subject to the terms of the Eclipse Public License v1.0
-* Agreement, available at the following URL:
-* http://www.eclipse.org/legal/epl-v10.html.
-* You must accept the terms of that agreement to use this software.
-*
-* Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
+// This software is subject to the terms of the Eclipse Public License v1.0
+// Agreement, available at the following URL:
+// http://www.eclipse.org/legal/epl-v10.html.
+// You must accept the terms of that agreement to use this software.
+//
+// Copyright (c) 2002-2013 Pentaho Corporation..  All rights reserved.
 */
-
 package mondrian.olap.fun;
 
 import mondrian.calc.*;
@@ -39,10 +38,10 @@ class StrToMemberFunDef extends FunDefBase {
 
     private StrToMemberFunDef(int[] parameterTypes) {
         super(
-                "StrToMember",
-                "<Member> StrToMember(<String Expression>[, CONSTRAINED])",
-                "Returns a member from a unique name String in MDX format.",
-                Syntax.Function, Category.Member, parameterTypes);
+            "StrToMember",
+            "<Member> StrToMember(<String Expression>[, CONSTRAINED])",
+            "Returns a member from a unique name String in MDX format.",
+            Syntax.Function, Category.Member, parameterTypes);
     }
 
     public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
@@ -66,10 +65,10 @@ class StrToMemberFunDef extends FunDefBase {
 
         ResolverImpl() {
             super(
-                    "StrToMember",
-                    "<Member> StrToMember(<String Expression>[, CONSTRAINED])",
-                    "Returns a member from a unique name String in MDX format.",
-                    Syntax.Function);
+                "StrToMember",
+                "<Member> StrToMember(<String Expression>[, CONSTRAINED])",
+                "Returns a member from a unique name String in MDX format.",
+                Syntax.Function);
         }
 
         public String[] getReservedWords() {
@@ -77,24 +76,24 @@ class StrToMemberFunDef extends FunDefBase {
         }
 
         public FunDef resolve(
-                Exp[] args,
-                Validator validator,
-                List<Conversion> conversions)
+            Exp[] args,
+            Validator validator,
+            List<Conversion> conversions)
         {
             if (args.length < 1) {
                 return null;
             }
 
             Type type = args[0].getType();
-            if (!(type instanceof StringType) && !(type instanceof NullType))
-            {
+            if (!(type instanceof StringType) && !(type instanceof NullType)) {
                 return null;
             }
 
             int[] argTypes = new int[args.length];
             argTypes[0] = Category.String;
-            if (args.length == 2 &&
-                    validator.canConvert(1, args[1], Category.Symbol, conversions))
+            if (args.length == 2
+                && validator.canConvert(
+                    1, args[1], Category.Symbol, conversions))
             {
                 // we don't support CONSTRAINED syntax, but we'll allow it
                 argTypes[1] = Category.Symbol;
