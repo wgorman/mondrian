@@ -2415,6 +2415,7 @@ public class Vba {
         void add(Calendar calendar, int amount) {
             switch (this) {
             case q:
+            case Q:
                 calendar.add(Calendar.MONTH, amount * 3);
                 break;
             default:
