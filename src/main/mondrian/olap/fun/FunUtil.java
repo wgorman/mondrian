@@ -2699,7 +2699,7 @@ public class FunUtil extends Util {
         final List<Hierarchy> rightHierarchies,
         final Evaluator eval)
     {
-        List<Member> checkedMembers = new ArrayList<Member>();
+        Set<Member> checkedMembers = new HashSet<Member>();
 
         for (Member leftMember : leftTuple) {
             Member rightMember = getCorrespondingMember(

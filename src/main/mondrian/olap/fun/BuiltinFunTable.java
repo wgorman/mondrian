@@ -577,7 +577,6 @@ public class BuiltinFunTable extends FunTableImpl {
             }
         });
 
-        builder.define(StrToMemberFunDef.INSTANCE);
         builder.define(ValidMeasureFunDef.instance);
 
         builder.define(LinkMemberFunDef.instance);
@@ -1097,6 +1096,7 @@ public class BuiltinFunTable extends FunTableImpl {
         });
 
         builder.define(StrToSetFunDef.Resolver);
+        builder.define(StrToMemberFunDef.Resolver);
         builder.define(SubsetFunDef.Resolver);
         builder.define(HeadTailFunDef.TailResolver);
         builder.define(ToggleDrillStateFunDef.Resolver);

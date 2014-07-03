@@ -26,8 +26,8 @@ import mondrian.rolap.sql.SqlQuery;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -53,7 +53,7 @@ public class RolapNativeExisting extends RolapNativeSet {
             return null;
         }
         if (!ExistingConstraint.isValidContext(
-            evaluator, false, new Level[]{}, restrictMemberTypes()))
+                evaluator, false, new Level[]{}, restrictMemberTypes()))
         {
             return null;
         }
@@ -104,9 +104,9 @@ public class RolapNativeExisting extends RolapNativeSet {
      * Get all context members from the same dimensions as the provided cjArgs
      */
     public static CrossJoinArg[] getContextArgsByDim(
-      CrossJoinArg[] cjArgs,
-      RolapEvaluator evaluator,
-      boolean restrictMemberTypes)
+        CrossJoinArg[] cjArgs,
+        RolapEvaluator evaluator,
+        boolean restrictMemberTypes)
     {
         ArrayList<CrossJoinArg> contextPredicates =
             new ArrayList<CrossJoinArg>();
@@ -121,7 +121,7 @@ public class RolapNativeExisting extends RolapNativeSet {
                     continue;
                 }
                 for (RolapMember contextMember
-                    : getContext(evaluator, dimension))
+                    : getContextMembers(evaluator, dimension))
                 {
                     if (!contextMember.isAll()) {
                         CrossJoinArg predicate =
@@ -129,7 +129,7 @@ public class RolapNativeExisting extends RolapNativeSet {
                                 evaluator,
                                 Collections.singletonList(contextMember),
                                 restrictMemberTypes, false);
-                        if (predicate == null){ 
+                        if (predicate == null) {
                             return null;
                         }
                         contextPredicates.add(predicate);
@@ -141,14 +141,14 @@ public class RolapNativeExisting extends RolapNativeSet {
             new CrossJoinArg[contextPredicates.size()]);
     }
 
-    private static List<RolapMember> getContext(
+    private static List<RolapMember> getContextMembers(
         RolapEvaluator evaluator,
         Dimension dim)
     {
         Hierarchy[] dimHierarchies = dim.getHierarchies();
         List<RolapMember> contextMembers =
             new ArrayList<RolapMember>(dimHierarchies.length);
-        for(Hierarchy hierarchy : dimHierarchies) {
+        for (Hierarchy hierarchy : dimHierarchies) {
             contextMembers.add(evaluator.getContext(hierarchy));
         }
         return contextMembers;
@@ -156,7 +156,8 @@ public class RolapNativeExisting extends RolapNativeSet {
 
     public static class ExistingConstraint extends SetConstraint {
         // only need the context
-        public ExistingConstraint(CrossJoinArg[] args, RolapEvaluator evaluator) {
+        public ExistingConstraint(CrossJoinArg[] args, RolapEvaluator evaluator)
+        {
             super(args, evaluator, true);
         }
         protected boolean isJoinRequired() {
@@ -193,13 +194,12 @@ public class RolapNativeExisting extends RolapNativeSet {
         Set<RolapMember> removedMembers)
     {
         ListIterator<List<Member>> tupleIter = tuples.listIterator();
-        iterateLeft:
+        iterateTuples:
         while (tupleIter.hasNext()) {
-            // remove tuples containing removed members
             for (Member member : tupleIter.next()) {
                 if (removedMembers.contains(member)) {
                     tupleIter.remove();
-                    continue iterateLeft;
+                    continue iterateTuples;
                 }
             }
         }
@@ -207,58 +207,69 @@ public class RolapNativeExisting extends RolapNativeSet {
     }
 
     /**
-     * Refetches members from left set too see which are eliminated by
-     * 
+     * Refetches members from left set to constrain them with members from
+     * the right set at table level. This is only used by the non-native version
+     * but kept here for rolap access.
      * @param evaluator
      * @param hierarchyLeft
      * @param leftSet
      * @param hierarchyRight
      * @param rightSet
-     * @return
+     * @return 
      */
     public static TupleList postFilterExistingRelatedHierarchies(
-      RolapEvaluator evaluator,
-      RolapHierarchy hierarchyLeft, TupleList leftSet,
-      Hierarchy hierarchyRight, TupleList rightSet)
+        RolapEvaluator evaluator,
+        RolapHierarchy hierarchyLeft, TupleList leftSet,
+        Hierarchy hierarchyRight, TupleList rightSet)
     {
-        Map<RolapLevel,List<RolapMember>> leftMembers =
-            extractHierarchyMembers(hierarchyLeft, leftSet);
-        Map<RolapLevel,List<RolapMember>> rightMembers =
-            extractHierarchyMembers(hierarchyRight, rightSet);
+        // get only hierarchy member, by level
+        Map<RolapLevel, List<RolapMember>> leftMembers =
+            extractHierarchyMembers(
+                hierarchyLeft, leftSet, evaluator.isNonEmpty());
+        Map<RolapLevel, List<RolapMember>> rightMembers =
+            extractHierarchyMembers(
+                hierarchyRight, rightSet, evaluator.isNonEmpty());
+        // ensure no set is bigger than MaxConstraints
         Iterable<List<RolapMember>> leftChunks =
             getMemberLists(leftMembers);
         Iterable<List<RolapMember>> rightChunks =
             getMemberLists(rightMembers);
-        // determine which members will be removed by any of the constraints
+        // find which members will be removed by any of the constraints
         Set<RolapMember> removedMembers = new HashSet<RolapMember>();
         for (List<RolapMember> left : leftChunks) {
             for (List<RolapMember> right : rightChunks) {
                 Set<RolapMember> removedMembersPart =
-                  new HashSet<RolapMember>(left);
+                    new HashSet<RolapMember>(left);
                 SqlTupleReader reader =
                     getFilterExistingReader(evaluator, left, right);
                 // unary tuple list
                 TupleList members = reader.readMembers(
-                  evaluator.getSchemaReader().getDataSource(), null, null);
+                    evaluator.getSchemaReader().getDataSource(), null, null);
                 List<Member> filteredLeftMembers = members.slice(0);
                 removedMembersPart.removeAll(filteredLeftMembers);
                 removedMembers.addAll(removedMembersPart);
             }
         }
+        // filter tuple list
         return removeInvalidTuples(leftSet, removedMembers);
     }
 
+    /**
+     * Separate in chunks according to MaxConstraints.
+     * <b>Separation is done with subList so value lists shouldn't be changed.
+     * </b>
+     * @param memberMap Members by level
+     * @return lists of members of the same level no bigger than MaxConstraints
+     */
     private static Iterable<List<RolapMember>> getMemberLists(
         Map<RolapLevel, List<RolapMember>> memberMap)
     {
-        // separate in chunks according to MaxConstraints
         List<List<RolapMember>> result = new ArrayList<List<RolapMember>>();
         final int maxSize = MondrianProperties.instance().MaxConstraints.get();
         for (List<RolapMember> members : memberMap.values()) {
             if (members.size() <= maxSize) {
                 result.add(members);
-            }
-            else {
+            } else {
                 //split
                 while (members != null) {
                     boolean last = members.size() < maxSize;
@@ -283,7 +294,7 @@ public class RolapNativeExisting extends RolapNativeSet {
         args[0] = MemberListCrossJoinArg.create(
             evaluator, toFetch, false, false);
         args[1] = MemberListCrossJoinArg.create(
-          evaluator, toConstrain, false, false);
+            evaluator, toConstrain, false, false);
         // members and constraint to where
         ExistingConstraint constraint = new ExistingConstraint(args, evaluator);
         SqlTupleReader reader = new SqlTupleReader(constraint);
@@ -296,13 +307,21 @@ public class RolapNativeExisting extends RolapNativeSet {
         return reader;
     }
 
-    private static Map<RolapLevel,List<RolapMember>> extractHierarchyMembers(
-      Hierarchy targetHierarchy,
-      TupleList tuples)
+    /**
+     * Get members of target hierarchy by level
+     * @param targetHierarchy
+     * @param tuples
+     * @param isNonEmpty if can join with fact table
+     * @return Map with members of each level for target hierarchy
+     */
+    private static Map<RolapLevel, List<RolapMember>> extractHierarchyMembers(
+        Hierarchy targetHierarchy,
+        TupleList tuples,
+        final boolean isNonEmpty)
     {
         Map<RolapLevel, List<RolapMember>> result =
-            new HashMap<RolapLevel, List<RolapMember>>();
-        for(List<Member> tuple : tuples) {
+            new LinkedHashMap<RolapLevel, List<RolapMember>>();
+        for (List<Member> tuple : tuples) {
             for (Member member : tuple) {
                 if (member.getHierarchy().equals(targetHierarchy)
                     && member instanceof RolapMember)
@@ -310,8 +329,9 @@ public class RolapNativeExisting extends RolapNativeSet {
                     // avoiding rolapCubeMember will prevent fact table joins
                     // TODO: a better way
                     RolapMember rolapMember = (RolapMember) member;
-                    if (rolapMember instanceof RolapCubeMember) {
-                        rolapMember = ((RolapCubeMember)member).getRolapMember();
+                    if (!isNonEmpty && rolapMember instanceof RolapCubeMember) {
+                        rolapMember =
+                            ((RolapCubeMember)member).getRolapMember();
                     }
                     putInMapList(
                         result,
@@ -323,7 +343,8 @@ public class RolapNativeExisting extends RolapNativeSet {
         }
         return result;
     }
-    private static <K,V> void putInMapList(Map<K, List<V>> map, K key, V value) {
+    private static <K, V> void putInMapList(Map<K, List<V>> map, K key, V value)
+    {
         List<V> list = map.get(key);
         if (list == null) {
             list = new ArrayList<V>();

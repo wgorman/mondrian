@@ -11,6 +11,8 @@ package mondrian.olap.fun.vba;
 import mondrian.olap.InvalidArgumentException;
 import mondrian.olap.Util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.*;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -34,6 +36,14 @@ public class Vba {
 
     private static final DateFormatSymbols DATE_FORMAT_SYMBOLS =
         new DateFormatSymbols(Locale.getDefault());
+
+    private static final String CURRENCY_SYMBOL =
+        Currency.getInstance(Locale.getDefault()).getSymbol();
+
+    private static final Pattern VAL_HEX_PATTERN = Pattern.compile("[0-9a-fA-F]*");
+    private static final Pattern VAL_INT_PATTERN = Pattern.compile("[0-7]*");
+    private static final Pattern VAL_FLOAT_PATTERN = Pattern.compile("-?[0-9]*[.]?[0-9]*");
+    private static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s");
 
     // Conversion
 
@@ -116,8 +126,32 @@ public class Vba {
             return number.doubleValue();
         } else {
             final String s = String.valueOf(expression);
-            return new Double(s).intValue();
+            return Double.valueOf(s);
         }
+    }
+
+    @FunctionName("CCur")
+    @Signature("CCur(expression)")
+    @Description(
+        "Returns an expression that has been converted to a Variant of subtype "
+        + "Double rounded to 4 decimal places.")
+    public static double cCur(Object expression) throws ParseException {
+        BigDecimal bd;
+        if (expression instanceof Number) {
+            bd = new BigDecimal(((Number)expression).doubleValue());
+        } else {
+            String s = String.valueOf(expression);
+            s = WHITESPACE_PATTERN.matcher(s).replaceAll(""); // remove whitespaces
+            NumberFormat format = s.contains(CURRENCY_SYMBOL)
+                ? NumberFormat.getCurrencyInstance()
+                : NumberFormat.getNumberInstance();
+            if (format instanceof DecimalFormat) {
+                ((DecimalFormat)format).setParseBigDecimal(true);
+            }
+            Number result = format.parse(s);
+            bd = result instanceof BigDecimal ? (BigDecimal)result : new BigDecimal(result.doubleValue());
+        }
+        return bd.setScale(4, RoundingMode.HALF_UP).doubleValue();
     }
 
     @FunctionName("CInt")
@@ -351,23 +385,20 @@ public class Vba {
         // international applications, use CDbl instead to convert a string to
         // a number.
 
-        string = string.replaceAll("\\s", ""); // remove all whitespace
+        string = WHITESPACE_PATTERN.matcher(string).replaceAll(""); // remove all whitespace
         if (string.startsWith("&H")) {
             string = string.substring(2);
-            Pattern p = Pattern.compile("[0-9a-fA-F]*");
-            Matcher m = p.matcher(string);
+            Matcher m = VAL_HEX_PATTERN.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 16);
         } else if (string.startsWith("&O")) {
             string = string.substring(2);
-            Pattern p = Pattern.compile("[0-7]*");
-            Matcher m = p.matcher(string);
+            Matcher m = VAL_INT_PATTERN.matcher(string);
             m.find();
             return Integer.parseInt(m.group(), 8);
         } else {
             // find the first number
-            Pattern p = Pattern.compile("-?[0-9]*[.]?[0-9]*");
-            Matcher m = p.matcher(string);
+            Matcher m = VAL_FLOAT_PATTERN.matcher(string);
             m.find();
             return Double.parseDouble(m.group());
         }
@@ -2389,7 +2420,17 @@ public class Vba {
         ww("Week", Calendar.WEEK_OF_YEAR),
         h("Hour", Calendar.HOUR_OF_DAY),
         n("Minute", Calendar.MINUTE),
-        s("Second", Calendar.SECOND);
+        s("Second", Calendar.SECOND),
+        YYYY(yyyy),
+        Q(q),
+        M(m),
+        Y(y),
+        D(d),
+        W(w),
+        WW(ww),
+        H(h),
+        N(n),
+        S(s);
 
         private final int dateField;
 
@@ -2398,9 +2439,14 @@ public class Vba {
             this.dateField = dateField;
         }
 
+        Interval(Interval other) {
+            this.dateField = other.dateField;
+        }
+
         void add(Calendar calendar, int amount) {
             switch (this) {
             case q:
+            case Q:
                 calendar.add(Calendar.MONTH, amount * 3);
                 break;
             default:
@@ -2419,10 +2465,12 @@ public class Vba {
         private void floorInplace(Calendar calendar) {
             switch (this) {
             case yyyy:
+            case YYYY:
                 calendar.set(Calendar.DAY_OF_YEAR, 1);
                 d.floorInplace(calendar);
                 break;
             case q:
+            case Q:
                 int month = calendar.get(Calendar.MONTH);
                 month -= month % 3;
                 calendar.set(Calendar.MONTH, month);
@@ -2430,10 +2478,12 @@ public class Vba {
                 d.floorInplace(calendar);
                 break;
             case m:
+            case M:
                 calendar.set(Calendar.DAY_OF_MONTH, 1);
                 d.floorInplace(calendar);
                 break;
             case w:
+            case W:
                 final int dow = calendar.get(Calendar.DAY_OF_WEEK);
                 final int firstDayOfWeek = calendar.getFirstDayOfWeek();
                 if (dow == firstDayOfWeek) {
@@ -2450,22 +2500,27 @@ public class Vba {
                 d.floorInplace(calendar);
                 break;
             case y:
+            case Y:
             case d:
+            case D:
                 calendar.set(Calendar.HOUR_OF_DAY, 0);
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case h:
+            case H:
                 calendar.set(Calendar.MINUTE, 0);
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case n:
+            case N:
                 calendar.set(Calendar.SECOND, 0);
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             case s:
+            case S:
                 calendar.set(Calendar.MILLISECOND, 0);
                 break;
             }
@@ -2474,6 +2529,7 @@ public class Vba {
         int diff(Calendar calendar1, Calendar calendar2, int firstDayOfWeek) {
             switch (this) {
             case q:
+            case Q:
                 return m.diff(calendar1, calendar2, firstDayOfWeek) / 3;
             default:
                 return floor(calendar1).get(dateField)
@@ -2484,10 +2540,13 @@ public class Vba {
         int datePart(Calendar calendar) {
             switch (this) {
             case q:
+            case Q:
                 return (m.datePart(calendar) + 2) / 3;
             case m:
+            case M:
                 return calendar.get(dateField) + 1;
             case w:
+            case W:
                 int dayOfWeek = calendar.get(dateField);
                 dayOfWeek -= (calendar.getFirstDayOfWeek() - 1);
                 dayOfWeek = dayOfWeek % 7;
