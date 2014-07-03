@@ -20,6 +20,7 @@ import mondrian.olap.*;
 import mondrian.olap.fun.FunUtil;
 import mondrian.rolap.CalculatedCellUtil.CellCalc;
 import mondrian.rolap.CalculatedCellUtil.CellCalcReturn;
+import mondrian.rolap.CalculatedCellUtil.RolapCellCalculation;
 import mondrian.server.Statement;
 import mondrian.spi.Dialect;
 import mondrian.util.Format;
@@ -170,6 +171,7 @@ public class RolapEvaluator implements Evaluator {
         commands = new Object[10];
         commands[0] = Command.SAVEPOINT; // sentinel
         commandCount = 1;
+        activeCellCalcs.addAll(parent.activeCellCalcs);
 
         // Build aggregationLists, combining parent's aggregationLists (if not
         // null) and the new aggregation list (if any).
@@ -1556,6 +1558,17 @@ public class RolapEvaluator implements Evaluator {
         }
 
         abstract void execute(RolapEvaluator evaluator);
+    }
+
+    @Override
+    public List<Exp> getCurrentCellExpressions() {
+      List<Exp> exps = new ArrayList<Exp>();
+      for (RolapCalculation calc : calculations) {
+          if (calc instanceof RolapCellCalculation) {
+            exps.add(((RolapCellCalculation)calc).cellExp);
+          }
+      }
+      return exps;
     }
 }
 

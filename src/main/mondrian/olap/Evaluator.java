@@ -502,6 +502,14 @@ public interface Evaluator {
     QueryTiming getTiming();
 
     /**
+     * Returns any active cell expressions within the calculations list.
+     * Used by native evaluation.
+     *
+     * @return list of calculated cell expressions
+     */
+    List<Exp> getCurrentCellExpressions();
+
+    /**
      * Interface for evaluating a particular named set.
      */
     interface NamedSetEvaluator {

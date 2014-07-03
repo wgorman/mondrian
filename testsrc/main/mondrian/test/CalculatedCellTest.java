@@ -408,6 +408,58 @@ public class CalculatedCellTest extends FoodMartTestCase {
           + "Row #0: 14,054\n");
     }
 
+    /**
+     * This test verifies that native evaluators recognize when active cell
+     * calculations are in play.  The first scenario is not nativized, the second is.
+     */
+    public void testCellCalcWithNativeEval() {
+        propSaver.set(propSaver.properties.EnableNativeFilter, false);
+        propSaver.set(propSaver.properties.EnableNativeSum, false);
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F])</SubCube>\n"
+            + "    <Formula>([Measures].CurrentMember, [Gender].[All Gender], [Marital Status].[M])</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>"
+        );
+
+        testContext.assertQueryReturns(
+            "with member [Measures].[Calc] as 'Sum(Filter([Time].[1997].Children, [Measures].[Unit Sales] > 10000))', solve_order = 0"
+            + "   member [Measures].[MidCalc] as '([Gender].[F], [Measures].[Calc])', solve_order = 100"
+            + "select {[Measures].[MidCalc]} on 0 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[MidCalc]}\n"
+            + "Row #0: 131,796\n");
+
+        testContext = TestContext.instance().createSubstitutingCube(
+            "Sales",
+            null,
+            null,
+            null,
+            "  <CalculatedCell>\n"
+            + "    <SubCube>([Gender].[F])</SubCube>\n"
+            + "    <Formula>[Gender].[All Gender]</Formula>\n"
+            + "    <CalculatedCellProperty name=\"SOLVE_ORDER\" value=\"-100\"/>\n"
+            + "  </CalculatedCell>"
+        );
+
+        testContext.assertQueryReturns(
+            "with member [Measures].[Calc] as 'Sum(Filter([Time].[1997].Children, [Measures].[Unit Sales] > 10000))', solve_order = 0"
+            + "   member [Measures].[MidCalc] as '([Gender].[F], [Measures].[Calc])', solve_order = 100"
+            + "select {[Measures].[MidCalc]} on 0 from sales",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[MidCalc]}\n"
+            + "Row #0: 266,773\n");
+    }
+
     public void _testFilterCellCalc() {
         propSaver.set(propSaver.properties.EnableNativeFilter, false);
         TestContext testContext = TestContext.instance().createSubstitutingCube(

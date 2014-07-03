@@ -108,6 +108,14 @@ public class SqlContextConstraint
                 return false;
             }
         }
+
+        // get any cell calculations and make sure they are supported as well
+        for (Exp exp : context.getCurrentCellExpressions()) {
+            if (!SqlConstraintUtils.isSupportedExpressionForCalculatedMember( exp)) {
+                return false;
+            }
+        }
+
         return true;
     }
 

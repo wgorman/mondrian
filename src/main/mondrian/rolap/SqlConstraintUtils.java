@@ -743,6 +743,15 @@ public class SqlConstraintUtils {
                 listOfMembers.add(member);
             }
         }
+
+        // also expand calculated cells if applicable
+        // the '1' in addAll is because list order matters when determining
+        // unique ordinal members, calculated cells will override their
+        // counterpart objects.
+        for (Exp exp : evaluator.getCurrentCellExpressions()) {
+            listOfMembers.addAll(1, expandExpressions(null, exp, evaluator));
+        }
+
         members = listOfMembers.toArray(new Member[listOfMembers.size()]);
         return members;
     }
