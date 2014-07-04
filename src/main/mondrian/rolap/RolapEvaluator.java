@@ -1560,7 +1560,6 @@ public class RolapEvaluator implements Evaluator {
         abstract void execute(RolapEvaluator evaluator);
     }
 
-    @Override
     public List<Exp> getCurrentCellExpressions() {
       List<Exp> exps = new ArrayList<Exp>();
       for (RolapCalculation calc : calculations) {
