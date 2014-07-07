@@ -876,6 +876,8 @@ public class RolapNativeSql {
                 FunCall funcall = (FunCall) exp;
                 if (funcall.getFunName().equalsIgnoreCase("val") && funcall.getArgCount() == 1) {
                     return supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("strtomember") && funcall.getArgCount() == 1) {
+                    return supportsExp(funcall.getArg(0));
                 } else if (funcall.getFunName().equalsIgnoreCase("CurrentMember")) {
                     // we need to verify that the current member isn't in the filter section
                     final RolapCubeDimension dimension;
@@ -914,6 +916,8 @@ public class RolapNativeSql {
                 } else if (funcall.getFunName().equalsIgnoreCase("Name")  && funcall.getArgCount() == 1) {
                     return supportsExp(funcall.getArg(0));
                 }
+            } else if (exp instanceof ParameterExpr) {
+                return true;
             }
             return false;
         }
