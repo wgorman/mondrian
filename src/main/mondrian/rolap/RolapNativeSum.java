@@ -277,7 +277,7 @@ public class RolapNativeSum extends RolapNativeSet {
 
         private String getMeasureExpression(Member member, AggStar aggStar, SqlQuery sqlQuery) {
             RolapStoredMeasure measure = (RolapStoredMeasure) member;
-            String exprInner;
+            String expr;
             // Use aggregate table to create condition if available
             if (aggStar != null
                 && measure.getStarMeasure() instanceof RolapStar.Column)
@@ -286,13 +286,14 @@ public class RolapNativeSum extends RolapNativeSet {
                     (RolapStar.Column) measure.getStarMeasure();
                 int bitPos = column.getBitPosition();
                 AggStar.Table.Column aggColumn = aggStar.lookupColumn(bitPos);
-                exprInner = aggColumn.generateExprString(sqlQuery);
+                AggStar.FactTable.Measure columnMeasure = (AggStar.FactTable.Measure) aggColumn;
+                expr = columnMeasure.generateRollupString(sqlQuery);
             } else {
-                exprInner =
+                String exprInner =
                     measure.getMondrianDefExpression().getExpression(sqlQuery);
+                expr = measure.getAggregator().getExpression(exprInner);
             }
 
-            String expr = measure.getAggregator().getExpression(exprInner);
             if (sqlQuery.getDialect().getDatabaseProduct().getFamily()
                 == Dialect.DatabaseProduct.DB2)
             {

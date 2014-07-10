@@ -19,6 +19,8 @@ import mondrian.spi.DialectManager;
 import mondrian.util.Pair;
 
 import java.util.*;
+import java.util.Map.Entry;
+
 import javax.sql.DataSource;
 
 /**
@@ -240,7 +242,7 @@ public class SqlQuery {
         assert alias != null;
         assert alias.length() > 0;
 
-        if (fromAliases.contains(alias)) {
+        if (containsFromAlias(alias)) {
             if (failIfExists) {
                 throw Util.newInternal(
                     "query already contains alias '" + alias + "'");
@@ -289,7 +291,7 @@ public class SqlQuery {
         final Map hints,
         final boolean failIfExists)
     {
-        if (fromAliases.contains(alias)) {
+        if (containsFromAlias(alias)) {
             if (failIfExists) {
                 throw Util.newInternal(
                     "query already contains alias '" + alias + "'");
@@ -341,6 +343,7 @@ public class SqlQuery {
     public Map<String, SqlQuery> correlatedSubqueries = new HashMap<String, SqlQuery>();
     public Map<String, List<String>> subwhereExpr = new HashMap<String, List<String>>();
     public boolean correlatedSubquery = false;
+
     public boolean addFrom(
         final MondrianDef.RelationOrJoin relation,
         final String alias,
@@ -350,12 +353,13 @@ public class SqlQuery {
         if (subquery != null) {
             SqlQuery subq = getSubQuery(subquery);
             if (subq == null) {
-                subq = new SqlQuery(dialect, generateFormattedSql );
+                subq = new SqlQuery(dialect, generateFormattedSql);
                 subq.setDistinct(true);
                 if (correlatedSubquery) {
                     correlatedSubqueries.put(subquery, subq);
                 } else {
                     subqueries.put(subquery, subq);
+                    fromAliases.add(subquery);
                 }
             }
             return subq.addFrom(relation, alias, failIfExists, null);
@@ -452,6 +456,67 @@ public class SqlQuery {
         }
     }
 
+    /**
+     * Checks to see if the alias exists within the query or subqueries.
+     */
+    private boolean containsFromAlias(String alias) {
+        if (fromAliases.contains(alias)) {
+            return true;
+        }
+        for (SqlQuery subquery : subqueries.values()) {
+          if (subquery.containsFromAlias( alias )) {
+              return true;
+          }
+        }
+        return false;
+    }
+
+    /**
+     * Checks to see if a relation exists in the query.
+     *
+     * @param relation Relation to check
+     * @param alias Alias of relation. If null, uses relation's alias.
+     * @return true, if relation exists already
+     */
+    public boolean hasFrom(
+        final MondrianDef.RelationOrJoin relation,
+        final String alias)
+    {
+
+        if (relation instanceof MondrianDef.View) {
+            final MondrianDef.View view = (MondrianDef.View) relation;
+            final String viewAlias =
+                (alias == null)
+                ? view.getAlias()
+                : alias;
+            return containsFromAlias(viewAlias);
+        } else if (relation instanceof MondrianDef.InlineTable) {
+            final MondrianDef.Relation relation1 =
+                RolapUtil.convertInlineTableToRelation(
+                    (MondrianDef.InlineTable) relation, dialect);
+            return hasFrom(relation1, alias);
+
+        } else if (relation instanceof MondrianDef.Table) {
+            final MondrianDef.Table table = (MondrianDef.Table) relation;
+            final String tableAlias =
+                (alias == null)
+                ? table.getAlias()
+                : alias;
+            return containsFromAlias(tableAlias);
+        } else if (relation instanceof MondrianDef.Join) {
+            final MondrianDef.Join join = (MondrianDef.Join) relation;
+            return hasJoin(
+                join.left,
+                join.getLeftAlias(),
+                join.leftKey,
+                join.right,
+                join.getRightAlias(),
+                join.rightKey);
+        } else {
+            throw Util.newInternal("bad relation type " + relation);
+        }
+    }
+
     private boolean addJoin(
         MondrianDef.RelationOrJoin left,
         String leftAlias,
@@ -481,6 +546,19 @@ public class SqlQuery {
             }
         }
         return added;
+    }
+
+    private boolean hasJoin(
+        MondrianDef.RelationOrJoin left,
+        String leftAlias,
+        String leftKey,
+        MondrianDef.RelationOrJoin right,
+        String rightAlias,
+        String rightKey)
+    {
+        boolean hasLeft = hasFrom(left, leftAlias);
+        boolean hasRight = hasFrom(right, rightAlias);
+        return hasLeft || hasRight;
     }
 
     private void addJoinBetween(
@@ -520,6 +598,46 @@ public class SqlQuery {
             }
         }
         return -1;
+    }
+
+    /**
+     * Adds an expression to the select clause, and returns
+     * a string of the rendered expression along with it's alias.
+     * The rendered expression may be use later for grouping and ordering.
+     *
+     * @param expression the expression to add to the select clause
+     * @param type the type of the expression
+     * @return a string array containing two elements.  The 0th element is the
+     *         alias, the 1st element is the rendered expression
+     */
+    public String[] addSelect(
+        final MondrianDef.Expression expression,
+        final SqlStatement.Type type)
+    {
+        // return the expression generated along with the alias
+        // if expression.getTableAlias() is part of a subquery, we need to
+        // first add this expression to the subquery, then
+        // access it via the main query.
+        if (expression.getTableAlias() != null && subqueries.size() > 0) {
+            for (Entry<String, SqlQuery> subquery : subqueries.entrySet()) {
+                if (subquery.getValue()
+                    .containsFromAlias(expression.getTableAlias()))
+                {
+                  String internalAlias =
+                      subquery.getValue().addSelect(expression, type)[0];
+                  String alias =
+                      addSelect(
+                          getDialect().quoteIdentifier(
+                              subquery.getKey(),
+                              internalAlias),
+                          type);
+                  return new String[] {alias, internalAlias};
+                }
+            }
+        }
+        String exprStr = expression.getExpression(this);
+        String alias = addSelect(exprStr, type);
+        return new String[] {alias, exprStr};
     }
 
     /**
@@ -631,7 +749,7 @@ public class SqlQuery {
     public void addWhere(RolapStar.Condition joinCondition) {
         String left = joinCondition.getLeft().getTableAlias();
         String right = joinCondition.getRight().getTableAlias();
-        if (fromAliases.contains(left) && fromAliases.contains(right)) {
+        if (containsFromAlias(left) && containsFromAlias(right)) {
             addWhere(
                 joinCondition.getLeft(this),
                 " = ",

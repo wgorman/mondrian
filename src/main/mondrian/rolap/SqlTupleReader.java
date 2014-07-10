@@ -579,13 +579,13 @@ public class SqlTupleReader implements TupleReader {
             final Pair<String, List<SqlStatement.Type>> pair =
                 makeLevelMembersSql(dataSource);
 
-            SqlQuery countQuery = SqlQuery.newQuery(dataSource, "");
+            SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
             // Add the subquery to the wrapper query.
-            countQuery.addFromQuery(
+            sumQuery.addFromQuery(
                 pair.left, "sumQuery", true);
             // Dont forget to select all columns.
-            countQuery.addSelect("sum(" + countQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
-            String sql = countQuery.toSqlAndTypes().left;
+            sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
+            String sql = sumQuery.toSqlAndTypes().left;
 
             assert sql != null && !sql.equals("");
 
@@ -1030,11 +1030,12 @@ public class SqlTupleReader implements TupleReader {
         Evaluator evaluator = getEvaluator(constraint);
         // Certain Native Evaluations require Many to Many dimensions
         // to generate SQL in a particular way.
+        boolean subqueriesNecessary = false;
         if (evaluator != null
             && evaluator instanceof RolapEvaluator
             && ((RolapEvaluator)evaluator).isInlineSubqueryNecessary())
         {
-            sqlQuery.correlatedSubquery = true;
+            subqueriesNecessary = true;
             sqlQuery.setEnableDistinctSubquery(true);
         }
         AggStar aggStar = chooseAggStar(constraint, evaluator, baseCube);
@@ -1052,7 +1053,11 @@ public class SqlTupleReader implements TupleReader {
                     aggStar);
             }
         }
+        if (subqueriesNecessary) {
+            sqlQuery.correlatedSubquery = true;
+        }
 
+        // this is the only time we need to do a coorelated subquery.
         constraint.addConstraint(sqlQuery, baseCube, aggStar);
 
         return sqlQuery.toSqlAndTypes();
@@ -1215,6 +1220,12 @@ public class SqlTupleReader implements TupleReader {
                 continue;
             }
 
+            // Add the contextual level constraints.
+            // Do this ahead of adding other parts of the SQL, so that
+            // if there is different context with a subquery, it'll be detected later.
+            constraint.addLevelConstraint(
+                sqlQuery, baseCube, aggStar, currLevel);
+
             MondrianDef.Expression keyExp = currLevel.getKeyExp();
             MondrianDef.Expression ordinalExp = currLevel.getOrdinalExp();
             MondrianDef.Expression captionExp = currLevel.getCaptionExp();
@@ -1252,45 +1263,41 @@ public class SqlTupleReader implements TupleReader {
                 }
             }
 
-            final String keyAlias =
-                sqlQuery.addSelect(keySql, currLevel.getInternalType());
+            final String keyAliasAndExpr[] =
+                sqlQuery.addSelect(keyExp, currLevel.getInternalType());
             if (needsGroupBy) {
                 // We pass both the expression and the alias.
                 // The SQL query will figure out what to use.
-                sqlQuery.addGroupBy(keySql, keyAlias);
+                sqlQuery.addGroupBy(keyAliasAndExpr[1], keyAliasAndExpr[0]);
             }
 
             if (captionSql != null) {
-                final String captionAlias =
-                    sqlQuery.addSelect(captionSql, null);
+                final String captionAliasAndExpr[] =
+                    sqlQuery.addSelect(captionExp, null);
                 if (needsGroupBy) {
                     // We pass both the expression and the alias.
                     // The SQL query will figure out what to use.
-                    sqlQuery.addGroupBy(captionSql, captionAlias);
+                    sqlQuery.addGroupBy(captionAliasAndExpr[1], captionAliasAndExpr[0]);
                 }
             }
 
             // Figure out the order-by part
-            final String orderByAlias;
+            final String orderByAliasAndExpr[];
             if (!ordinalSql.equals(keySql)) {
-                orderByAlias = sqlQuery.addSelect(ordinalSql, null);
+                orderByAliasAndExpr = sqlQuery.addSelect(ordinalExp, null);
                 if (needsGroupBy) {
-                    sqlQuery.addGroupBy(ordinalSql, orderByAlias);
+                    sqlQuery.addGroupBy(orderByAliasAndExpr[1], orderByAliasAndExpr[0]);
                 }
                 if (whichSelect == WhichSelect.ONLY) {
                     sqlQuery.addOrderBy(
-                        ordinalSql, orderByAlias, true, false, true, true);
+                        orderByAliasAndExpr[1], orderByAliasAndExpr[0], true, false, true, true);
                 }
             } else {
                 if (whichSelect == WhichSelect.ONLY) {
                     sqlQuery.addOrderBy(
-                        keySql, keyAlias, true, false, true, true);
+                        keyAliasAndExpr[1], keyAliasAndExpr[0], true, false, true, true);
                 }
             }
-
-            // Add the contextual level constraints.
-            constraint.addLevelConstraint(
-                sqlQuery, baseCube, aggStar, currLevel);
 
             if (levelCollapsed) {
                 // add join between key and aggstar
@@ -1311,19 +1318,7 @@ public class SqlTupleReader implements TupleReader {
             RolapProperty[] properties = currLevel.getProperties();
             for (RolapProperty property : properties) {
                 final MondrianDef.Expression propExp = property.getExp();
-                final String propSql;
-                if (propExp instanceof MondrianDef.Column) {
-                    // When dealing with a column, we must use the same table
-                    // alias as the one used by the level. We also assume that
-                    // the property lives in the same table as the level.
-                    propSql =
-                        sqlQuery.getDialect().quoteIdentifier(
-                            currLevel.getTableAlias(),
-                            ((MondrianDef.Column)propExp).name);
-                } else {
-                    propSql = property.getExp().getExpression(sqlQuery);
-                }
-                final String propAlias = sqlQuery.addSelect(propSql, null);
+                final String propAliasAndExpr[] = sqlQuery.addSelect(property.getExp(), null);
                 if (needsGroupBy) {
                     // Certain dialects allow us to eliminate properties
                     // from the group by that are functionally dependent
@@ -1331,7 +1326,7 @@ public class SqlTupleReader implements TupleReader {
                     if (!sqlQuery.getDialect().allowsSelectNotInGroupBy()
                         || !property.dependsOnLevelValue())
                     {
-                        sqlQuery.addGroupBy(propSql, propAlias);
+                        sqlQuery.addGroupBy(propAliasAndExpr[1], propAliasAndExpr[0]);
                     }
                 }
             }

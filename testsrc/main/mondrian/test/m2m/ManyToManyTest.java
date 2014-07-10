@@ -9,8 +9,15 @@
 */
 package mondrian.test.m2m;
 
-import mondrian.calc.TupleList;
-import mondrian.calc.impl.ListTupleList;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+import junit.framework.Assert;
 import mondrian.olap.Annotation;
 import mondrian.olap.Dimension;
 import mondrian.olap.Exp;
@@ -29,29 +36,20 @@ import mondrian.rolap.RolapUtil;
 import mondrian.test.TestContext;
 import mondrian.test.loader.CsvDBTestCase;
 
-import junit.framework.Assert;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 /**
  * TODO: Test scenarios where multiple many to many dimensions are at play
  *       within the slicer
  * TODO: Test Virtual Cube scenario with same dimension but two different m2m
  *       relationships
  * TODO: Test with more than two bridge dimensions
- *
+
  * Potential future work for Many to Many Dimensions:
- *  - Add tests with snow flake (multi-table, "join") dimensions
+ *  - Add tests with snow flake (multi-table, "join") dimensions, use product as an example
  *  - Add tests and implement nested Many to Many dimensions
  *  - Support M2M AggLevel agg tables.  Today, you can only use agg tables who
- *    link via foreign key to a many to many dimension.
+ *    link via foreign key to a many to many dimensions (in limited scenarios).
+ *  - Support AggForeignKey for many to many dimensions with more than one parent
+ *  - Support Native Evaluation of Many to Many Dimensions within Agg Tables.
  *
  * @author Will Gorman (wgorman@pentaho.com)
  *
@@ -562,6 +560,202 @@ public class ManyToManyTest  extends CsvDBTestCase {
         return testContext;
     }
 
+    protected TestContext createFoodmartTestContext() {
+        final TestContext testContext = TestContext.instance().withSchema(
+            "<?xml version=\"1.0\"?>\n"
+            + "<Schema name=\"FoodMart\">\n"
+            + "\n"
+            + "  <Dimension name=\"Store\">\n"
+            + "    <Hierarchy hasAll=\"true\" primaryKey=\"store_id\">\n"
+            + "      <Table name=\"store\"/>\n"
+            + "      <Level name=\"Store Country\" column=\"store_country\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"Store State\" column=\"store_state\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"Store City\" column=\"store_city\" uniqueMembers=\"false\"/>\n"
+            + "      <Level name=\"Store Name\" column=\"store_name\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Time\" type=\"TimeDimension\">\n"
+            + "    <Hierarchy hasAll=\"false\" primaryKey=\"time_id\">\n"
+            + "      <Table name=\"time_by_day\"/>\n"
+            + "      <Level name=\"Year\" column=\"the_year\" type=\"Numeric\" uniqueMembers=\"true\" levelType=\"TimeYears\"/>\n"
+            + "      <Level name=\"Quarter\" column=\"quarter\" uniqueMembers=\"false\" levelType=\"TimeQuarters\"/>\n"
+            + "      <Level name=\"Month\" column=\"month_of_year\" uniqueMembers=\"false\" type=\"Numeric\" levelType=\"TimeMonths\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Product\">\n"
+            + "    <Hierarchy hasAll=\"true\" primaryKey=\"product_id\" >\n"
+            + "      <Table name=\"product\"/>\n"
+            + "      <Level name=\"Product Class ID\" column=\"product_class_id\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"Brand Name\" column=\"brand_name\" uniqueMembers=\"false\"/>\n"
+            + "      <Level name=\"Product Name\" column=\"product_name\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Warehouse\">\n"
+            + "    <Hierarchy hasAll=\"true\" primaryKey=\"warehouse_id\">\n"
+            + "      <Table name=\"warehouse\"/>\n"
+            + "      <Level name=\"Country\" column=\"warehouse_country\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"State Province\" column=\"warehouse_state_province\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"City\" column=\"warehouse_city\" uniqueMembers=\"false\"/>\n"
+            + "      <Level name=\"Warehouse Name\" column=\"warehouse_name\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Dimension name=\"Customers\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customers\" primaryKey=\"customer_id\">\n"
+            + "      <Table name=\"customer\"/>\n"
+            + "      <Level name=\"Country\" column=\"country\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"State Province\" column=\"state_province\" uniqueMembers=\"true\"/>\n"
+            + "      <Level name=\"City\" column=\"city\" uniqueMembers=\"false\"/>\n"
+            + "      <Level name=\"Name\" column=\"customer_id\" nameColumn=\"fullname\" type=\"Numeric\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>\n"
+            + "\n"
+            + "  <Cube name=\"WarehouseBridge\" visible=\"false\">\n"
+            + "    <Table name=\"inventory_fact_1997\"/>\n"
+            + "    <DimensionUsage name=\"Store\" source=\"Store\" foreignKey=\"store_id\"/>\n"
+            + "    <DimensionUsage name=\"Product\" source=\"Product\" foreignKey=\"product_id\"/>\n"
+            + "    <DimensionUsage name=\"Warehouse\" source=\"Warehouse\" foreignKey=\"warehouse_id\"/>\n"
+            + "    <Measure name=\"Count\" aggregator=\"count\" column=\"warehouse_id\"/>\n"
+            + "  </Cube>\n"
+            + "\n"
+            + "  <Cube name=\"WarehouseSales\">\n"
+            + "    <Table name=\"sales_fact_1997\">\n"
+            + "       <AggExclude name=\"agg_c_special_sales_fact_1997\"/>\n"
+            + "    </Table>\n"
+            + "    <DimensionUsage name=\"Store\" source=\"Store\" foreignKey=\"store_id\"/>\n"
+            + "    <DimensionUsage name=\"Product\" source=\"Product\" foreignKey=\"product_id\"/>\n"
+            + "    <DimensionUsage name=\"Warehouse\" source=\"Warehouse\" foreignKey=\"store_id\" bridgeCube=\"WarehouseBridge\"/>\n"
+            + "    <DimensionUsage name=\"Time\" source=\"Time\" foreignKey=\"time_id\"/>\n"
+            + "    <DimensionUsage name=\"Customers\" source=\"Customers\" foreignKey=\"customer_id\"/>\n"
+            + "    <Dimension name=\"Promotions\" foreignKey=\"promotion_id\">\n"
+            + "      <Hierarchy hasAll=\"true\" allMemberName=\"All Promotions\" primaryKey=\"promotion_id\" defaultMember=\"[All Promotions]\">\n"
+            + "        <Table name=\"promotion\"/>\n"
+            + "        <Level name=\"Promotion Name\" column=\"promotion_name\" uniqueMembers=\"true\"/>\n"
+            + "      </Hierarchy>\n"
+            + "    </Dimension>\n"
+            + "    <Measure name=\"Unit Sales\" column=\"unit_sales\" aggregator=\"sum\" formatString=\"Standard\"/>\n"
+            + "    <Measure name=\"Store Cost\" column=\"store_cost\" aggregator=\"sum\" formatString=\"#,###.00\"/>\n"
+            + "    <Measure name=\"Store Sales\" column=\"store_sales\" aggregator=\"sum\" formatString=\"#,###.00\"/>\n"
+            + "    <Measure name=\"Sales Count\" column=\"product_id\" aggregator=\"count\" formatString=\"#,###\"/>\n"
+            + "    <Measure name=\"Customer Count\" column=\"customer_id\" aggregator=\"distinct-count\" formatString=\"#,###\"/>\n"
+            + "  </Cube>\n"
+            + "</Schema>\n");
+        return testContext;
+    }
+
+    public void testFoodmartM2MSchema() {
+        // skip this test if aggregates are enabled for now
+        // We do not properly join multi-key many to many tables via
+        // AggStar at this time.
+        if (MondrianProperties.instance().UseAggregates.get() || MondrianProperties.instance().ReadAggregates.get()) {
+            return;
+        }
+
+        TestContext context = createFoodmartTestContext();
+
+        // Note that there are different values between product/store for sales vs. product/store for warehouses, hence the diff in numbers here. 
+        context.assertQueryReturns("with member [Warehouse].[Agg] as 'Aggregate({[Warehouse].[City].Members})'\n"
+            + "select NON EMPTY Union({[Warehouse].[All Warehouses], [Warehouse].[Agg]}, {[Warehouse].[City].Members}) on 0, {[Measures].[Unit Sales]} on 1 from [WarehouseSales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Warehouse].[All Warehouses]}\n"
+            + "{[Warehouse].[Agg]}\n"
+            + "{[Warehouse].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Warehouse].[USA].[CA].[Los Angeles]}\n"
+            + "{[Warehouse].[USA].[CA].[San Diego]}\n"
+            + "{[Warehouse].[USA].[CA].[San Francisco]}\n"
+            + "{[Warehouse].[USA].[OR].[Portland]}\n"
+            + "{[Warehouse].[USA].[OR].[Salem]}\n"
+            + "{[Warehouse].[USA].[WA].[Bellingham]}\n"
+            + "{[Warehouse].[USA].[WA].[Bremerton]}\n"
+            + "{[Warehouse].[USA].[WA].[Seattle]}\n"
+            + "{[Warehouse].[USA].[WA].[Spokane]}\n"
+            + "{[Warehouse].[USA].[WA].[Tacoma]}\n"
+            + "{[Warehouse].[USA].[WA].[Walla Walla]}\n"
+            + "{[Warehouse].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 266,773\n"
+            + "Row #0: 62,383\n"
+            + "Row #0: 2,786\n"
+            + "Row #0: 7,137\n"
+            + "Row #0: 6,734\n"
+            + "Row #0: 48\n"
+            + "Row #0: 2,565\n"
+            + "Row #0: 13,617\n"
+            + "Row #0: 94\n"
+            + "Row #0: 6,416\n"
+            + "Row #0: 6,561\n"
+            + "Row #0: 3,184\n"
+            + "Row #0: 11,812\n"
+            + "Row #0: 56\n"
+            + "Row #0: 1,373\n");
+
+        // This returns the correct value, but generates an extra IN clause that could be collapsed.
+        context.assertQueryReturns("select {[Measures].[Unit Sales]} on 0 from [WarehouseSales] where {([Time].[1997].[Q1], [Warehouse].[USA].[CA].[Beverly Hills]), ([Time].[1997].[Q2], [Warehouse].[USA].[CA].[Los Angeles])}",
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1], [Warehouse].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Time].[1997].[Q2], [Warehouse].[USA].[CA].[Los Angeles]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 1,939\n");
+
+        // This returns the correct value, but generates an extra IN clause that could be collapsed.
+        context.assertQueryReturns("select {Filter([Promotions].[All Promotions].Children, [Measures].[Unit Sales] > 100)} on 0 from [WarehouseSales] where {([Time].[1997].[Q1], [Warehouse].[USA].[CA].[Beverly Hills]), ([Time].[1997].[Q2], [Warehouse].[USA].[CA].[Los Angeles])}",
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1], [Warehouse].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Time].[1997].[Q2], [Warehouse].[USA].[CA].[Los Angeles]}\n"
+            + "Axis #1:\n"
+            + "{[Promotions].[No Promotion]}\n"
+            + "{[Promotions].[Savings Galore]}\n"
+            + "Row #0: 1,625\n"
+            + "Row #0: 154\n");
+
+        // this breaks due to native eval of Sum(), we attempt to join through a subquery even though warehouse
+        // should be visible. causing a cartesian product.
+        context.assertQueryReturns("with member [Warehouse].[Sum] as 'Sum({[Warehouse].[City].Members})'\n"
+            + "select NON EMPTY Union({[Warehouse].[All Warehouses], [Warehouse].[Sum]}, {[Warehouse].[City].Members}) on 0, {[Measures].[Unit Sales]} on 1 from [WarehouseSales]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Warehouse].[All Warehouses]}\n"
+            + "{[Warehouse].[Sum]}\n"
+            + "{[Warehouse].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Warehouse].[USA].[CA].[Los Angeles]}\n"
+            + "{[Warehouse].[USA].[CA].[San Diego]}\n"
+            + "{[Warehouse].[USA].[CA].[San Francisco]}\n"
+            + "{[Warehouse].[USA].[OR].[Portland]}\n"
+            + "{[Warehouse].[USA].[OR].[Salem]}\n"
+            + "{[Warehouse].[USA].[WA].[Bellingham]}\n"
+            + "{[Warehouse].[USA].[WA].[Bremerton]}\n"
+            + "{[Warehouse].[USA].[WA].[Seattle]}\n"
+            + "{[Warehouse].[USA].[WA].[Spokane]}\n"
+            + "{[Warehouse].[USA].[WA].[Tacoma]}\n"
+            + "{[Warehouse].[USA].[WA].[Walla Walla]}\n"
+            + "{[Warehouse].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 266,773\n"
+            + "Row #0: 62,383\n"
+            + "Row #0: 2,786\n"
+            + "Row #0: 7,137\n"
+            + "Row #0: 6,734\n"
+            + "Row #0: 48\n"
+            + "Row #0: 2,565\n"
+            + "Row #0: 13,617\n"
+            + "Row #0: 94\n"
+            + "Row #0: 6,416\n"
+            + "Row #0: 6,561\n"
+            + "Row #0: 3,184\n"
+            + "Row #0: 11,812\n"
+            + "Row #0: 56\n"
+            + "Row #0: 1,373\n");
+    }
+
     /**
      * This test case demonstrates the select distinct subselect functionality for M2M
      */
@@ -832,6 +1026,26 @@ public class ManyToManyTest  extends CsvDBTestCase {
           + "Axis #2:\n"
           + "{[Account].[Mark-Paul]}\n"
           + "Row #0: 100\n");
+    }
+
+    public void testNativeSum() {
+        boolean sum = prop.EnableNativeSum.get();
+        prop.EnableNativeSum.set(true);
+        TestContext context = createTestContext();
+        context.assertQueryReturns(
+            "With MEMBER [Customer].[All Customers].[Calc] As 'Sum({[Customer].[Customer Name].Members})'\n"
+            + "Select\n"
+            + "[Measures].[Amount] on columns,\n"
+            + "{[Customer].[All Customers].[Calc]} on rows\n"
+            + "From [M2M]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Amount]}\n"
+            + "Axis #2:\n"
+            + "{[Customer].[All Customers].[Calc]}\n"
+            + "Row #0: 1,430\n");
+        prop.EnableNativeSum.set(sum);
     }
 
     public void testNativeTopCount() {

@@ -1990,11 +1990,11 @@ public class NonEmptyTest extends BatchTestCase {
             + "\"product_class\".\"product_family\" "
             + "from "
             + "\"store\" as \"store\", \"sales_fact_1997\" as \"sales_fact_1997\", "
-            + "\"product\" as \"product\", \"product_class\" as \"product_class\" "
+            + "\"product_class\" as \"product_class\", \"product\" as \"product\" "
             + "where "
             + "\"sales_fact_1997\".\"store_id\" = \"store\".\"store_id\" "
-            + "and \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" "
             + "and \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\" "
+            + "and \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" "
             + "and ((\"store\".\"store_state\" = 'OR' and \"store\".\"store_city\" in ('Portland', 'Salem'))"
             + " or (\"store\".\"store_state\" = 'CA' and \"store\".\"store_city\" = 'San Francisco')"
             + " or (\"store\".\"store_state\" = 'WA' and \"store\".\"store_city\" = 'Tacoma')) "
@@ -2008,11 +2008,11 @@ public class NonEmptyTest extends BatchTestCase {
             + "`store`.`store_city` as `c2`, `product_class`.`product_family` as `c3` "
             + "from "
             + "`store` as `store`, `sales_fact_1997` as `sales_fact_1997`, "
-            + "`product` as `product`, `product_class` as `product_class` "
+            + "`product_class` as `product_class`, `product` as `product` "
             + "where "
             + "`sales_fact_1997`.`store_id` = `store`.`store_id` "
-            + "and `product`.`product_class_id` = `product_class`.`product_class_id` "
             + "and `sales_fact_1997`.`product_id` = `product`.`product_id` "
+            + "and `product`.`product_class_id` = `product_class`.`product_class_id` "
             + "and ((`store`.`store_city`, `store`.`store_state`) in (('Portland', 'OR'), ('Salem', 'OR'), ('San Francisco', 'CA'), ('Tacoma', 'WA'))) "
             + "and (`product_class`.`product_family` = 'Food') "
             + "group by `store`.`store_country`, `store`.`store_state`, `store`.`store_city`, `product_class`.`product_family` "
@@ -2108,9 +2108,9 @@ public class NonEmptyTest extends BatchTestCase {
 
         String necjSqlDerby =
             "select \"warehouse\".\"wa_address3\", \"warehouse\".\"wa_address2\", \"warehouse\".\"wa_address1\", \"warehouse\".\"warehouse_name\", \"product_class\".\"product_family\" "
-            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product\" as \"product\", \"product_class\" as \"product_class\" "
-            + "where \"inventory_fact_1997\".\"warehouse_id\" = \"warehouse\".\"warehouse_id\" and \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" "
-            + "and \"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" and "
+            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product_class\" as \"product_class\", \"product\" as \"product\" "
+            + "where \"inventory_fact_1997\".\"warehouse_id\" = \"warehouse\".\"warehouse_id\" "
+            + "and \"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" and \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" and "
             + "((\"warehouse\".\"wa_address1\" = '5617 Saclan Terrace' and \"warehouse\".\"wa_address2\" is null and \"warehouse\".\"warehouse_name\" = 'Arnold and Sons') "
             + "or (\"warehouse\".\"wa_address1\" = '3377 Coachman Place' and \"warehouse\".\"wa_address2\" is null and \"warehouse\".\"warehouse_name\" = 'Jones International')) "
             + "and (\"product_class\".\"product_family\" = 'Food') group by \"warehouse\".\"wa_address3\", \"warehouse\".\"wa_address2\", \"warehouse\".\"wa_address1\", "
@@ -2119,9 +2119,9 @@ public class NonEmptyTest extends BatchTestCase {
 
         String necjSqlMySql =
             "select `warehouse`.`wa_address3` as `c0`, `warehouse`.`wa_address2` as `c1`, `warehouse`.`wa_address1` as `c2`, `warehouse`.`warehouse_name` as `c3`, "
-            + "`product_class`.`product_family` as `c4` from `warehouse` as `warehouse`, `inventory_fact_1997` as `inventory_fact_1997`, `product` as `product`, "
-            + "`product_class` as `product_class` where `inventory_fact_1997`.`warehouse_id` = `warehouse`.`warehouse_id` and "
-            + "`product`.`product_class_id` = `product_class`.`product_class_id` and `inventory_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product_class`.`product_family` as `c4` from `warehouse` as `warehouse`, `inventory_fact_1997` as `inventory_fact_1997`, `product_class` as `product_class`, "
+            + "`product` as `product` where `inventory_fact_1997`.`warehouse_id` = `warehouse`.`warehouse_id` and "
+            + "`inventory_fact_1997`.`product_id` = `product`.`product_id` and `product`.`product_class_id` = `product_class`.`product_class_id` and "
             + "((`warehouse`.`wa_address2` is null and (`warehouse`.`warehouse_name`, `warehouse`.`wa_address1`) in (('Arnold and Sons', '5617 Saclan Terrace'), "
             + "('Jones International', '3377 Coachman Place')))) and (`product_class`.`product_family` = 'Food') group by `warehouse`.`wa_address3`, "
             + "`warehouse`.`wa_address2`, `warehouse`.`wa_address1`, `warehouse`.`warehouse_name`, `product_class`.`product_family` "
@@ -2197,9 +2197,10 @@ public class NonEmptyTest extends BatchTestCase {
 
         String necjSqlDerby =
             "select \"warehouse\".\"warehouse_fax\", \"warehouse\".\"wa_address1\", \"warehouse\".\"warehouse_name\", \"product_class\".\"product_family\" "
-            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product\" as \"product\", \"product_class\" as \"product_class\" "
-            + "where \"inventory_fact_1997\".\"warehouse_id\" = \"warehouse\".\"warehouse_id\" and \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" "
-            + "and \"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" and "
+            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product_class\" as \"product_class\", \"product\" as \"product\" "
+            + "where \"inventory_fact_1997\".\"warehouse_id\" = \"warehouse\".\"warehouse_id\" and "
+            + "\"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" and "
+            + "\"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" and "
             + "((\"warehouse\".\"wa_address1\" = '234 West Covina Pkwy' and \"warehouse\".\"warehouse_fax\" is null and \"warehouse\".\"warehouse_name\" = 'Freeman And Co') "
             + "or (\"warehouse\".\"wa_address1\" = '3377 Coachman Place' and \"warehouse\".\"warehouse_fax\" = '971-555-6213' and \"warehouse\".\"warehouse_name\" = 'Jones International')) "
             + "and (\"product_class\".\"product_family\" = 'Food') "
@@ -2210,10 +2211,10 @@ public class NonEmptyTest extends BatchTestCase {
             "select `warehouse`.`warehouse_fax` as `c0`, `warehouse`.`wa_address1` as `c1`, "
             + "`warehouse`.`warehouse_name` as `c2`, `product_class`.`product_family` as `c3` "
             + "from `warehouse` as `warehouse`, `inventory_fact_1997` as `inventory_fact_1997`, "
-            + "`product` as `product`, `product_class` as `product_class` "
+            + "`product_class` as `product_class`, `product` as `product` "
             + "where `inventory_fact_1997`.`warehouse_id` = `warehouse`.`warehouse_id` and "
-            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
             + "`inventory_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
             + "((`warehouse`.`warehouse_name`, `warehouse`.`wa_address1`, `warehouse`.`warehouse_fax`) in (('Jones International', '3377 Coachman Place', '971-555-6213')) "
             + "or (`warehouse`.`warehouse_fax` is null and "
             + "(`warehouse`.`warehouse_name`, `warehouse`.`wa_address1`) in (('Freeman And Co', '234 West Covina Pkwy')))) "
@@ -2238,7 +2239,6 @@ public class NonEmptyTest extends BatchTestCase {
             new SqlPattern(
                 Dialect.DatabaseProduct.MYSQL, necjSqlMySql, necjSqlMySql)
         };
-
         assertQuerySql(testContext, query, patterns);
     }
 
@@ -2290,10 +2290,11 @@ public class NonEmptyTest extends BatchTestCase {
 
         String necjSqlDerby =
             "select \"warehouse\".\"wa_address3\", \"warehouse\".\"wa_address2\", \"warehouse\".\"warehouse_fax\", \"product_class\".\"product_family\" "
-            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product\" as \"product\", \"product_class\" as \"product_class\" "
+            + "from \"warehouse\" as \"warehouse\", \"inventory_fact_1997\" as \"inventory_fact_1997\", \"product_class\" as \"product_class\", \"product\" as \"product\" "
             + "where \"inventory_fact_1997\".\"warehouse_id\" = \"warehouse\".\"warehouse_id\" and "
-            + "\"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" and \"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" "
-            + "and ((\"warehouse\".\"warehouse_fax\" = '971-555-6213' or \"warehouse\".\"warehouse_fax\" is null) and "
+            + "\"inventory_fact_1997\".\"product_id\" = \"product\".\"product_id\" and "
+            + "\"product\".\"product_class_id\" = \"product_class\".\"product_class_id\" and "
+            + "((\"warehouse\".\"warehouse_fax\" = '971-555-6213' or \"warehouse\".\"warehouse_fax\" is null) and "
             + "\"warehouse\".\"wa_address2\" is null and \"warehouse\".\"wa_address3\" is null) and "
             + "(\"product_class\".\"product_family\" = 'Food') "
             + "group by \"warehouse\".\"wa_address3\", \"warehouse\".\"wa_address2\", \"warehouse\".\"warehouse_fax\", \"product_class\".\"product_family\" "
@@ -2302,9 +2303,10 @@ public class NonEmptyTest extends BatchTestCase {
         String necjSqlMySql =
             "select `warehouse`.`wa_address3` as `c0`, `warehouse`.`wa_address2` as `c1`, `warehouse`.`warehouse_fax` as `c2`, "
             + "`product_class`.`product_family` as `c3` from `warehouse` as `warehouse`, `inventory_fact_1997` as `inventory_fact_1997`, "
-            + "`product` as `product`, `product_class` as `product_class` "
-            + "where `inventory_fact_1997`.`warehouse_id` = `warehouse`.`warehouse_id` and `product`.`product_class_id` = `product_class`.`product_class_id` and "
+            + "`product_class` as `product_class`, `product` as `product` "
+            + "where `inventory_fact_1997`.`warehouse_id` = `warehouse`.`warehouse_id` and " 
             + "`inventory_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
             + "((`warehouse`.`warehouse_fax` = '971-555-6213' or `warehouse`.`warehouse_fax` is null) and "
             + "`warehouse`.`wa_address2` is null and `warehouse`.`wa_address3` is null) and "
             + "(`product_class`.`product_family` = 'Food') "
@@ -2329,7 +2331,6 @@ public class NonEmptyTest extends BatchTestCase {
             new SqlPattern(
                 Dialect.DatabaseProduct.MYSQL, necjSqlMySql, necjSqlMySql)
         };
-
         assertQuerySql(testContext, query, patterns);
     }
 
