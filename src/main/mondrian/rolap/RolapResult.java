@@ -2300,7 +2300,7 @@ public class RolapResult extends ResultBase {
 
         @Override
         public int getSolveOrder() {
-            return 0;
+            return -1000;
         }
 
         public ValueFormatter getFormatter() {
