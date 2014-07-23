@@ -67,9 +67,21 @@ public class SqlConstraintUtils {
         if (baseCube == null && evaluator instanceof RolapEvaluator) {
             baseCube = ((RolapEvaluator) evaluator).getCube();
         }
+
+        RolapEvaluator rEvaluator = (RolapEvaluator) evaluator;
+        // decide if we should use the tuple-based version instead
+        TupleList slicerTuples = rEvaluator.getOptimizedSlicerTuples(baseCube);
+        boolean disjointSlicerTuples = false;
+        if (slicerTuples != null && slicerTuples.size() > 0 && (
+            SqlConstraintUtils.isDisjointTuple(slicerTuples)
+            || rEvaluator.isMultiLevelSlicerTuple()))
+        {
+            disjointSlicerTuples = true;
+        }
+
         // find columns affected by context members
         final CellRequest request =
-            makeContextMembersRequest(evaluator, restrictMemberTypes);
+            makeContextMembersRequest(evaluator, restrictMemberTypes, disjointSlicerTuples);
         if (request == null) {
             if (restrictMemberTypes) {
                 throw Util.newInternal("CellRequest is null - why?");
@@ -78,13 +90,7 @@ public class SqlConstraintUtils {
             // request is impossible to satisfy.
             return;
         }
-        RolapEvaluator rEvaluator = (RolapEvaluator) evaluator;
-        // decide if we should use the tuple-based version instead
-        TupleList slicerTuples = rEvaluator.getOptimizedSlicerTuples(baseCube);
-        if (slicerTuples != null && slicerTuples.size() > 0 && (
-            SqlConstraintUtils.isDisjointTuple(slicerTuples)
-            || rEvaluator.isMultiLevelSlicerTuple()))
-        {
+        if (disjointSlicerTuples) {
             LOG.warn("Using tuple-based native slicer.");
             addContextConstraintTuples(
                 sqlQuery,
@@ -459,7 +465,8 @@ public class SqlConstraintUtils {
      */
     private static CellRequest makeContextMembersRequest(
             Evaluator evaluator,
-            boolean restrictMemberTypes)
+            boolean restrictMemberTypes,
+            boolean disjointSlicerTuples)
     {
         // Add constraint using the current evaluator context
         Member[] members = evaluator.getNonAllMembers();
@@ -469,7 +476,7 @@ public class SqlConstraintUtils {
         // only one member per ordinal in cube.
         // This follows the same line of thought as the setContext in
         // RolapEvaluator.
-        members = expandSupportedCalculatedMembers(members, evaluator);
+        members = expandSupportedCalculatedMembers(members, evaluator, disjointSlicerTuples);
         members = getUniqueOrdinalMembers(members);
 
         if (restrictMemberTypes) {
@@ -718,12 +725,21 @@ public class SqlConstraintUtils {
         return expandSupportedCalculatedMembers(
             listOfMembers.toArray(
                 new Member[listOfMembers.size()]),
-                evaluator);
+                evaluator,
+                false);
     }
 
     public static Member[] expandSupportedCalculatedMembers(
+            Member[] members,
+            Evaluator evaluator)
+    {
+        return expandSupportedCalculatedMembers(members, evaluator, false);
+    }
+    
+    public static Member[] expandSupportedCalculatedMembers(
         Member[] members,
-        Evaluator evaluator)
+        Evaluator evaluator,
+        boolean disjointSlicerTuples)
     {
         ArrayList<Member> listOfMembers = new ArrayList<Member>();
         for (Member member : members) {
@@ -734,10 +750,14 @@ public class SqlConstraintUtils {
                     expandExpressions(member, null, evaluator));
             } else if (member instanceof RolapResult.CompoundSlicerRolapMember)
             {
-                listOfMembers.add(
-                    replaceCompoundSlicerPlaceholder(
-                        member,
-                        (RolapEvaluator) evaluator));
+                // if the slicer is disjoint, it handles the SQL generation in
+                // a different way
+                if (!disjointSlicerTuples) {
+                    listOfMembers.add(
+                        replaceCompoundSlicerPlaceholder(
+                            member,
+                            (RolapEvaluator) evaluator));
+                }
             } else {
                 // just add the member
                 listOfMembers.add(member);
