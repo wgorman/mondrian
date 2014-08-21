@@ -864,6 +864,15 @@ public class SqlTupleReader implements TupleReader {
 
             SqlQuery unionQuery = SqlQuery.newQuery(dataSource, "");
 
+            // TODO: Encapsulate Union queries entirely in SqlQuery, this will
+            // allow the simplication of the logic in this section of code.
+
+            // track inner limit and offsets, these need to be bubbled up for
+            // union queries.
+
+            Integer unionLimit = null;
+            Integer unionOffset = null;
+
             try {
                 for (RolapCube baseCube : fullyJoiningBaseCubes) {
                     // Use the measure from the corresponding base cube in the
@@ -906,18 +915,30 @@ public class SqlTupleReader implements TupleReader {
                     // than one base cube and it isn't the last one so that
                     // the order by clause is not added to unionized queries
                     // (that would be illegal SQL)
-                    final Pair<String, List<SqlStatement.Type>> pair =
+                    final SqlQuery subquery =
                         generateSelectForLevels(
                             dataSource, baseCube,
                             fullyJoiningBaseCubes.size() == 1
                                 ? WhichSelect.ONLY
                                 : WhichSelect.NOT_LAST);
-                    selectString.append(pair.left);
-                    types = pair.right;
+
+                    if (fullyJoiningBaseCubes.size() > 1) {
+                        if (subquery.getLimit() != null) {
+                            unionLimit = subquery.getLimit();
+                            subquery.setLimit(null);
+                        }
+                        if (subquery.getOffset() != null) {
+                            unionOffset = subquery.getOffset();
+                            subquery.setOffset(null);
+                        }
+                    }
                     prependString =
                         MondrianProperties.instance().GenerateFormattedSql.get()
                             ? Util.nl + UNION + Util.nl
                             : " " + UNION + " ";
+                    final Pair<String, List<SqlStatement.Type>> pair = subquery.toSqlAndTypes();
+                    selectString.append(pair.left);
+                    types = pair.right;
                 }
             } finally {
                 // Restore the original measure member
@@ -940,21 +961,28 @@ public class SqlTupleReader implements TupleReader {
                 // Sort the union of the cubes.
                 // The order by columns need to be numbers,
                 // not column name strings or expressions.
-                if (fullyJoiningBaseCubes.size() > 1) {
-                    for (int i = 0; i < types.size(); i++) {
-                        unionQuery.addOrderBy(
-                            i + 1 + "",
-                            true,
-                            false,
-                            // We can't order the nulls
-                            // because column ordinals used as alias
-                            // are not supported by functions.
-                            // FIXME This dialect call is old and
-                            // has lost its meaning in the process.
-                            unionQuery.getDialect()
-                                .requiresUnionOrderByOrdinal());
-                    }
+                for (int i = 0; i < types.size(); i++) {
+                    unionQuery.addOrderBy(
+                        i + 1 + "",
+                        true,
+                        false,
+                        // We can't order the nulls
+                        // because column ordinals used as alias
+                        // are not supported by functions.
+                        // FIXME This dialect call is old and
+                        // has lost its meaning in the process.
+                        unionQuery.getDialect()
+                            .requiresUnionOrderByOrdinal());
                 }
+
+                if (unionLimit != null) {
+                    unionQuery.setLimit(unionLimit);
+                }
+
+                if (unionOffset != null) {
+                    unionQuery.setOffset(unionOffset);
+                }
+
                 return Pair.of(unionQuery.toSqlAndTypes().left, types);
             }
 
@@ -962,7 +990,7 @@ public class SqlTupleReader implements TupleReader {
             // This is the standard code path with regular single-fact table
             // cubes.
             return generateSelectForLevels(
-                dataSource, cube, WhichSelect.ONLY);
+                dataSource, cube, WhichSelect.ONLY).toSqlAndTypes();
         }
     }
 
@@ -1015,7 +1043,7 @@ public class SqlTupleReader implements TupleReader {
      * @param whichSelect Position of this select statement in a union
      * @return SQL statement string and types
      */
-    Pair<String, List<SqlStatement.Type>> generateSelectForLevels(
+    SqlQuery generateSelectForLevels(
         DataSource dataSource,
         RolapCube baseCube,
         WhichSelect whichSelect)
@@ -1057,10 +1085,10 @@ public class SqlTupleReader implements TupleReader {
             sqlQuery.correlatedSubquery = true;
         }
 
-        // this is the only time we need to do a coorelated subquery.
+        // this is the only time we need to do a correlated subquery.
         constraint.addConstraint(sqlQuery, baseCube, aggStar);
 
-        return sqlQuery.toSqlAndTypes();
+        return sqlQuery;
     }
 
     boolean targetIsOnBaseCube(TargetBase target, RolapCube baseCube) {

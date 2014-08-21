@@ -211,14 +211,32 @@ public class SqlQuery {
      * If supported by the dialect, set an offset for the query.
      */
     public void setOffset(Integer offset) {
-      this.offset = offset;
+        this.offset = offset;
     }
-    
+
+    /**
+     * Return the offset value if any
+     *
+     * @return offset
+     */
+    public Integer getOffset() {
+        return offset;
+    }
+
     /**
      * If supported by the dialect, set a limit for the query.
      */
     public void setLimit(Integer limit) {
       this.limit = limit;
+    }
+
+    /**
+     * Return the limit value if any
+     *
+     * @return limit
+     */
+    public Integer getLimit() {
+      return limit;
     }
 
     /**

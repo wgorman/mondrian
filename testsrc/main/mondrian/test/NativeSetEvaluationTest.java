@@ -1233,6 +1233,118 @@ public class NativeSetEvaluationTest extends BatchTestCase {
         propSaver.reset();
     }
 
+    public void testNativeSubsetWithVirtualCube() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS 'Subset([Product].[Food].Children, 2, 10 )'\n"
+            + "\n"
+            + "  SELECT NON EMPTY {[Measures].[Unit Sales],[Measures].[Store Invoice]} on 0,\n"
+            + "    TC ON 1 \n"
+            + "  FROM [Warehouse and Sales] WHERE {([Time].[1997])}\n";
+
+        String mysqlQuery =
+            "select\n"
+            + "    *\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` = 'Food')\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`\n"
+            + "union\n"
+            + "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`,\n"
+            + "    `inventory_fact_1997` as `inventory_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `inventory_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `inventory_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` = 'Food')\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`) as `unionQuery`\n"
+            + "order by\n"
+            + "    ISNULL(1) ASC, 1 ASC,\n"
+            + "    ISNULL(2) ASC, 2 ASC limit 10 offset 2";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeSubset.get()) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "{[Measures].[Store Invoice]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Breakfast Foods]}\n"
+            + "{[Product].[Food].[Canned Foods]}\n"
+            + "{[Product].[Food].[Canned Products]}\n"
+            + "{[Product].[Food].[Dairy]}\n"
+            + "{[Product].[Food].[Deli]}\n"
+            + "{[Product].[Food].[Eggs]}\n"
+            + "{[Product].[Food].[Frozen Foods]}\n"
+            + "{[Product].[Food].[Meat]}\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "Row #0: 3,317\n"
+            + "Row #0: 1,034.384\n"
+            + "Row #1: 19,026\n"
+            + "Row #1: 6,952.89\n"
+            + "Row #2: 1,812\n"
+            + "Row #2: 382.504\n"
+            + "Row #3: 12,885\n"
+            + "Row #3: 6,209.258\n"
+            + "Row #4: 12,037\n"
+            + "Row #4: 4,279.385\n"
+            + "Row #5: 4,132\n"
+            + "Row #5: 1,956.589\n"
+            + "Row #6: 26,655\n"
+            + "Row #6: 9,595.334\n"
+            + "Row #7: 1,714\n"
+            + "Row #7: 764.79\n"
+            + "Row #8: 37,792\n"
+            + "Row #8: 14,897.605\n"
+            + "Row #9: 1,764\n"
+            + "Row #9: 621.922\n");
+    }
+
     public void testNativeSubset() {
         final boolean useAgg =
             MondrianProperties.instance().UseAggregates.get()
