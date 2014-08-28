@@ -58,6 +58,33 @@ public class HangerDimensionTest extends FoodMartTestCase {
           + "Row #5: 285,011.92\n");
     }
 
+    public void testHangerWithDescendants() {
+
+      TestContext testContext = TestContext.instance().createSubstitutingCube(
+          "Sales",
+          "<Dimension name='Boolean' hanger='true'>\n"
+          + "  <Hierarchy hasAll=\"true\">\n"
+          + "    <Table name=\"store\"/>\n"
+          + "    <Level name=\"Boolean\" column=\"store_name\"/>\n"
+          + "  </Hierarchy>\n"
+          + "</Dimension>",
+          "<CalculatedMember name='False' hierarchy='[Boolean]' formula='[Marital Status]'/>\n"
+          + "<CalculatedMember name='True' hierarchy='[Boolean]' formula='[Marital Status]'/>\n");
+
+      String mdx =
+          "with set [All Measures Fullset] as '{[Measures].[Unit Sales]}'\n"
+        + "member [Measures].[(Axis Members Count)] as 'Count(Descendants([Boolean].[All Booleans], 1, SELF_AND_BEFORE))', SOLVE_ORDER = 1000\n"
+        + "select {[Measures].[(Axis Members Count)]} ON COLUMNS\n"
+        + "from [Sales]";
+
+      testContext.assertQueryReturns( mdx,
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Measures].[(Axis Members Count)]}\n"
+          + "Row #0: 26\n");
+    }
+
     /**
      * NOTE: In Mondrian 3, hanger dimensions must either be based on a table
      * or have an all member.

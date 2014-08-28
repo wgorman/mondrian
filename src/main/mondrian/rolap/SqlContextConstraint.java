@@ -359,7 +359,9 @@ public class SqlContextConstraint
         AggStar aggStar,
         RolapLevel level)
     {
-        if (!isJoinRequired()) {
+        if (!isJoinRequired()
+            || level.getHierarchy().getDimension().isHanger())
+        {
             return;
         }
         SqlConstraintUtils.joinLevelTableToFactTable(
