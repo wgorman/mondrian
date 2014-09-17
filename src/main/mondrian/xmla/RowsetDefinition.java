@@ -4949,7 +4949,7 @@ TODO: see above
                     fullUniqueNames,
                     hierarchy,
                     hierarchy.getDefaultMember()));
-            if (hierarchy.hasAll()) {
+            if (hierarchy.hasAll() && hierarchy.getRootMembers().size() > 0) {
                 row.set(
                     AllMember.name,
                     XmlaHandler.getFullUniqueName(
