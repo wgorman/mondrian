@@ -843,6 +843,16 @@ If enabled some Order will be computed in SQL.
         <Default>true</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>EnableNativeExists</Name>
+        <Path>mondrian.native.exists.enable</Path>
+        <Category>SQL generation</Category>
+        <Description>
+<p>If enabled some EXISTS() calls will be computed in SQL.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>AlertNativeEvaluationUnsupported</Name>
         <Path>mondrian.native.unsupported.alert</Path>
         <Category>SQL generation</Category>

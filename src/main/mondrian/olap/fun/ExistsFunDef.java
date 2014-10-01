@@ -13,6 +13,8 @@ import mondrian.calc.impl.AbstractListCalc;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.olap.type.EmptyType;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 import mondrian.rolap.RolapUtil;
 
 import java.util.ArrayList;
@@ -40,7 +42,7 @@ class ExistsFunDef extends FunDefBase
         super(dummyFunDef);
     }
 
-    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
+    public Calc compileCall(final ResolvedFunCall call, ExpCompiler compiler) {
         final ListCalc listCalc1 = compiler.compileList(call.getArg(0));
         // Set2 arg can be empty iff there is a cubeName
         final ListCalc listCalc2 =
@@ -55,6 +57,19 @@ class ExistsFunDef extends FunDefBase
 
         return new AbstractListCalc(call, new Calc[] {listCalc1, listCalc2}) {
             public TupleList evaluateList(Evaluator evaluator) {
+                RolapEvaluator manyToManyEval =
+                    ManyToManyUtil.getManyToManyEvaluator(
+                        (RolapEvaluator)evaluator);
+                NativeEvaluator nativeEvaluator =
+                    evaluator.getSchemaReader().getNativeSetEvaluator(
+                        call.getFunDef(),
+                        call.getArgs(),
+                        manyToManyEval,
+                        this);
+                if (nativeEvaluator != null) {
+                    return (TupleList)
+                        nativeEvaluator.execute(ResultStyle.LIST);
+                }
                 String cubeName = (cubeNameCalc != null)
                     ? cubeNameCalc.evaluateString(evaluator)
                     : null;
