@@ -201,13 +201,15 @@ public class ExistingFunDef extends FunDefBase {
     {
         Map<Dimension, Set<Hierarchy>> dims =
             new HashMap<Dimension, Set<Hierarchy>>();
-        for (Hierarchy hierarchy : hierarchies) {
-            Set<Hierarchy> list = dims.get(hierarchy.getDimension());
-            if (list == null) {
-                list = new HashSet<Hierarchy>();
-                dims.put(hierarchy.getDimension(), list);
+        if (hierarchies != null) {
+            for (Hierarchy hierarchy : hierarchies) {
+                Set<Hierarchy> list = dims.get(hierarchy.getDimension());
+                if (list == null) {
+                    list = new HashSet<Hierarchy>();
+                    dims.put(hierarchy.getDimension(), list);
+                }
+                list.add(hierarchy);
             }
-            list.add(hierarchy);
         }
         return dims;
     }
