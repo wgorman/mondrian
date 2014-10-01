@@ -15,6 +15,8 @@ import mondrian.calc.*;
 import mondrian.calc.impl.*;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
+import mondrian.rolap.ManyToManyUtil;
+import mondrian.rolap.RolapEvaluator;
 
 import java.util.*;
 
@@ -32,7 +34,7 @@ class OrderFunDef extends FunDefBase {
         super(resolverBase, type, types);
     }
 
-    public Calc compileCall(ResolvedFunCall call, ExpCompiler compiler) {
+    public Calc compileCall(final ResolvedFunCall call, ExpCompiler compiler) {
         final IterCalc listCalc = compiler.compileIter(call.getArg(0));
         List<SortKeySpec> keySpecList = new ArrayList<SortKeySpec>();
         buildKeySpecList(keySpecList, call, compiler);
@@ -137,6 +139,7 @@ class OrderFunDef extends FunDefBase {
         private final List<SortKeySpec> keySpecList;
         private final int originalKeySpecCount;
         private final int arity;
+        private final ResolvedFunCall call;
 
         public CalcImpl(
             ResolvedFunCall call,
@@ -150,6 +153,7 @@ class OrderFunDef extends FunDefBase {
             this.keySpecList = keySpecList;
             this.originalKeySpecCount = keySpecList.size();
             this.arity = getType().getArity();
+            this.call = call;
         }
 
         public TupleList evaluateDual(
@@ -199,6 +203,21 @@ class OrderFunDef extends FunDefBase {
         }
 
         public TupleList evaluateList(Evaluator evaluator) {
+            SchemaReader schemaReader = evaluator.getSchemaReader();
+            RolapEvaluator manyToManyEval =
+                ManyToManyUtil.getManyToManyEvaluator(
+                    (RolapEvaluator)evaluator);
+            NativeEvaluator nativeEvaluator =
+                schemaReader.getNativeSetEvaluator(
+                    call.getFunDef(),
+                    call.getArgs(),
+                    manyToManyEval,
+                    this);
+            if (nativeEvaluator != null) {
+                return
+                    (TupleList) nativeEvaluator.execute(ResultStyle.LIST);
+            }
+
             final TupleIterable iterable =
                 iterCalc.evaluateIterable(evaluator);
             // REVIEW: If iterable happens to be a list, we'd like to pass it,
