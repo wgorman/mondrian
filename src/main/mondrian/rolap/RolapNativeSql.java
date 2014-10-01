@@ -616,6 +616,7 @@ public class RolapNativeSql {
         private class RecursiveState {
             boolean unknownFound = false;
             boolean measureFound = false;
+            boolean multipleFactsFound = false;
             boolean currentMemberFound = false;
             boolean nonAllHierarchyFound = false;
             List<Hierarchy> allHierarchies = new ArrayList<Hierarchy>();
@@ -701,10 +702,16 @@ public class RolapNativeSql {
                 // calculated member that sometimes evaluates to empty and other times where it will not.
                 Member m = ((MemberExpr) exp).getMember();
                 if (m.isMeasure()) {
-                    if (!m.isCalculated() || SqlConstraintUtils.isSupportedCalculatedMember(m)) {
+                    if (!m.isCalculated()
+                        || SqlConstraintUtils.isSupportedCalculatedMember(m)) 
+                    {
                           rs.measureFound = true;
                           if (m instanceof RolapStoredMeasure) {
-                              saveStoredMeasure((RolapStoredMeasure)m);
+                              if (!saveStoredMeasure((RolapStoredMeasure)m)) {
+                                  // Virtual Cube with multiple Measures from
+                                  // different cubes, returning false
+                                  rs.multipleFactsFound = true;
+                              }
                           }
                     }
                 } else {
@@ -731,12 +738,7 @@ public class RolapNativeSql {
             // return null if a measure is not found
             // return a list of related hierarchies, if their all member is present somewhere in the stack
             // if there is a hierarchy present without an all member, return null for now.
-  
-            if (!(rolapLevel instanceof RolapCubeLevel) || ((RolapCubeLevel)rolapLevel).getCube().isVirtual()) {
-              // we currently don't support virtual cubes in this use case.
-              // Additional logic would be needed to determine that only a single cube measures are in play
-              return null;
-            }
+
             RecursiveState rs = new RecursiveState();
             traverseExp(exp, rs);
   
@@ -754,7 +756,10 @@ public class RolapNativeSql {
                     rs.nonAllHierarchyFound = true;
                 }
             }
-            if (!rs.measureFound || !rs.currentMemberFound || rs.nonAllHierarchyFound || rs.unknownFound) {
+            if (!rs.measureFound || rs.multipleFactsFound
+                || !rs.currentMemberFound || rs.nonAllHierarchyFound
+                || rs.unknownFound) 
+            {
                 return null;
             }
             return rs.allHierarchies;
