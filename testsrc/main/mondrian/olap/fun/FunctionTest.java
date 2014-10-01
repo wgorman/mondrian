@@ -12612,6 +12612,25 @@ Intel platforms):
             + "  <VirtualCubeMeasure cubeName=\"Warehouse\" name=\"[Measures].[Warehouse Sales]\"/>\n"
             + "</VirtualCube>",
             null, null, null);
+
+        context.assertQueryReturns(
+            "SELECT \n"
+            + "  { Measures.[Store Sales] } ON 0,\n"
+            + "  { Exists( \n"
+            + "    { [Product].[Product Name].[Club Head Cheese],\n"
+            + "      [Product].[Product Name].[Washington Cola],\n"
+            + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
+            + "    {StrToMember(Parameter(\"MyParam\", STRING, \"[Product].[Food].[Dairy].[Dairy].[Cheese].[Club]\"), CONSTRAINED)},\n"
+            + "    'Warehouse') } ON 1\n"
+            + "FROM [Sales and Warehouse]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+            + "Row #0: 647.80\n");
+        // for Sales
         // [Club Head Cheese] doesn't appear in Warehouse's fact table
         context.assertQueryReturns(
             "SELECT \n"

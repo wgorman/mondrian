@@ -464,16 +464,25 @@ public class CrossJoinArgFactory {
         List<RolapMember> memberList = new ArrayList<RolapMember>();
         for (Exp arg : args) {
             if (!(arg instanceof MemberExpr)) {
-                return null;
+              // attempt to pre-evaluate calculated members
+              // resolving them to real members before native sql pushdown.
+              if (!supportsPreEval(arg)) {
+                    return null;
+                }
+                ExpCompiler compiler = evaluator.getQuery().createCompiler();
+                Calc calc = compiler.compileMember(arg);
+                Object results = calc.evaluate(evaluator);
+                memberList.add((RolapMember)results);
+            } else {
+                final Member member = ((MemberExpr) arg).getMember();
+                if (member.isCalculated()
+                    && !member.isParentChildLeaf())
+                {
+                    // also returns null if any member is calculated
+                    return null;
+                }
+                memberList.add((RolapMember) member);
             }
-            final Member member = ((MemberExpr) arg).getMember();
-            if (member.isCalculated()
-                && !member.isParentChildLeaf())
-            {
-                // also returns null if any member is calculated
-                return null;
-            }
-            memberList.add((RolapMember) member);
         }
 
         final CrossJoinArg cjArg =
@@ -483,6 +492,21 @@ public class CrossJoinArgFactory {
             return null;
         }
         return new CrossJoinArg[]{cjArg};
+    }
+
+    /**
+     * Return true if the expression can be pre-evaluated before SQL Pushdown.
+     */
+    public boolean supportsPreEval(Exp exp) {
+      if (exp instanceof FunCall) {
+        FunCall funcall = (FunCall) exp;
+        if (funcall.getFunName().equalsIgnoreCase("strtomember")) {
+          return supportsPreEval(funcall.getArg(0));
+        }
+      } else if (exp instanceof ParameterExpr) {
+        return true;
+      }
+      return false;
     }
 
     private boolean restrictMemberTypes() {
