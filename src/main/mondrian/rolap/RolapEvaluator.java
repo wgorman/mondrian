@@ -568,9 +568,11 @@ public class RolapEvaluator implements Evaluator {
         boolean removeMember[] = new boolean[slicerTuples.getArity()];
         for (int i = 0; i < slicerTuples.get( 0 ).size(); i++) {
             Hierarchy h = slicerTuples.get(0).get(i).getHierarchy();
+            // check to see if the current member is overridden and not expanding.
             if (!(getContext(h) instanceof
                 RolapResult.CompoundSlicerRolapMember)
-                && (!getExpanding().getHierarchy().equals(h)
+                && (getExpanding() == null
+                || !getExpanding().getHierarchy().equals(h)
                 || !(getExpanding() instanceof
                 RolapResult.CompoundSlicerRolapMember)))
             {
