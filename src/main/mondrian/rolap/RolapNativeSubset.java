@@ -14,6 +14,7 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
@@ -24,6 +25,7 @@ import mondrian.olap.SchemaReader;
 import mondrian.olap.Util;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.CrossJoinArg;
+import mondrian.rolap.sql.MemberChildrenConstraint;
 import mondrian.rolap.sql.SqlQuery;
 import mondrian.rolap.sql.TupleConstraint;
 
@@ -40,19 +42,27 @@ public class RolapNativeSubset extends RolapNativeSet {
             MondrianProperties.instance().EnableNativeSubset.get());
     }
 
+    /**
+     * This constraint can act in two ways.  Either as a self contained
+     * constraint, or as a wrapper around an existing native constraint.
+     */
     static class SubsetConstraint extends SetConstraint {
         Integer start;
         Integer count;
+        SetConstraint parentConstraint;
 
         public SubsetConstraint(
             Integer start,
             Integer count,
-            CrossJoinArg[] args, RolapEvaluator evaluator
+            CrossJoinArg[] args, 
+            RolapEvaluator evaluator,
+            SetConstraint parentConstraint
             )
         {
             super(args, evaluator, true);
             this.start = start;
             this.count = count;
+            this.parentConstraint = parentConstraint;
         }
 
         /**
@@ -61,7 +71,11 @@ public class RolapNativeSubset extends RolapNativeSet {
          * <p>Subset doesn't require a join to the fact table.
          */
         protected boolean isJoinRequired() {
-            return super.isJoinRequired();
+            if (parentConstraint != null) {
+                return parentConstraint.isJoinRequired();
+            } else {
+                return super.isJoinRequired();
+            }
         }
 
         public void addConstraint(
@@ -75,12 +89,20 @@ public class RolapNativeSubset extends RolapNativeSet {
             if (count != null) {
               sqlQuery.setLimit(count);
             }
-            super.addConstraint(sqlQuery, baseCube, aggStar);
+            if (parentConstraint != null) {
+                parentConstraint.addConstraint( sqlQuery, baseCube, aggStar);
+            } else {
+                super.addConstraint(sqlQuery, baseCube, aggStar);
+            }
         }
 
         public Object getCacheKey() {
             List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            if (parentConstraint != null) {
+                key.add(parentConstraint.getCacheKey());
+            } else {
+                key.add(super.getCacheKey());
+            }
             key.add(start);
             key.add(count);
 
@@ -90,6 +112,27 @@ public class RolapNativeSubset extends RolapNativeSet {
                     .getSlicerMembers());
             }
             return key;
+        }
+
+        public MemberChildrenConstraint getMemberChildrenConstraint(
+            RolapMember parent)
+        {
+            if (parentConstraint != null) {
+                return parentConstraint.getMemberChildrenConstraint(parent);
+            } else {
+                return super.getMemberChildrenConstraint(parent);
+            }
+        }
+
+        public void constrainExtraLevels(
+            RolapCube baseCube,
+            BitKey levelBitKey)
+        {
+            if (parentConstraint != null) {
+                parentConstraint.constrainExtraLevels(baseCube, levelBitKey);
+            } else {
+                super.constrainExtraLevels(baseCube, levelBitKey);
+            }
         }
     }
 
@@ -120,23 +163,6 @@ public class RolapNativeSubset extends RolapNativeSet {
             return null;
         }
 
-        // extract the set expression
-        List<CrossJoinArg[]> allArgs =
-            crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
-
-        // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
-        // array is the CrossJoin dimensions.  The second array, if any,
-        // contains additional constraints on the dimensions. If either the list
-        // or the first array is null, then native cross join is not feasible.
-        if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
-            return null;
-        }
-
-        CrossJoinArg[] cjArgs = allArgs.get(0);
-        if (isPreferInterpreter(cjArgs, false)) {
-            return null;
-        }
-
         // extract start
         if (!(args[1] instanceof Literal)) {
             return null;
@@ -159,35 +185,75 @@ public class RolapNativeSubset extends RolapNativeSet {
           return null;
         }
 
-        LOGGER.debug("using native subset");
-        final int savepoint = evaluator.savepoint();
-        try {
-            overrideContext(evaluator, cjArgs, null);
+        // first see if subset wraps another native evaluation (other than count and sum)
 
-            CrossJoinArg[] predicateArgs = null;
-            if (allArgs.size() == 2) {
-                predicateArgs = allArgs.get(1);
+        SetEvaluator eval = null;
+        if (args[0] instanceof ResolvedFunCall) {
+            ResolvedFunCall call = (ResolvedFunCall)args[0];
+            if (call.getFunDef().getName().equals("Cache")) {
+                if (call.getArg( 0 ) instanceof ResolvedFunCall) {
+                    call = (ResolvedFunCall)call.getArg(0);
+                } else {
+                    return null;
+                }
+            }
+            eval = (SetEvaluator)evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
+                evaluator, call.getFunDef(), call.getArgs());
+        }
+        if (eval == null) {
+            // extract the set expression
+            List<CrossJoinArg[]> allArgs =
+                crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
+
+            // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
+            // array is the CrossJoin dimensions.  The second array, if any,
+            // contains additional constraints on the dimensions. If either the list
+            // or the first array is null, then native cross join is not feasible.
+            if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
+                return null;
             }
 
-            CrossJoinArg[] combinedArgs;
-            if (predicateArgs != null) {
-                // Combined the CJ and the additional predicate args
-                // to form the TupleConstraint.
-                combinedArgs =
-                        Util.appendArrays(cjArgs, predicateArgs);
-            } else {
-                combinedArgs = cjArgs;
+            CrossJoinArg[] cjArgs = allArgs.get(0);
+            if (isPreferInterpreter(cjArgs, false)) {
+                return null;
             }
 
+            final int savepoint = evaluator.savepoint();
+            try {
+                overrideContext(evaluator, cjArgs, null);
+                CrossJoinArg[] predicateArgs = null;
+                if (allArgs.size() == 2) {
+                    predicateArgs = allArgs.get(1);
+                }
+                CrossJoinArg[] combinedArgs;
+                if (predicateArgs != null) {
+                    // Combined the CJ and the additional predicate args
+                    // to form the TupleConstraint.
+                    combinedArgs =
+                            Util.appendArrays(cjArgs, predicateArgs);
+                } else {
+                    combinedArgs = cjArgs;
+                }
+
+                TupleConstraint constraint =
+                    new SubsetConstraint(
+                        start, count, combinedArgs, evaluator, null);
+                SetEvaluator sev =
+                    new SetEvaluator(cjArgs, schemaReader, constraint);
+                sev.setMaxRows(count);
+                LOGGER.debug("using native subset");
+                return sev;
+            } finally {
+                evaluator.restore(savepoint);
+            }
+        } else {
+            // if subset wraps another native function, add start and count to the constraint.
             TupleConstraint constraint =
                 new SubsetConstraint(
-                    start, count, combinedArgs, evaluator);
-            SetEvaluator sev =
-                new SetEvaluator(cjArgs, schemaReader, constraint);
-            sev.setMaxRows(count);
-            return sev;
-        } finally {
-            evaluator.restore(savepoint);
+                    start, count, null, evaluator, (SetConstraint)eval.getConstraint());
+            eval.setConstraint(constraint);
+            LOGGER.debug("using native subset");
+            return eval;
         }
     }
 }

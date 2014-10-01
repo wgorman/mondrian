@@ -1205,126 +1205,365 @@ public class FilterTest extends BatchTestCase {
     }
 
     /**
+     * This tests Filter(,Count(,EXCLUDEEMPTY)) scenarios in a virtual cube context.
+     */
+    public void testVirtualCubeNativeCountFilter() {
+      TestContext context = getTestContext().withFreshConnection();
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        // should nativize with separate measures, but not when they are both referenced.
+        // peanut butter! 3 items in sales, 2 in warehouse
+        String mdx =
+            "SELECT Filter("
+            + "   [Product].[All Products].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].Children, "
+            + "   Count(Crossjoin({[Product].CurrentMember}, {[Measures].[Units Ordered]}), ExcludeEmpty)) on 0, {[Measures].[Unit Sales], [Measures].[Units Ordered]} on 1 from [Warehouse and Sales]";
+        // verify SQL
+        String sql =
+            "select `product_class`.`product_family` as `c0`, "
+            + "`product_class`.`product_department` as `c1`, "
+            + "`product_class`.`product_category` as `c2`, "
+            + "`product_class`.`product_subcategory` as `c3`, "
+            + "`product`.`brand_name` as `c4`, `product`.`product_name` as `c5` "
+            + "from `product_class` as `product_class`, `product` as `product`, "
+            + "`inventory_fact_1997` as `inventory_fact_1997`, "
+            + "`time_by_day` as `time_by_day` where "
+            + "`inventory_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
+            + "`inventory_fact_1997`.`time_id` = `time_by_day`.`time_id` and "
+            + "`time_by_day`.`the_year` = 1997 and (`product`.`brand_name` = 'CDR' "
+            + "and `product_class`.`product_subcategory` = 'Peanut Butter' and "
+            + "`product_class`.`product_category` = 'Jams and Jellies' and "
+            + "`product_class`.`product_department` = 'Baking Goods' and "
+            + "`product_class`.`product_family` = 'Food') group by "
+            + "`product_class`.`product_family`, `product_class`.`product_department`, "
+            + "`product_class`.`product_category`, `product_class`.`product_subcategory`, "
+            + "`product`.`brand_name`, `product`.`product_name` order by "
+            + "ISNULL(`product_class`.`product_family`) ASC, "
+            + "`product_class`.`product_family` ASC, "
+            + "ISNULL(`product_class`.`product_department`) ASC, "
+            + "`product_class`.`product_department` ASC, "
+            + "ISNULL(`product_class`.`product_category`) ASC, "
+            + "`product_class`.`product_category` ASC, "
+            + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+            + "`product_class`.`product_subcategory` ASC, "
+            + "ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC, "
+            + "ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC";
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+            assertQuerySql(
+                context,
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
+
+        context.assertQueryReturns(
+            mdx, 
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Chunky Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Creamy Peanut Butter]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "{[Measures].[Units Ordered]}\n"
+            + "Row #0: 182\n"
+            + "Row #0: 178\n"
+            + "Row #1: 222.0\n"
+            + "Row #1: 164.0\n");
+
+        mdx = 
+            "SELECT Filter("
+            + "   [Product].[All Products].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].Children, "
+            + "   Count(Crossjoin({[Product].CurrentMember}, {[Measures].[Unit Sales]}), ExcludeEmpty)) on 0, {[Measures].[Unit Sales], [Measures].[Units Ordered]} on 1 from [Warehouse and Sales]";
+
+        // verify SQL
+        sql = 
+            "select `product_class`.`product_family` as `c0`, "
+            + "`product_class`.`product_department` as `c1`, "
+            + "`product_class`.`product_category` as `c2`, "
+            + "`product_class`.`product_subcategory` as `c3`, "
+            + "`product`.`brand_name` as `c4`, `product`.`product_name` as `c5` "
+            + "from `product_class` as `product_class`, `product` as `product`, "
+            + "`sales_fact_1997` as `sales_fact_1997`, `time_by_day` as `time_by_day` "
+            + "where `sales_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
+            + "`sales_fact_1997`.`time_id` = `time_by_day`.`time_id` and "
+            + "`time_by_day`.`the_year` = 1997 and (`product`.`brand_name` = 'CDR' and "
+            + "`product_class`.`product_subcategory` = 'Peanut Butter' and "
+            + "`product_class`.`product_category` = 'Jams and Jellies' and "
+            + "`product_class`.`product_department` = 'Baking Goods' and "
+            + "`product_class`.`product_family` = 'Food') group by "
+            + "`product_class`.`product_family`, `product_class`.`product_department`, "
+            + "`product_class`.`product_category`, `product_class`.`product_subcategory`, "
+            + "`product`.`brand_name`, `product`.`product_name` order by "
+            + "ISNULL(`product_class`.`product_family`) ASC, "
+            + "`product_class`.`product_family` ASC, "
+            + "ISNULL(`product_class`.`product_department`) ASC, "
+            + "`product_class`.`product_department` ASC, "
+            + "ISNULL(`product_class`.`product_category`) ASC, "
+            + "`product_class`.`product_category` ASC, "
+            + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+            + "`product_class`.`product_subcategory` ASC, "
+            + "ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC, "
+            + "ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC";
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+            assertQuerySql(
+                context,
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
+
+        context.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Chunky Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Creamy Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Extra Chunky Peanut Butter]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "{[Measures].[Units Ordered]}\n"
+            + "Row #0: 182\n"
+            + "Row #0: 178\n"
+            + "Row #0: 185\n"
+            + "Row #1: 222.0\n"
+            + "Row #1: 164.0\n"
+            + "Row #1: \n");
+
+        mdx = 
+            "SELECT Filter("
+            + "   [Product].[All Products].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].Children, "
+            + "   Count(Crossjoin({[Product].CurrentMember}, {[Measures].[Unit Sales], [Measures].[Units Ordered]}), ExcludeEmpty)) on 0, {[Measures].[Unit Sales], [Measures].[Units Ordered]} on 1 from [Warehouse and Sales]";
+
+        // verify SQL
+        sql =
+            "select `product`.`product_name` as `c0` from `product` as `product`, "
+            + "`product_class` as `product_class` where "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` "
+            + "and (`product`.`brand_name` = 'CDR' "
+            + "and `product_class`.`product_subcategory` = 'Peanut Butter' "
+            + "and `product_class`.`product_category` = 'Jams and Jellies' "
+            + "and `product_class`.`product_department` = 'Baking Goods' "
+            + "and `product_class`.`product_family` = 'Food') group by "
+            + "`product`.`product_name` order by ISNULL(`product`.`product_name`) ASC, "
+            + "`product`.`product_name` ASC";
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+            assertQuerySql(
+                context,
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
+
+        context.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Chunky Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Creamy Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter].[CDR].[CDR Extra Chunky Peanut Butter]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "{[Measures].[Units Ordered]}\n"
+            + "Row #0: 182\n"
+            + "Row #0: 178\n"
+            + "Row #0: 185\n"
+            + "Row #1: 222.0\n"
+            + "Row #1: 164.0\n"
+            + "Row #1: \n");
+    }
+
+    /**
+     * This verifies that a native filter embedded in a subset generates the correct SQL
+     */
+    public void testNativeFilterInSubset() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        String mdx =
+            "SELECT\n"
+            + "Subset(Filter([Product].[Food].[Baking Goods].[Jams and Jellies].Children, [Measures].[Unit Sales] > 2564), 1, 2) ON 0,\n"
+            + "{[Measures].[Unit Sales]} ON 1\n"
+            + "FROM [Sales]";
+
+        String sql =
+            "select `product_class`.`product_family` as `c0`, "
+            + "`product_class`.`product_department` as `c1`, "
+            + "`product_class`.`product_category` as `c2`, "
+            + "`product_class`.`product_subcategory` as `c3` "
+            + "from `product_class` as `product_class`, "
+            + "`product` as `product`, `sales_fact_1997` as `sales_fact_1997`, "
+            + "`time_by_day` as `time_by_day` where "
+            + "`sales_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
+            + "`sales_fact_1997`.`time_id` = `time_by_day`.`time_id` and "
+            + "`time_by_day`.`the_year` = 1997 and "
+            + "(`product_class`.`product_category` = 'Jams and Jellies' and "
+            + "`product_class`.`product_department` = 'Baking Goods' and "
+            + "`product_class`.`product_family` = 'Food') group by "
+            + "`product_class`.`product_family`, `product_class`.`product_department`, "
+            + "`product_class`.`product_category`, `product_class`.`product_subcategory` "
+            + "having (sum(`sales_fact_1997`.`unit_sales`) > 2564) order by "
+            + "ISNULL(`product_class`.`product_family`) ASC, "
+            + "`product_class`.`product_family` ASC, "
+            + "ISNULL(`product_class`.`product_department`) ASC, "
+            + "`product_class`.`product_department` ASC, "
+            + "ISNULL(`product_class`.`product_category`) ASC, "
+            + "`product_class`.`product_category` ASC, "
+            + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+            + "`product_class`.`product_subcategory` ASC limit 2 offset 1";
+
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get() 
+            && propSaver.properties.EnableNativeSubset.get()) 
+        {
+            assertQuerySql(
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Peanut Butter]}\n"
+            + "{[Product].[Food].[Baking Goods].[Jams and Jellies].[Preserves]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 2,667\n"
+            + "Row #0: 4,100\n");
+    }
+
+    /**
      * Test for Native Count Filter Scenario
-     * 
-     * TODO: Test Virtual Cubes
+     *
+     * TODO: Test with Calculated Members that match scenario
      * TODO: Add support for more than just related All members
      */
     public void testNativeCountFilter() {  
-      final boolean useAgg =
-          MondrianProperties.instance().UseAggregates.get()
-          && MondrianProperties.instance().ReadAggregates.get();
-      TestContext testContext = TestContext.instance()
-      .createSubstitutingCube(
-          "Sales",
-          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
-          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
-          + "      <Table name=\"customer\"/>\n"
-          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
-          + "    </Hierarchy>\n"
-          + "  </Dimension>"
-          + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
-          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
-          + "      <Table name=\"store\"/>\n"
-          + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
-          + "    </Hierarchy>\n"
-          + "  </Dimension>");
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        TestContext testContext = TestContext.instance()
+        .createSubstitutingCube(
+            "Sales",
+            "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+            + "      <Table name=\"customer\"/>\n"
+            + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>"
+            + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
+            + "      <Table name=\"store\"/>\n"
+            + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>");
 
-      // expected native filter with a join against the fact table
-      String sql = 
-          "select `customer`.`customer_id` as `c0` "
-          + "from `customer` as `customer`, `sales_fact_1997` as `sales_fact_1997`, "
-          + "`time_by_day` as `time_by_day`, `promotion` as `promotion` "
-          + "where `sales_fact_1997`.`customer_id` = `customer`.`customer_id` "
-          + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
-          + "and `time_by_day`.`the_year` = 1997 "
-          + "and `sales_fact_1997`.`promotion_id` = `promotion`.`promotion_id` "
-          + "and `promotion`.`promotion_name` = 'Big Promo' "
-          + "and `customer`.`gender` = 'F' "
-          + "group by `customer`.`customer_id` "
-          + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
-      String mdx = 
-          "WITH\n"
-          + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
-          + "     SET [Customer IDs Subset] AS 'Subset([Customer IDs Fullset], 0, 25)'\n"
-          + "SELECT\n"
-          + "     {[Store IDs].[All Store IDs]} ON COLUMNS,\n"
-          + "     {[Customer IDs Subset], Ascendants([Customer IDs].[All Customer IDs])} ON ROWS\n"
-          + "FROM\n"
-          + "      [Sales]\n"
-          + "WHERE\n"
-          + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales] )\n"
-          + "CELL PROPERTIES\n"
-          + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
+        // expected native filter with a join against the fact table
+        String sql = 
+            "select `customer`.`customer_id` as `c0` "
+            + "from `customer` as `customer`, `sales_fact_1997` as `sales_fact_1997`, "
+            + "`time_by_day` as `time_by_day`, `promotion` as `promotion` "
+            + "where `sales_fact_1997`.`customer_id` = `customer`.`customer_id` "
+            + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
+            + "and `time_by_day`.`the_year` = 1997 "
+            + "and `sales_fact_1997`.`promotion_id` = `promotion`.`promotion_id` "
+            + "and `promotion`.`promotion_name` = 'Big Promo' "
+            + "and `customer`.`gender` = 'F' "
+            + "group by `customer`.`customer_id` "
+            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+        String mdx = 
+            "WITH\n"
+            + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
+            + "     SET [Customer IDs Subset] AS 'Subset([Customer IDs Fullset], 0, 25)'\n"
+            + "SELECT\n"
+            + "     {[Store IDs].[All Store IDs]} ON COLUMNS,\n"
+            + "     {[Customer IDs Subset], Ascendants([Customer IDs].[All Customer IDs])} ON ROWS\n"
+            + "FROM\n"
+            + "      [Sales]\n"
+            + "WHERE\n"
+            + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales] )\n"
+            + "CELL PROPERTIES\n"
+            + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
 
-      if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
-          assertQuerySql(
-              testContext,
-              mdx,
-              new SqlPattern[] {
-                  new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
-              });
-      }
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+            assertQuerySql(
+                testContext,
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
 
-      testContext.assertQueryReturns(
-          mdx,          
-          "Axis #0:\n"
-          + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales]}\n"
-          + "Axis #1:\n"
-          + "{[Store IDs].[All Store IDs]}\n"
-          + "Axis #2:\n"
-          + "{[Customer IDs].[158]}\n"
-          + "{[Customer IDs].[229]}\n"
-          + "{[Customer IDs].[485]}\n"
-          + "{[Customer IDs].[617]}\n"
-          + "{[Customer IDs].[1024]}\n"
-          + "{[Customer IDs].[1057]}\n"
-          + "{[Customer IDs].[1607]}\n"
-          + "{[Customer IDs].[1652]}\n"
-          + "{[Customer IDs].[1813]}\n"
-          + "{[Customer IDs].[1965]}\n"
-          + "{[Customer IDs].[2035]}\n"
-          + "{[Customer IDs].[2244]}\n"
-          + "{[Customer IDs].[2390]}\n"
-          + "{[Customer IDs].[2459]}\n"
-          + "{[Customer IDs].[2664]}\n"
-          + "{[Customer IDs].[2918]}\n"
-          + "{[Customer IDs].[2942]}\n"
-          + "{[Customer IDs].[3015]}\n"
-          + "{[Customer IDs].[3160]}\n"
-          + "{[Customer IDs].[3245]}\n"
-          + "{[Customer IDs].[3310]}\n"
-          + "{[Customer IDs].[4269]}\n"
-          + "{[Customer IDs].[4287]}\n"
-          + "{[Customer IDs].[4322]}\n"
-          + "{[Customer IDs].[4340]}\n"
-          + "{[Customer IDs].[All Customer IDs]}\n"
-          + "Row #0: 18\n"
-          + "Row #1: 12\n"
-          + "Row #2: 20\n"
-          + "Row #3: 16\n"
-          + "Row #4: 9\n"
-          + "Row #5: 8\n"
-          + "Row #6: 12\n"
-          + "Row #7: 8\n"
-          + "Row #8: 9\n"
-          + "Row #9: 20\n"
-          + "Row #10: 17\n"
-          + "Row #11: 25\n"
-          + "Row #12: 23\n"
-          + "Row #13: 10\n"
-          + "Row #14: 10\n"
-          + "Row #15: 24\n"
-          + "Row #16: 41\n"
-          + "Row #17: 12\n"
-          + "Row #18: 31\n"
-          + "Row #19: 16\n"
-          + "Row #20: 14\n"
-          + "Row #21: 23\n"
-          + "Row #22: 9\n"
-          + "Row #23: 21\n"
-          + "Row #24: 21\n"
-          + "Row #25: 936\n");
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[F], [Measures].[Unit Sales]}\n"
+            + "Axis #1:\n"
+            + "{[Store IDs].[All Store IDs]}\n"
+            + "Axis #2:\n"
+            + "{[Customer IDs].[158]}\n"
+            + "{[Customer IDs].[229]}\n"
+            + "{[Customer IDs].[485]}\n"
+            + "{[Customer IDs].[617]}\n"
+            + "{[Customer IDs].[1024]}\n"
+            + "{[Customer IDs].[1057]}\n"
+            + "{[Customer IDs].[1607]}\n"
+            + "{[Customer IDs].[1652]}\n"
+            + "{[Customer IDs].[1813]}\n"
+            + "{[Customer IDs].[1965]}\n"
+            + "{[Customer IDs].[2035]}\n"
+            + "{[Customer IDs].[2244]}\n"
+            + "{[Customer IDs].[2390]}\n"
+            + "{[Customer IDs].[2459]}\n"
+            + "{[Customer IDs].[2664]}\n"
+            + "{[Customer IDs].[2918]}\n"
+            + "{[Customer IDs].[2942]}\n"
+            + "{[Customer IDs].[3015]}\n"
+            + "{[Customer IDs].[3160]}\n"
+            + "{[Customer IDs].[3245]}\n"
+            + "{[Customer IDs].[3310]}\n"
+            + "{[Customer IDs].[4269]}\n"
+            + "{[Customer IDs].[4287]}\n"
+            + "{[Customer IDs].[4322]}\n"
+            + "{[Customer IDs].[4340]}\n"
+            + "{[Customer IDs].[All Customer IDs]}\n"
+            + "Row #0: 18\n"
+            + "Row #1: 12\n"
+            + "Row #2: 20\n"
+            + "Row #3: 16\n"
+            + "Row #4: 9\n"
+            + "Row #5: 8\n"
+            + "Row #6: 12\n"
+            + "Row #7: 8\n"
+            + "Row #8: 9\n"
+            + "Row #9: 20\n"
+            + "Row #10: 17\n"
+            + "Row #11: 25\n"
+            + "Row #12: 23\n"
+            + "Row #13: 10\n"
+            + "Row #14: 10\n"
+            + "Row #15: 24\n"
+            + "Row #16: 41\n"
+            + "Row #17: 12\n"
+            + "Row #18: 31\n"
+            + "Row #19: 16\n"
+            + "Row #20: 14\n"
+            + "Row #21: 23\n"
+            + "Row #22: 9\n"
+            + "Row #23: 21\n"
+            + "Row #24: 21\n"
+            + "Row #25: 936\n");
     }
 
     /**
@@ -1332,123 +1571,123 @@ public class FilterTest extends BatchTestCase {
      * expand Member expressions.
      */
     public void testNativeFilterWithComplexCalc() {
-      final boolean useAgg =
-          MondrianProperties.instance().UseAggregates.get()
-          && MondrianProperties.instance().ReadAggregates.get();
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
 
-      TestContext testContext = TestContext.instance()
-      .createSubstitutingCube(
-          "Sales",
-          "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
-          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
-          + "      <Table name=\"customer\"/>\n"
-          + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
-          + "    </Hierarchy>\n"
-          + "  </Dimension>"
-          + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
-          + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
-          + "      <Table name=\"store\"/>\n"
-          + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
-          + "    </Hierarchy>\n"
-          + "  </Dimension>");
+        TestContext testContext = TestContext.instance()
+        .createSubstitutingCube(
+            "Sales",
+            "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+            + "      <Table name=\"customer\"/>\n"
+            + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>"
+            + "  <Dimension name=\"Store IDs\" foreignKey=\"store_id\">\n"
+            + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
+            + "      <Table name=\"store\"/>\n"
+            + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
+            + "    </Hierarchy>\n"
+            + "  </Dimension>");
 
-      // expected native filter with a join against the fact table
-      String sql =
-          "select `customer`.`customer_id` as `c0` "
-          + "from `customer` as `customer`, `sales_fact_1997` as `sales_fact_1997`, "
-          + "`time_by_day` as `time_by_day`, `promotion` as `promotion` "
-          + "where `sales_fact_1997`.`customer_id` = `customer`.`customer_id` "
-          + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
-          + "and `time_by_day`.`the_year` = 1997 "
-          + "and `sales_fact_1997`.`promotion_id` = `promotion`.`promotion_id` "
-          + "and `promotion`.`promotion_name` = 'Big Promo' "
-          + "and `customer`.`gender` = 'F' "
-          + "group by `customer`.`customer_id` "
-          + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
-      String mdx =
-          "WITH\n"
-          + "     MEMBER [Gender].[Filter 0] as Aggregate(Filter([Gender].[F], 1=1))\n"
-          + "     MEMBER [Gender].[Filter] as [Gender].[Filter 0]\n"
-          + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
-          + "     SET [Customer IDs Subset] AS 'Subset([Customer IDs Fullset], 0, 25)'\n"
-          + "SELECT\n"
-          + "     {[Store IDs].[All Store IDs]} ON COLUMNS,\n"
-          + "     {[Customer IDs Subset], Ascendants([Customer IDs].[All Customer IDs])} ON ROWS\n"
-          + "FROM\n"
-          + "      [Sales]\n"
-          + "WHERE\n"
-          + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[Filter], [Measures].[Unit Sales] )\n"
-          + "CELL PROPERTIES\n"
-          + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
+        // expected native filter with a join against the fact table
+        String sql =
+            "select `customer`.`customer_id` as `c0` "
+            + "from `customer` as `customer`, `sales_fact_1997` as `sales_fact_1997`, "
+            + "`time_by_day` as `time_by_day`, `promotion` as `promotion` "
+            + "where `sales_fact_1997`.`customer_id` = `customer`.`customer_id` "
+            + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
+            + "and `time_by_day`.`the_year` = 1997 "
+            + "and `sales_fact_1997`.`promotion_id` = `promotion`.`promotion_id` "
+            + "and `promotion`.`promotion_name` = 'Big Promo' "
+            + "and `customer`.`gender` = 'F' "
+            + "group by `customer`.`customer_id` "
+            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+        String mdx =
+            "WITH\n"
+            + "     MEMBER [Gender].[Filter 0] as Aggregate(Filter([Gender].[F], 1=1))\n"
+            + "     MEMBER [Gender].[Filter] as [Gender].[Filter 0]\n"
+            + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
+            + "     SET [Customer IDs Subset] AS 'Subset([Customer IDs Fullset], 0, 25)'\n"
+            + "SELECT\n"
+            + "     {[Store IDs].[All Store IDs]} ON COLUMNS,\n"
+            + "     {[Customer IDs Subset], Ascendants([Customer IDs].[All Customer IDs])} ON ROWS\n"
+            + "FROM\n"
+            + "      [Sales]\n"
+            + "WHERE\n"
+            + "      ([Promotions].[Big Promo], [Time].[1997], [Gender].[Filter], [Measures].[Unit Sales] )\n"
+            + "CELL PROPERTIES\n"
+            + "      VALUE, FORMATTED_VALUE, CELL_ORDINAL, FORE_COLOR, BACK_COLOR, UPDATEABLE, FORMAT_STRING";
 
-      if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
-          assertQuerySql(
-              testContext,
-              mdx,
-              new SqlPattern[] {
-                  new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
-              });
-      }
+        if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+            assertQuerySql(
+                testContext,
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
 
-      testContext.assertQueryReturns(
-          mdx,
-          "Axis #0:\n"
-          + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[Filter], [Measures].[Unit Sales]}\n"
-          + "Axis #1:\n"
-          + "{[Store IDs].[All Store IDs]}\n"
-          + "Axis #2:\n"
-          + "{[Customer IDs].[158]}\n"
-          + "{[Customer IDs].[229]}\n"
-          + "{[Customer IDs].[485]}\n"
-          + "{[Customer IDs].[617]}\n"
-          + "{[Customer IDs].[1024]}\n"
-          + "{[Customer IDs].[1057]}\n"
-          + "{[Customer IDs].[1607]}\n"
-          + "{[Customer IDs].[1652]}\n"
-          + "{[Customer IDs].[1813]}\n"
-          + "{[Customer IDs].[1965]}\n"
-          + "{[Customer IDs].[2035]}\n"
-          + "{[Customer IDs].[2244]}\n"
-          + "{[Customer IDs].[2390]}\n"
-          + "{[Customer IDs].[2459]}\n"
-          + "{[Customer IDs].[2664]}\n"
-          + "{[Customer IDs].[2918]}\n"
-          + "{[Customer IDs].[2942]}\n"
-          + "{[Customer IDs].[3015]}\n"
-          + "{[Customer IDs].[3160]}\n"
-          + "{[Customer IDs].[3245]}\n"
-          + "{[Customer IDs].[3310]}\n"
-          + "{[Customer IDs].[4269]}\n"
-          + "{[Customer IDs].[4287]}\n"
-          + "{[Customer IDs].[4322]}\n"
-          + "{[Customer IDs].[4340]}\n"
-          + "{[Customer IDs].[All Customer IDs]}\n"
-          + "Row #0: 18\n"
-          + "Row #1: 12\n"
-          + "Row #2: 20\n"
-          + "Row #3: 16\n"
-          + "Row #4: 9\n"
-          + "Row #5: 8\n"
-          + "Row #6: 12\n"
-          + "Row #7: 8\n"
-          + "Row #8: 9\n"
-          + "Row #9: 20\n"
-          + "Row #10: 17\n"
-          + "Row #11: 25\n"
-          + "Row #12: 23\n"
-          + "Row #13: 10\n"
-          + "Row #14: 10\n"
-          + "Row #15: 24\n"
-          + "Row #16: 41\n"
-          + "Row #17: 12\n"
-          + "Row #18: 31\n"
-          + "Row #19: 16\n"
-          + "Row #20: 14\n"
-          + "Row #21: 23\n"
-          + "Row #22: 9\n"
-          + "Row #23: 21\n"
-          + "Row #24: 21\n"
-          + "Row #25: 936\n");
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Promotions].[Big Promo], [Time].[1997], [Gender].[Filter], [Measures].[Unit Sales]}\n"
+            + "Axis #1:\n"
+            + "{[Store IDs].[All Store IDs]}\n"
+            + "Axis #2:\n"
+            + "{[Customer IDs].[158]}\n"
+            + "{[Customer IDs].[229]}\n"
+            + "{[Customer IDs].[485]}\n"
+            + "{[Customer IDs].[617]}\n"
+            + "{[Customer IDs].[1024]}\n"
+            + "{[Customer IDs].[1057]}\n"
+            + "{[Customer IDs].[1607]}\n"
+            + "{[Customer IDs].[1652]}\n"
+            + "{[Customer IDs].[1813]}\n"
+            + "{[Customer IDs].[1965]}\n"
+            + "{[Customer IDs].[2035]}\n"
+            + "{[Customer IDs].[2244]}\n"
+            + "{[Customer IDs].[2390]}\n"
+            + "{[Customer IDs].[2459]}\n"
+            + "{[Customer IDs].[2664]}\n"
+            + "{[Customer IDs].[2918]}\n"
+            + "{[Customer IDs].[2942]}\n"
+            + "{[Customer IDs].[3015]}\n"
+            + "{[Customer IDs].[3160]}\n"
+            + "{[Customer IDs].[3245]}\n"
+            + "{[Customer IDs].[3310]}\n"
+            + "{[Customer IDs].[4269]}\n"
+            + "{[Customer IDs].[4287]}\n"
+            + "{[Customer IDs].[4322]}\n"
+            + "{[Customer IDs].[4340]}\n"
+            + "{[Customer IDs].[All Customer IDs]}\n"
+            + "Row #0: 18\n"
+            + "Row #1: 12\n"
+            + "Row #2: 20\n"
+            + "Row #3: 16\n"
+            + "Row #4: 9\n"
+            + "Row #5: 8\n"
+            + "Row #6: 12\n"
+            + "Row #7: 8\n"
+            + "Row #8: 9\n"
+            + "Row #9: 20\n"
+            + "Row #10: 17\n"
+            + "Row #11: 25\n"
+            + "Row #12: 23\n"
+            + "Row #13: 10\n"
+            + "Row #14: 10\n"
+            + "Row #15: 24\n"
+            + "Row #16: 41\n"
+            + "Row #17: 12\n"
+            + "Row #18: 31\n"
+            + "Row #19: 16\n"
+            + "Row #20: 14\n"
+            + "Row #21: 23\n"
+            + "Row #22: 9\n"
+            + "Row #23: 21\n"
+            + "Row #24: 21\n"
+            + "Row #25: 936\n");
     }
 }
 
