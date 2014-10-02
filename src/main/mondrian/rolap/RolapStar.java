@@ -911,6 +911,23 @@ public class RolapStar {
             int bitPosition,
             boolean rollupAllowed)
         {
+            this(name, table, expression, datatype, internalType, nameColumn, parentColumn, usagePrefix, approxCardinality, bitPosition, rollupAllowed, true);
+        }
+
+        private Column(
+            String name,
+            Table table,
+            MondrianDef.Expression expression,
+            Dialect.Datatype datatype,
+            SqlStatement.Type internalType,
+            Column nameColumn,
+            Column parentColumn,
+            String usagePrefix,
+            int approxCardinality,
+            int bitPosition,
+            boolean rollupAllowed,
+            boolean addToStar)
+        {
             this.name = name;
             this.rollupAllowed = rollupAllowed;
             this.table = table;
@@ -927,8 +944,10 @@ public class RolapStar {
             if (nameColumn != null) {
                 nameColumn.isNameColumn = true;
             }
-            if (table != null) {
-                table.star.addColumn(this);
+            if (addToStar) {
+                if (table != null) {
+                    table.star.addColumn(this);
+                }
             }
         }
 
@@ -964,6 +983,42 @@ public class RolapStar {
                 && Util.equals(other.expression, this.expression)
                 && other.datatype == this.datatype
                 && other.name.equals(this.name);
+        }
+
+        public Column optimize() {
+            // check if table is a fact table or part of a many to many relationship,
+            // columns from those scenarios cannot be optimized.
+            // Note: Views are excluded from this optimization due to issues with data types
+            // The attribute might be considered a double vs. an integer for keys, causing issues
+            // Test case InlineTableTest.testInlineTable() demonstrates the issue.
+            if (table != null && table.getParentTable() != null && table.addlParents.size() == 0 && table.getRelation() instanceof MondrianDef.Table) {
+                if (table.getJoinCondition().getRight().equals( this.getExpression() )) {
+                    Column col = table.getParentTable().lookupColumnByExpression(table.getJoinCondition().getLeft());
+                    if (col != null) {
+                        return col;
+                    } else {
+                        // need to create the column if join condition is appropriate
+                        if (table.getJoinCondition().getLeft() instanceof MondrianDef.Column) {
+                            MondrianDef.Column defcol = (MondrianDef.Column)table.getJoinCondition().getLeft(); 
+                            Column ncol = new Column(
+                                defcol.getColumnName(),
+                                table.getParentTable(), 
+                                table.getJoinCondition().getLeft(),
+                                this.getDatatype(),
+                                this.getInternalType(), 
+                                this.getNameColumn(),
+                                this.getParentColumn(),
+                                this.usagePrefix,
+                                this.approxCardinality.intValue(),
+                                this.bitPosition,
+                                this.rollupAllowed,
+                                false);
+                            return ncol;
+                        }
+                    }
+                }
+            }
+            return this;
         }
 
         public int hashCode() {

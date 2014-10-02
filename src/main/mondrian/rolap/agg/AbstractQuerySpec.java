@@ -92,6 +92,9 @@ public abstract class AbstractQuerySpec implements QuerySpec {
         }
         for (int i = 0; i < arity; i++) {
             RolapStar.Column column = columns[i];
+            // replace column with its foreign key if it's a primary key
+            // of a joining table, may not need to join the parent table here.
+            column = column.optimize();
             RolapStar.Table table = column.getTable();
             if (table.isFunky()) {
                 // this is a funky dimension -- ignore for now
@@ -410,25 +413,36 @@ public abstract class AbstractQuerySpec implements QuerySpec {
             for (RolapStar.Column column
                 : predicate.getConstrainedColumnList())
             {
-                final RolapStar.Table table = column.getTable();
-                if (column.getTable().getSubQueryAlias() != null
+                final RolapStar.Column optimized;
+                optimized = column.optimize();
+
+                final RolapStar.Table table = optimized.getTable();
+                if (table.getSubQueryAlias() != null
                     && sqlQuery.getEnableDistinctSubquery() && sqlQuery.correlatedSubquery)
                 {
                     // we're dealing with a m2m dimension, we need to create the query in a new context
                     SqlQuery subSqlQuery = new SqlQuery(sqlQuery.getDialect());
                     subSqlQuery.setEnableDistinctSubquery(true);
                     subSqlQuery.correlatedSubquery = true;
-                    column.getTable().addToFrom(subSqlQuery, false, true);
+                    table.addToFrom(subSqlQuery, false, true);
                     // this step adds then immediately removes the subquery from the parent,
                     // leaving the possible multi-join paths to the subquery for inclusion
                     // in the And/Or Predicate part of the SQL statement
-                    column.getTable().addToFrom(sqlQuery, false, true);
-                    sqlQuery.subqueries.remove(column.getTable().getSubQueryAlias());
-                    sqlQuery.subwhereExpr.remove(column.getTable().getSubQueryAlias());
-                    subqueryMap.put(column.getTable().getSubQueryAlias(), subSqlQuery);
+                    table.addToFrom(sqlQuery, false, true);
+                    sqlQuery.subqueries.remove(table.getSubQueryAlias());
+                    sqlQuery.subwhereExpr.remove(table.getSubQueryAlias());
+                    if (subqueryMap.containsKey( table.getSubQueryAlias() )) {
+                        // subquery is already present, only add if this subquery contains more tables.
+                        SqlQuery orig = subqueryMap.get(table.getSubQueryAlias());
+                        if (orig.toString().length() < subSqlQuery.toString().length()) {
+                          subqueryMap.put(table.getSubQueryAlias(), subSqlQuery);
+                        }
+                    } else {
+                        subqueryMap.put(table.getSubQueryAlias(), subSqlQuery);
+                    }
                 } else {
                     table.addToFrom(sqlQuery, false, true);
-                    subquerySet.add(column.getTable().getSubQueryAlias());
+                    subquerySet.add(table.getSubQueryAlias());
                 }
             }
             if (subquerySet.size() > 1) {

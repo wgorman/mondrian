@@ -805,16 +805,14 @@ public class ParentChildHierarchyTest extends FoodMartTestCase {
             "[Employees].[Sheri Nowmer]",
             "$39,431.67",
             "select `time_by_day`.`the_year` as `Year`,"
-            + " `employee`.`employee_id` as `Employee Id (Key)`,"
+            + " `salary`.`employee_id` as `Employee Id (Key)`,"
             + " `salary`.`salary_paid` as `Org Salary` "
             + "from `time_by_day` =as= `time_by_day`,"
-            + " `salary` =as= `salary`,"
-            + " `employee` =as= `employee` "
+            + " `salary` =as= `salary` "
             + "where `salary`.`pay_date` = `time_by_day`.`the_date`"
             + " and `time_by_day`.`the_year` = 1997"
-            + " and `salary`.`employee_id` = `employee`.`employee_id`"
-            + " and `employee`.`employee_id` = 1 "
-            + "order by `time_by_day`.`the_year` ASC, `employee`.`employee_id` ASC",
+            + " and `salary`.`employee_id` = 1 "
+            + "order by `time_by_day`.`the_year` ASC, `salary`.`employee_id` ASC",
             12);
 
         // Drill-through for row #2, [Employees].[All].[Sheri Nowmer].
@@ -826,16 +824,14 @@ public class ParentChildHierarchyTest extends FoodMartTestCase {
             "[Employees].[Sheri Nowmer].[Derrick Whelply]",
             "$36,494.07",
             "select `time_by_day`.`the_year` as `Year`,"
-            + " `employee`.`employee_id` as `Employee Id (Key)`,"
+            + " `salary`.`employee_id` as `Employee Id (Key)`,"
             + " `salary`.`salary_paid` as `Org Salary` "
             + "from `time_by_day` =as= `time_by_day`,"
-            + " `salary` =as= `salary`,"
-            + " `employee` =as= `employee` "
+            + " `salary` =as= `salary` "
             + "where `salary`.`pay_date` = `time_by_day`.`the_date`"
             + " and `time_by_day`.`the_year` = 1997"
-            + " and `salary`.`employee_id` = `employee`.`employee_id`"
-            + " and `employee`.`employee_id` = 2 "
-            + "order by `time_by_day`.`the_year` ASC, `employee`.`employee_id` ASC",
+            + " and `salary`.`employee_id` = 2 "
+            + "order by `time_by_day`.`the_year` ASC, `salary`.`employee_id` ASC",
             12);
     }
 
@@ -866,25 +862,23 @@ public class ParentChildHierarchyTest extends FoodMartTestCase {
             + " `store`.`store_type` as `Store Type`,"
             + " `employee`.`management_role` as `Management Role`,"
             + " `employee`.`position_title` as `Position Title`,"
-            + " `department`.`department_id` as `Department Description`,"
+            + " `salary`.`department_id` as `Department Description`,"
             + " `employee`.`full_name` as `Employee Id`,"
-            + " `employee`.`employee_id` as `Employee Id (Key)`,"
+            + " `salary`.`employee_id` as `Employee Id (Key)`,"
             + " `salary`.`salary_paid` as `Org Salary` "
             + "from"
             + " `time_by_day` =as= `time_by_day`,"
             + " `salary` =as= `salary`,"
             + " `store` =as= `store`,"
             + " `employee` =as= `employee`,"
-            + " `position` =as= `position`,"
-            + " `department` =as= `department` "
+            + " `position` =as= `position` "
             + "where"
             + " `salary`.`pay_date` = `time_by_day`.`the_date`"
             + " and `time_by_day`.`the_year` = 1997"
             + " and `salary`.`employee_id` = `employee`.`employee_id`"
             + " and `employee`.`store_id` = `store`.`store_id`"
             + " and `employee`.`position_id` = `position`.`position_id`"
-            + " and `salary`.`department_id` = `department`.`department_id`"
-            + " and `employee`.`employee_id` = 2 "
+            + " and `salary`.`employee_id` = 2 "
             + "order by"
             + " `time_by_day`.`the_year` ASC,"
             + " `time_by_day`.`quarter` ASC,"
@@ -898,9 +892,9 @@ public class ParentChildHierarchyTest extends FoodMartTestCase {
             + " `store`.`store_type` ASC,"
             + " `employee`.`management_role` ASC,"
             + " `employee`.`position_title` ASC,"
-            + " `department`.`department_id` ASC,"
+            + " `salary`.`department_id` ASC,"
             + " `employee`.`full_name` ASC,"
-            + " `employee`.`employee_id` ASC",
+            + " `salary`.`employee_id` ASC",
             12);
     }
 

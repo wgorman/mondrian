@@ -160,7 +160,7 @@ public class ValueColumnPredicate
     }
 
     public void toSql(SqlQuery sqlQuery, StringBuilder buf) {
-        final RolapStar.Column column = getConstrainedColumn();
+        final RolapStar.Column column = getConstrainedColumn().optimize();
         String expr = column.generateExprString(sqlQuery);
         if (sqlQuery.correlatedSubquery && subqueryMap != null
             && column.getTable() != null

@@ -1153,6 +1153,10 @@ public class SchemaTest extends FoodMartTestCase {
 
     /**
      * Test DimensionUsage level attribute
+     * Note: When adding join optimization these numbers behave differently,
+     * The new results actually are more accurate than the old.  The
+     * Values are doubled or more in the old paradigm due to duplicate joins
+     * in the dimension table.
      */
     public void testDimensionUsageLevel() {
         final TestContext testContext = TestContext.instance().create(
@@ -1183,16 +1187,16 @@ public class SchemaTest extends FoodMartTestCase {
             + "{[Store].[USA].[CA]}\n"
             + "{[Store].[USA].[OR]}\n"
             + "{[Store].[USA].[WA]}\n"
-            + "Row #0: 7,700\n"
-            + "Row #0: 1,492\n"
+            + "Row #0: 3,850\n"
+            + "Row #0: 746\n"
             + "Row #0: 228\n"
             + "Row #0: 206\n"
             + "Row #0: 195\n"
             + "Row #0: 229\n"
-            + "Row #0: 1,209\n"
-            + "Row #0: 46,965\n"
-            + "Row #0: 4,686\n"
-            + "Row #0: 32,767\n");
+            + "Row #0: 403\n"
+            + "Row #0: 9,393\n"
+            + "Row #0: 2,343\n"
+            + "Row #0: 4,681\n");
 
         // BC.children should return an empty list, considering that we've
         // joined Store at the State level.

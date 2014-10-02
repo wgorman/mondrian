@@ -570,6 +570,135 @@ public class NonEmptyTest extends BatchTestCase {
             + "Row #8: 43,479.86\n");
     }
 
+    /*
+     * Test TopCount with Filter scenario
+     */
+    public void testTopCountWithFilterNotIn() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        String mdx =
+            "select TopCount(Filter([Product].[Product Subcategory].Members, [Product].CurrentMember not in {[Product].[Food].[Produce].[Fruit].[Fresh Fruit]}), 3, [Measures].[Unit Sales]) ON 0, "
+            + "{[Measures].[Unit Sales]} ON 1 FROM [Warehouse and Sales]";
+
+        String sql =
+            "select `product_class`.`product_family` as `c0`, "
+            + "`product_class`.`product_department` as `c1`, "
+            + "`product_class`.`product_category` as `c2`, "
+            + "`product_class`.`product_subcategory` as `c3`, "
+            + "sum(`sales_fact_1997`.`unit_sales`) as `c4` "
+            + "from `product_class` as `product_class`, `product` as `product`, "
+            + "`sales_fact_1997` as `sales_fact_1997`, "
+            + "`time_by_day` as `time_by_day` where "
+            + "`sales_fact_1997`.`product_id` = `product`.`product_id` and "
+            + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
+            + "`sales_fact_1997`.`time_id` = `time_by_day`.`time_id` and "
+            + "`time_by_day`.`the_year` = 1997 and "
+            + "((not (`product_class`.`product_subcategory` = 'Fresh Fruit') or (`product_class`.`product_subcategory` is null)) or "
+            + "(not (`product_class`.`product_category` = 'Fruit') or (`product_class`.`product_category` is null)) or "
+            + "(not (`product_class`.`product_department` = 'Produce') or (`product_class`.`product_department` is null)) or "
+            + "(not (`product_class`.`product_family` = 'Food') or (`product_class`.`product_family` is null))) "
+            + "group by "
+            + "`product_class`.`product_family`, `product_class`.`product_department`, "
+            + "`product_class`.`product_category`, `product_class`.`product_subcategory` "
+            + "order by sum(`sales_fact_1997`.`unit_sales`) DESC, "
+            + "ISNULL(`product_class`.`product_family`) ASC, "
+            + "`product_class`.`product_family` ASC, "
+            + "ISNULL(`product_class`.`product_department`) ASC, "
+            + "`product_class`.`product_department` ASC, "
+            + "ISNULL(`product_class`.`product_category`) ASC, "
+            + "`product_class`.`product_category` ASC, "
+            + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+            + "`product_class`.`product_subcategory` ASC";
+
+        if (!useAgg && propSaver.properties.EnableNativeTopCount.get()
+            && propSaver.properties.EnableNativeFilter.get()) 
+        {
+            assertQuerySql(
+                mdx,
+                new SqlPattern[] {
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                });
+        }
+
+        assertQueryReturns(
+            mdx, 
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food].[Produce].[Vegetables].[Fresh Vegetables]}\n"
+            + "{[Product].[Food].[Canned Foods].[Canned Soup].[Soup]}\n"
+            + "{[Product].[Food].[Dairy].[Dairy].[Cheese]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Row #0: 20,739\n"
+            + "Row #0: 8,006\n"
+            + "Row #0: 7,818\n");
+    }
+
+    /**
+     * Test various Virtual Cube Scenarios with Native Top Count.
+     *  - simple case
+     *  - verify unsolvable cases (calc measures) still skip native evaluation
+     *      - calc = ([m].[c1].[a] + [m].[c2].[b])
+     *  - case where measures from both cubes are in play
+     */
+    public void testTopCountInVirtualCube() {
+      final boolean useAgg =
+          MondrianProperties.instance().UseAggregates.get()
+          && MondrianProperties.instance().ReadAggregates.get();
+      String mdx =
+          "select TopCount([Product].[Product Subcategory].Members, 3, [Measures].[Unit Sales]) ON 0, "
+          + "{[Measures].[Unit Sales]} ON 1 FROM [Warehouse and Sales]";
+      String sql =
+          "select `product_class`.`product_family` as `c0`, "
+          + "`product_class`.`product_department` as `c1`, "
+          + "`product_class`.`product_category` as `c2`, "
+          + "`product_class`.`product_subcategory` as `c3`, "
+          + "sum(`sales_fact_1997`.`unit_sales`) as `c4` "
+          + "from `product_class` as `product_class`, `product` as `product`, "
+          + "`sales_fact_1997` as `sales_fact_1997`, "
+          + "`time_by_day` as `time_by_day` where "
+          + "`sales_fact_1997`.`product_id` = `product`.`product_id` and "
+          + "`product`.`product_class_id` = `product_class`.`product_class_id` and "
+          + "`sales_fact_1997`.`time_id` = `time_by_day`.`time_id` and "
+          + "`time_by_day`.`the_year` = 1997 group by "
+          + "`product_class`.`product_family`, `product_class`.`product_department`, "
+          + "`product_class`.`product_category`, `product_class`.`product_subcategory` "
+          + "order by sum(`sales_fact_1997`.`unit_sales`) DESC, "
+          + "ISNULL(`product_class`.`product_family`) ASC, "
+          + "`product_class`.`product_family` ASC, "
+          + "ISNULL(`product_class`.`product_department`) ASC, "
+          + "`product_class`.`product_department` ASC, "
+          + "ISNULL(`product_class`.`product_category`) ASC, "
+          + "`product_class`.`product_category` ASC, "
+          + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+          + "`product_class`.`product_subcategory` ASC";
+
+      if (!useAgg && propSaver.properties.EnableNativeTopCount.get()) {
+        assertQuerySql(
+            mdx,
+            new SqlPattern[] {
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+            });
+      }
+
+      assertQueryReturns(
+          mdx, 
+          "Axis #0:\n"
+          + "{}\n"
+          + "Axis #1:\n"
+          + "{[Product].[Food].[Produce].[Vegetables].[Fresh Vegetables]}\n"
+          + "{[Product].[Food].[Produce].[Fruit].[Fresh Fruit]}\n"
+          + "{[Product].[Food].[Canned Foods].[Canned Soup].[Soup]}\n"
+          + "Axis #2:\n"
+          + "{[Measures].[Unit Sales]}\n"
+          + "Row #0: 20,739\n"
+          + "Row #0: 11,767\n"
+          + "Row #0: 8,006\n");
+    }
+
     public void testTopCountWithCalcMemberInSlicer() {
         // Internal error: can not restrict SQL to calculated Members
         TestContext ctx = getTestContext();
@@ -5435,14 +5564,13 @@ public class NonEmptyTest extends BatchTestCase {
             + "    `product_class`.`product_category` as `c5`,\n"
             + "    `product_class`.`product_subcategory` as `c6`,\n"
             + "    `product`.`brand_name` as `c7`,\n"
-            + "    `customer`.`customer_id` as `c8`,\n"
+            + "    `sales_fact_1997`.`customer_id` as `c8`,\n"
             + "    sum(`sales_fact_1997`.`unit_sales`) as `m0`\n"
             + "from\n"
             + "    `time_by_day` as `time_by_day`,\n"
             + "    `sales_fact_1997` as `sales_fact_1997`,\n"
             + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`,\n"
-            + "    `customer` as `customer`\n"
+            + "    `product` as `product`\n"
             + "where\n"
             + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
             + "and\n"
@@ -5466,9 +5594,7 @@ public class NonEmptyTest extends BatchTestCase {
             + "and\n"
             + "    `product`.`brand_name` = 'Portsmouth'\n"
             + "and\n"
-            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
-            + "and\n"
-            + "    `customer`.`customer_id` = 5219\n"
+            + "    `sales_fact_1997`.`customer_id` = 5219\n"
             + "group by\n"
             + "    `time_by_day`.`the_year`,\n"
             + "    `time_by_day`.`quarter`,\n"
@@ -5478,7 +5604,7 @@ public class NonEmptyTest extends BatchTestCase {
             + "    `product_class`.`product_category`,\n"
             + "    `product_class`.`product_subcategory`,\n"
             + "    `product`.`brand_name`,\n"
-            + "    `customer`.`customer_id`";
+            + "    `sales_fact_1997`.`customer_id`";
         String triggerSql =
             "select\n"
             + "    `time_by_day`.`the_year` as `c0`,\n"
@@ -5499,13 +5625,12 @@ public class NonEmptyTest extends BatchTestCase {
                 + "    `product_class`.`product_category` as `c5`,\n"
                 + "    `product_class`.`product_subcategory` as `c6`,\n"
                 + "    `product`.`brand_name` as `c7`,\n"
-                + "    `customer`.`customer_id` as `c8`,\n"
+                + "    `agg_c_14_sales_fact_1997`.`customer_id` as `c8`,\n"
                 + "    sum(`agg_c_14_sales_fact_1997`.`unit_sales`) as `m0`\n"
                 + "from\n"
                 + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`,\n"
                 + "    `product_class` as `product_class`,\n"
-                + "    `product` as `product`,\n"
-                + "    `customer` as `customer`\n"
+                + "    `product` as `product`\n"
                 + "where\n"
                 + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
                 + "and\n"
@@ -5527,9 +5652,7 @@ public class NonEmptyTest extends BatchTestCase {
                 + "and\n"
                 + "    `product`.`brand_name` = 'Portsmouth'\n"
                 + "and\n"
-                + "    `agg_c_14_sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
-                + "and\n"
-                + "    `customer`.`customer_id` = 5219\n"
+                + "    `agg_c_14_sales_fact_1997`.`customer_id` = 5219\n"
                 + "group by\n"
                 + "    `agg_c_14_sales_fact_1997`.`the_year`,\n"
                 + "    `agg_c_14_sales_fact_1997`.`quarter`,\n"
@@ -5539,7 +5662,7 @@ public class NonEmptyTest extends BatchTestCase {
                 + "    `product_class`.`product_category`,\n"
                 + "    `product_class`.`product_subcategory`,\n"
                 + "    `product`.`brand_name`,\n"
-                + "    `customer`.`customer_id`";
+                + "    `agg_c_14_sales_fact_1997`.`customer_id`";
             triggerSql =
                 "select\n"
                 + "    `agg_c_14_sales_fact_1997`.`the_year` as `c0`,\n"

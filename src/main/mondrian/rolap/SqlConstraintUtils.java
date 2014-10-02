@@ -511,9 +511,10 @@ public class SqlConstraintUtils {
             table.addToFrom(sqlQuery, false, true);
             expr = aggColumn.generateExprString(sqlQuery);
         } else {
-            RolapStar.Table table = column.getTable();
+            RolapStar.Column optimized = column.optimize();
+            RolapStar.Table table = optimized.getTable();
             table.addToFrom(sqlQuery, false, true);
-            expr = column.generateExprString(sqlQuery);
+            expr = optimized.generateExprString(sqlQuery);
         }
         return expr;
     }
@@ -2038,9 +2039,11 @@ public class SqlConstraintUtils {
                     table.addToFrom(sqlQuery, false, true);
                     q = aggColumn.generateExprString(sqlQuery);
                 } else {
-                    RolapStar.Table targetTable = column.getTable();
+                    // optimize column
+                    RolapStar.Column optimized = column.optimize();
+                    RolapStar.Table targetTable = optimized.getTable();
                     hierarchy.addToFrom(sqlQuery, targetTable);
-                    q = column.generateExprString(sqlQuery);
+                    q = optimized.generateExprString(sqlQuery);
                 }
             } else {
                 assert (aggStar == null);

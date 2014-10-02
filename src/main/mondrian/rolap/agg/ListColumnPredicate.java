@@ -316,7 +316,7 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
             return;
         }
 
-        final RolapStar.Column column = getConstrainedColumn();
+        final RolapStar.Column column = getConstrainedColumn().optimize();
         String expr = column.generateExprString(sqlQuery);
         if (sqlQuery.correlatedSubquery && subqueryMap != null
             && column.getTable() != null
@@ -363,7 +363,7 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
     public void toSqlGenExpr(SqlQuery sqlQuery, StringBuilder buf) {
         List<StarColumnPredicate> predicates = getPredicates();
         int notNullCount = 0;
-        final RolapStar.Column column = getConstrainedColumn();
+        final RolapStar.Column column = getConstrainedColumn().optimize();
         final String expr = column.generateExprString(sqlQuery);
         final int marker = buf.length(); // to allow backtrack later
         buf.append(expr);
