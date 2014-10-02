@@ -12650,25 +12650,48 @@ Intel platforms):
             + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
             + "Row #0: 647.80\n");
         // for Sales
-        context.assertQueryReturns(
-            "SELECT \n"
-            + "  { Measures.[Warehouse Sales] } ON 0,\n"
-            + "  { Exists( \n"
-            + "    { [Product].[Product Name].[Club Head Cheese],\n"
-            + "      [Product].[Product Name].[Washington Cola],\n"
-            + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
-            + "    { [Product].[Food].[Dairy].[Dairy].[Cheese].[Club].Children },\n"
-            + "    'Sales') } ON 1\n"
-            + "FROM [Sales and Warehouse]",
-            "Axis #0:\n"
-            + "{}\n"
-            + "Axis #1:\n"
-            + "{[Measures].[Warehouse Sales]}\n"
-            + "Axis #2:\n"
-            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Head Cheese]}\n"
-            + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
-            + "Row #0: \n"
-            + "Row #1: 184.188\n");
+        // native exists changes the order of the results, see MONDRIAN-785
+        if (!Bug.BugMondrian785Fixed && MondrianProperties.instance().EnableNativeExists.get()) {
+            context.assertQueryReturns(
+                "SELECT \n"
+                + "  { Measures.[Warehouse Sales] } ON 0,\n"
+                + "  { Exists( \n"
+                + "    { [Product].[Product Name].[Club Head Cheese],\n"
+                + "      [Product].[Product Name].[Washington Cola],\n"
+                + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
+                + "    { [Product].[Food].[Dairy].[Dairy].[Cheese].[Club].Children },\n"
+                + "    'Sales') } ON 1\n"
+                + "FROM [Sales and Warehouse]",
+                "Axis #0:\n"
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[Warehouse Sales]}\n"
+                + "Axis #2:\n"
+                + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+                + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Head Cheese]}\n"
+                + "Row #0: 184.188\n"
+                + "Row #1: \n");
+        } else {
+            context.assertQueryReturns(
+                "SELECT \n"
+                + "  { Measures.[Warehouse Sales] } ON 0,\n"
+                + "  { Exists( \n"
+                + "    { [Product].[Product Name].[Club Head Cheese],\n"
+                + "      [Product].[Product Name].[Washington Cola],\n"
+                + "      [Product].[Product Name].[Club Havarti Cheese] },\n"
+                + "    { [Product].[Food].[Dairy].[Dairy].[Cheese].[Club].Children },\n"
+                + "    'Sales') } ON 1\n"
+                + "FROM [Sales and Warehouse]",
+                "Axis #0:\n"
+                + "{}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[Warehouse Sales]}\n"
+                + "Axis #2:\n"
+                + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Head Cheese]}\n"
+                + "{[Product].[Food].[Dairy].[Dairy].[Cheese].[Club].[Club Havarti Cheese]}\n"
+                + "Row #0: \n"
+                + "Row #1: 184.188\n");
+        }
         // empty set2 arg
         context.assertQueryReturns(
             "SELECT \n"
