@@ -56,6 +56,14 @@ class ExistsFunDef extends FunDefBase
         assert listCalc2 != null || cubeNameCalc != null;
 
         return new AbstractListCalc(call, new Calc[] {listCalc1, listCalc2}) {
+            /**
+             * Exists behaves like NonEmpty, native evaluation depends on the
+             * full context.
+             */
+            public boolean dependsOn(Hierarchy hierarchy) {
+                return true;
+            }
+
             public TupleList evaluateList(Evaluator evaluator) {
                 RolapEvaluator manyToManyEval =
                     ManyToManyUtil.getManyToManyEvaluator(
