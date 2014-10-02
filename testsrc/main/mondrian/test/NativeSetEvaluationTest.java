@@ -1826,9 +1826,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "from\n"
             + "    `customer` as `customer`\n"
             + "group by\n"
-            + "    `customer`.`customer_id`\n"
-            + "order by\n"
-            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+            + "    `customer`.`customer_id`) as `countQuery`";
 
         if (MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
@@ -1874,9 +1872,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "from\n"
             + "    `customer` as `customer`\n"
             + "group by\n"
-            + "    `customer`.`customer_id`\n"
-            + "order by\n"
-            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+            + "    `customer`.`customer_id`) as `countQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
@@ -1926,9 +1922,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "where\n"
             + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
             + "group by\n"
-            + "    `customer`.`customer_id`\n"
-            + "order by\n"
-            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC) as `countQuery`";
+            + "    `customer`.`customer_id`) as `countQuery`";
 
         testContext.flushSchemaCache();
 
@@ -2085,14 +2079,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `product`.`brand_name`,\n"
             + "    `product`.`product_name`\n"
             + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 60.0)\n"
-            + "order by\n"
-            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
-            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
-            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
-            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
-            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
-            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `sumQuery`";
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 60.0)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
             SqlPattern mysqlPattern =
@@ -2455,11 +2442,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "group by\n"
           + "    `store`.`store_country`,\n"
           + "    `store`.`store_state`,\n"
-          + "    `store`.`store_city`\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    `store`.`store_city`) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2504,11 +2487,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `store`.`store_state`,\n"
           + "    `store`.`store_city`\n"
           + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2561,11 +2540,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `store`.`store_state`,\n"
           + "    `store`.`store_city`\n"
           + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 20000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2618,11 +2593,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `store`.`store_state`,\n"
           + "    `store`.`store_city`\n"
           + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 3000)\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 3000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2683,11 +2654,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `store`.`store_state`,\n"
           + "    `store`.`store_city`\n"
           + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2757,11 +2724,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    `store`.`store_state`,\n"
           + "    `store`.`store_city`\n"
           + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
-          + "order by\n"
-          + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-          + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-          + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2902,11 +2865,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `store`.`store_state`,\n"
             + "    `store`.`store_city`\n"
             + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)\n"
-            + "order by\n"
-            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
-            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
-            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC) as `sumQuery`";
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
             getTestContext().flushSchemaCache();
@@ -3215,14 +3174,7 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    `product_class`.`product_category`,\n"
             + "    `product_class`.`product_subcategory`,\n"
             + "    `product`.`brand_name`,\n"
-            + "    `product`.`product_name`\n"
-            + "order by\n"
-            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
-            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC,\n"
-            + "    ISNULL(`product_class`.`product_category`) ASC, `product_class`.`product_category` ASC,\n"
-            + "    ISNULL(`product_class`.`product_subcategory`) ASC, `product_class`.`product_subcategory` ASC,\n"
-            + "    ISNULL(`product`.`brand_name`) ASC, `product`.`brand_name` ASC,\n"
-            + "    ISNULL(`product`.`product_name`) ASC, `product`.`product_name` ASC) as `countQuery`";
+            + "    `product`.`product_name`) as `countQuery`";
         if (!isUseAgg() && (MondrianProperties.instance().EnableNativeCount.get()
             && MondrianProperties.instance().EnableNativeFilter.get()
             && MondrianProperties.instance().EnableNativeExisting.get()))

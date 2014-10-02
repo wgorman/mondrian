@@ -75,7 +75,7 @@ public class HighCardSqlTupleReader extends SqlTupleReader {
                     }
                 }
                 final Pair<String, List<SqlStatement.Type>> pair =
-                    makeLevelMembersSql(dataSource);
+                    makeLevelMembersSql(dataSource, false);
                 String sql = pair.left;
                 List<SqlStatement.Type> types = pair.right;
                 stmt = RolapUtil.executeQuery(

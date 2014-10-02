@@ -397,7 +397,7 @@ public class SqlTupleReader implements TupleReader {
                     }
                 }
                 final Pair<String, List<SqlStatement.Type>> pair =
-                    makeLevelMembersSql(dataSource);
+                    makeLevelMembersSql(dataSource, false);
                 String sql = pair.left;
                 List<SqlStatement.Type> types = pair.right;
                 assert sql != null && !sql.equals("");
@@ -577,7 +577,7 @@ public class SqlTupleReader implements TupleReader {
             }
 
             final Pair<String, List<SqlStatement.Type>> pair =
-                makeLevelMembersSql(dataSource);
+                makeLevelMembersSql(dataSource, true);
 
             SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
             // Add the subquery to the wrapper query.
@@ -637,7 +637,7 @@ public class SqlTupleReader implements TupleReader {
             }
 
             final Pair<String, List<SqlStatement.Type>> pair =
-                makeLevelMembersSql(dataSource);
+                makeLevelMembersSql(dataSource, true);
             
             SqlQuery countQuery = SqlQuery.newQuery(dataSource, "");
             // Add the subquery to the wrapper query.
@@ -818,7 +818,7 @@ public class SqlTupleReader implements TupleReader {
     }
 
     Pair<String, List<SqlStatement.Type>> makeLevelMembersSql(
-        DataSource dataSource)
+        DataSource dataSource, boolean keyOnly)
     {
         // In the case of a virtual cube, if we need to join to the fact
         // table, we do not necessarily have a single underlying fact table,
@@ -918,7 +918,8 @@ public class SqlTupleReader implements TupleReader {
                             dataSource, baseCube,
                             fullyJoiningBaseCubes.size() == 1
                                 ? WhichSelect.ONLY
-                                : WhichSelect.NOT_LAST);
+                                : WhichSelect.NOT_LAST,
+                                keyOnly);
 
                     if (fullyJoiningBaseCubes.size() > 1) {
                         if (subquery.getLimit() != null) {
@@ -988,7 +989,7 @@ public class SqlTupleReader implements TupleReader {
             // This is the standard code path with regular single-fact table
             // cubes.
             return generateSelectForLevels(
-                dataSource, cube, WhichSelect.ONLY).toSqlAndTypes();
+                dataSource, cube, WhichSelect.ONLY, keyOnly).toSqlAndTypes();
         }
     }
 
@@ -1044,7 +1045,8 @@ public class SqlTupleReader implements TupleReader {
     SqlQuery generateSelectForLevels(
         DataSource dataSource,
         RolapCube baseCube,
-        WhichSelect whichSelect)
+        WhichSelect whichSelect,
+        boolean keyOnly)
     {
         String s =
             "while generating query to retrieve members of level(s) " + targets;
@@ -1076,7 +1078,8 @@ public class SqlTupleReader implements TupleReader {
                     target.getLevel(),
                     baseCube,
                     whichSelect,
-                    aggStar);
+                    aggStar,
+                    keyOnly);
             }
         }
         if (subqueriesNecessary) {
@@ -1189,7 +1192,8 @@ public class SqlTupleReader implements TupleReader {
         RolapLevel level,
         RolapCube baseCube,
         WhichSelect whichSelect,
-        AggStar aggStar)
+        AggStar aggStar,
+        boolean keyOnly)
     {
         RolapHierarchy hierarchy = level.getHierarchy();
 
@@ -1279,13 +1283,8 @@ public class SqlTupleReader implements TupleReader {
 
             if (!levelCollapsed) {
                 hierarchy.addToFrom(sqlQuery, keyExp);
-                hierarchy.addToFrom(sqlQuery, ordinalExp);
-            }
-            String captionSql = null;
-            if (captionExp != null) {
-                captionSql = captionExp.getExpression(sqlQuery);
-                if (!levelCollapsed) {
-                    hierarchy.addToFrom(sqlQuery, captionExp);
+                if (!keyOnly) {
+                    hierarchy.addToFrom(sqlQuery, ordinalExp);
                 }
             }
 
@@ -1297,34 +1296,43 @@ public class SqlTupleReader implements TupleReader {
                 sqlQuery.addGroupBy(keyAliasAndExpr[1], keyAliasAndExpr[0]);
             }
 
-            if (captionSql != null) {
-                final String captionAliasAndExpr[] =
-                    sqlQuery.addSelect(captionExp, null);
-                if (needsGroupBy) {
-                    // We pass both the expression and the alias.
-                    // The SQL query will figure out what to use.
-                    sqlQuery.addGroupBy(captionAliasAndExpr[1], captionAliasAndExpr[0]);
+            if (!keyOnly) {
+                String captionSql = null;
+                if (captionExp != null) {
+                    captionSql = captionExp.getExpression(sqlQuery);
+                    if (!levelCollapsed) {
+                        hierarchy.addToFrom(sqlQuery, captionExp);
+                    }
+                }
+                
+                if (captionSql != null) {
+                    final String captionAliasAndExpr[] =
+                        sqlQuery.addSelect(captionExp, null);
+                    if (needsGroupBy) {
+                        // We pass both the expression and the alias.
+                        // The SQL query will figure out what to use.
+                        sqlQuery.addGroupBy(captionAliasAndExpr[1], captionAliasAndExpr[0]);
+                    }
+                }
+    
+                // Figure out the order-by part
+                final String orderByAliasAndExpr[];
+                if (!ordinalSql.equals(keySql)) {
+                    orderByAliasAndExpr = sqlQuery.addSelect(ordinalExp, null);
+                    if (needsGroupBy) {
+                        sqlQuery.addGroupBy(orderByAliasAndExpr[1], orderByAliasAndExpr[0]);
+                    }
+                    if (whichSelect == WhichSelect.ONLY) {
+                        sqlQuery.addOrderBy(
+                            orderByAliasAndExpr[1], orderByAliasAndExpr[0], true, false, true, true);
+                    }
+                } else {
+                    if (whichSelect == WhichSelect.ONLY) {
+                        sqlQuery.addOrderBy(
+                            keyAliasAndExpr[1], keyAliasAndExpr[0], true, false, true, true);
+                    }
                 }
             }
-
-            // Figure out the order-by part
-            final String orderByAliasAndExpr[];
-            if (!ordinalSql.equals(keySql)) {
-                orderByAliasAndExpr = sqlQuery.addSelect(ordinalExp, null);
-                if (needsGroupBy) {
-                    sqlQuery.addGroupBy(orderByAliasAndExpr[1], orderByAliasAndExpr[0]);
-                }
-                if (whichSelect == WhichSelect.ONLY) {
-                    sqlQuery.addOrderBy(
-                        orderByAliasAndExpr[1], orderByAliasAndExpr[0], true, false, true, true);
-                }
-            } else {
-                if (whichSelect == WhichSelect.ONLY) {
-                    sqlQuery.addOrderBy(
-                        keyAliasAndExpr[1], keyAliasAndExpr[0], true, false, true, true);
-                }
-            }
-
             if (levelCollapsed) {
                 // add join between key and aggstar
                 // join to dimension tables starting
@@ -1340,19 +1348,20 @@ public class SqlTupleReader implements TupleReader {
                     new RolapStar.Condition(keyExp, aggColumn.getExpression());
                 sqlQuery.addWhere(condition.toString(sqlQuery));
             }
-
-            RolapProperty[] properties = currLevel.getProperties();
-            for (RolapProperty property : properties) {
-                final MondrianDef.Expression propExp = property.getExp();
-                final String propAliasAndExpr[] = sqlQuery.addSelect(property.getExp(), null);
-                if (needsGroupBy) {
-                    // Certain dialects allow us to eliminate properties
-                    // from the group by that are functionally dependent
-                    // on the level value
-                    if (!sqlQuery.getDialect().allowsSelectNotInGroupBy()
-                        || !property.dependsOnLevelValue())
-                    {
-                        sqlQuery.addGroupBy(propAliasAndExpr[1], propAliasAndExpr[0]);
+            if (!keyOnly) { 
+                RolapProperty[] properties = currLevel.getProperties();
+                for (RolapProperty property : properties) {
+                    final MondrianDef.Expression propExp = property.getExp();
+                    final String propAliasAndExpr[] = sqlQuery.addSelect(property.getExp(), null);
+                    if (needsGroupBy) {
+                        // Certain dialects allow us to eliminate properties
+                        // from the group by that are functionally dependent
+                        // on the level value
+                        if (!sqlQuery.getDialect().allowsSelectNotInGroupBy()
+                            || !property.dependsOnLevelValue())
+                        {
+                            sqlQuery.addGroupBy(propAliasAndExpr[1], propAliasAndExpr[0]);
+                        }
                     }
                 }
             }
