@@ -1377,16 +1377,6 @@ public class Query extends QueryPart {
     }
 
     /**
-     * Saves away the base cubes related to the virtual cube
-     * referenced in this query
-     *
-     * @param baseCubes set of base cubes
-     */
-    public void setBaseCubes(List<RolapCube> baseCubes) {
-        this.baseCubes = baseCubes;
-    }
-
-    /**
      * return the set of base cubes associated with the virtual cube referenced
      * in this query
      *

@@ -52,6 +52,12 @@ interface CellReader {
     Object get(RolapEvaluator evaluator);
 
     /**
+     * adds a native evaluation request for parallel processing
+     * during phases.
+     */
+    void addNativeRequest(RolapNativeRequest request);
+
+    /**
      * Returns the number of times this cell reader has told a lie
      * (since creation), because the required cell value is not in the
      * cache.

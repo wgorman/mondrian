@@ -276,6 +276,18 @@ public abstract class RolapNativeSet extends RolapNative {
                     args.length, Util.<List<Member>>cast(result));
             }
 
+            // instead of executing this now,
+            // store this request in the cell reader,
+            // to be executed in a separate thread.  return a dummy empty list for now.
+            // TODO: figure out partial result case
+
+            if (!hasEnumTargets && !MondrianProperties.instance().DisableCaching.get()) {
+                // register this for separate thread execution
+                tr.constraint.getEvaluator().addNativeRequest(
+                    new NativeRequest(this, key, tr));
+                TupleList dummy = new ListTupleList(args.length, new ArrayList<Member>());
+                return dummy;
+            }
             // execute sql and store the result
             if (result == null && listener != null) {
                 TupleEvent e = new TupleEvent(this, tr);
@@ -316,6 +328,38 @@ public abstract class RolapNativeSet extends RolapNative {
             return filterInaccessibleTuples(result);
         }
 
+        public void populateListCache(final SqlTupleReader tr, List<Object> key) {
+            if (listener != null) {
+                TupleEvent e = new TupleEvent(this, tr);
+                listener.executingSql(e);
+            }
+
+            // if we don't have a cached result in the case where we have
+            // enumerated targets, then retrieve and cache that partial result
+            TupleList result;
+            List<List<RolapMember>> newPartialResult = null;
+            DataSource dataSource = schemaReader.getDataSource();
+            if (args.length == 1) {
+                result =
+                    tr.readMembers(
+                        dataSource, null, null);
+            } else {
+                result =
+                    tr.readTuples(
+                        dataSource, null, null);
+            }
+            cache.put(key, result);
+            filterInaccessibleTuples(result);
+        }
+
+        public void populateSumCache(final SqlTupleReader tr, List<Object> key) {
+            DataSource dataSource = schemaReader.getDataSource();
+            double sum = ((SqlTupleReader)tr).sumTuples(dataSource);
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                sumCache.put(key, new Double(sum));
+            }
+        }
+
         protected double executeSum(final SqlTupleReader tr) {
             tr.setMaxRows(maxRows);
             for (CrossJoinArg arg : args) {
@@ -348,6 +392,12 @@ public abstract class RolapNativeSet extends RolapNative {
                 return result;
             }
 
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                tr.constraint.getEvaluator().addNativeRequest(
+                    new NativeSumRequest(this, key, tr));
+                return 0.0;
+            }
+
             // execute sql and store the result
   //          if (result == null && listener != null) {
   //              TupleEvent e = new TupleEvent(this, tr);
@@ -361,9 +411,23 @@ public abstract class RolapNativeSet extends RolapNative {
             }
 
             // TODO: Note, this method won't work against secured tuples, we
-            // should have already detected this eariler in the process.
+            // should have already detected this earlier in the process.
             // filterInaccessibleTuples(result)
             return  sum;
+        }
+
+        public void populateCountCache(final SqlTupleReader tr, List<Object> key) {
+            DataSource dataSource = schemaReader.getDataSource();
+            int count = ((SqlTupleReader)tr).countTuples(dataSource);
+
+            if (tr.constraint instanceof CountConstraint) {
+                // adds calc and all members to the overall count.
+                count += ((CountConstraint)tr.constraint).addlCount;
+            }
+
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                countCache.put(key, new Integer(count));
+            }
         }
 
         protected int executeCount(final SqlTupleReader tr) {
@@ -396,6 +460,12 @@ public abstract class RolapNativeSet extends RolapNative {
   //                  listener.foundInCache(e);
   //              }
                 return result;
+            }
+
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+              tr.constraint.getEvaluator().addNativeRequest(new NativeCountRequest(
+                  this, key, tr));
+              return 0;
             }
 
             // execute sql and store the result
@@ -599,7 +669,7 @@ public abstract class RolapNativeSet extends RolapNative {
             if (evaluator.getCube().isVirtual()) {
                 List<RolapCube> baseCubes = new ArrayList<RolapCube>();
                 baseCubes.add(storedMeasure.getCube());
-                evaluator.getQuery().setBaseCubes(baseCubes);
+                evaluator.setBaseCubes(baseCubes);
             }
         }
     }
@@ -655,6 +725,51 @@ public abstract class RolapNativeSet extends RolapNative {
                 hierarchyReaders.put(hierarchy, memberReader);
             }
             return memberReader;
+        }
+    }
+
+    /**
+     * This is the native request for multi-threaded processing in FastBatchingCellReader
+     */
+    static class NativeRequest implements RolapNativeRequest {
+        RolapNativeSet.SetEvaluator eval;
+        List<Object> key;
+        SqlTupleReader tr;
+
+        public NativeRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+            this.eval = eval;
+            this.key = key;
+            this.tr = tr;
+        }
+
+        public void execute() {
+            eval.populateListCache(tr, key);
+        }
+    }
+
+    /**
+     * This is the native sum request for multi-threaded processing in FastBatchingCellReader
+     */
+    static class NativeSumRequest extends NativeRequest {
+        public NativeSumRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+            super(eval, key, tr);
+        }
+
+        public void execute() {
+            eval.populateSumCache(tr, key);
+        }
+    }
+
+    /**
+     * This is the native count request for multi-threaded processing in FastBatchingCellReader
+     */
+    static class NativeCountRequest extends NativeRequest {
+        public NativeCountRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+            super(eval, key, tr);
+        }
+
+        public void execute() {
+            eval.populateCountCache(tr, key);
         }
     }
 }

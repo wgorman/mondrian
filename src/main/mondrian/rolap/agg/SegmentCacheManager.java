@@ -231,6 +231,12 @@ public class SegmentCacheManager {
                 }
             });
 
+    public final ExecutorService nativeExecutor =
+        Util.getQueuedExecutorService(
+            MondrianProperties.instance()
+                .SegmentCacheManagerNumberNativeThreads.get(),
+            "mondrian.rolap.agg.SegmentCacheManager$nativeExecutor");
+
     /**
      * Executor with which to execute SQL requests.
      *

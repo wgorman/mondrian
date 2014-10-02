@@ -209,6 +209,35 @@ public class Util extends XOMUtil {
         }
         return algorithm.digest(value.getBytes());
     }
+    /**
+     * Creates an {@link ExecutorService} object backed by a thread pool with a queue.
+     * @param maximumPoolSize Maximum number of concurrent
+     * threads.
+     * @param name The name of the threads.
+     * @return An executor service preconfigured.
+     */
+    public static ExecutorService getQueuedExecutorService(
+        int maximumPoolSize,
+        final String name)
+    {
+        // We must create a factory where the threads
+        // have the right name and are marked as daemon threads.
+        final ThreadFactory factory =
+            new ThreadFactory() {
+                private final AtomicInteger counter = new AtomicInteger(0);
+                public Thread newThread(Runnable r) {
+                    final Thread t =
+                        Executors.defaultThreadFactory().newThread(r);
+                    t.setDaemon(true);
+                    t.setName(name + '_' + counter.incrementAndGet());
+                    return t;
+                }
+            };
+        final ExecutorService executor = Executors.newFixedThreadPool(
+            maximumPoolSize > 0 ? maximumPoolSize : Integer.MAX_VALUE,
+            factory);
+        return executor;
+    }
 
     /**
      * Creates an {@link ExecutorService} object backed by a thread pool.

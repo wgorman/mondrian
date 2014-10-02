@@ -90,7 +90,7 @@ public class SqlContextConstraint
                 return false;
             }
             assert levels != null;
-            query.setBaseCubes(baseCubeList);
+            context.setBaseCubes(baseCubeList);
         }
 
         // may return more rows than requested?
@@ -269,7 +269,7 @@ public class SqlContextConstraint
         // code in RolapResult() that replaces the default measure seems to
         // do that.
         if (evaluator.getCube().isVirtual()) {
-            cacheKey.addAll(evaluator.getQuery().getBaseCubes());
+            cacheKey.addAll(evaluator.getBaseCubes());
         }
     }
 

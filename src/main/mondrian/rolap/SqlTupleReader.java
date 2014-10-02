@@ -842,12 +842,10 @@ public class SqlTupleReader implements TupleReader {
         }
 
         if (virtualCube) {
-            Query query = constraint.getEvaluator().getQuery();
-
             // Make fact table appear in fixed sequence
 
             final Collection<RolapCube> baseCubes =
-                getBaseCubeCollection(query);
+                getBaseCubeCollection(constraint.getEvaluator());
             Collection<RolapCube> fullyJoiningBaseCubes =
                 getFullyJoiningBaseCubes(baseCubes);
             if (fullyJoiningBaseCubes.size() == 0) {
@@ -1014,12 +1012,12 @@ public class SqlTupleReader implements TupleReader {
     }
 
 
-    Collection<RolapCube> getBaseCubeCollection(final Query query) {
+    Collection<RolapCube> getBaseCubeCollection(final Evaluator evaluator) {
         RolapCube.CubeComparator cubeComparator =
             new RolapCube.CubeComparator();
         Collection<RolapCube> baseCubes =
             new TreeSet<RolapCube>(cubeComparator);
-        baseCubes.addAll(query.getBaseCubes());
+        baseCubes.addAll(evaluator.getBaseCubes());
         return baseCubes;
     }
 

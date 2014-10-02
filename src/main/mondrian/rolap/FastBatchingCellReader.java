@@ -25,6 +25,7 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.MDC;
 
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
 /**
@@ -82,6 +83,8 @@ public class FastBatchingCellReader implements CellReader {
 
     private final List<CellRequest> cellRequests = new ArrayList<CellRequest>();
 
+    private final List<RolapNativeRequest> nativeRequests = new ArrayList<RolapNativeRequest>();
+
     private final Execution execution;
 
     /**
@@ -110,6 +113,11 @@ public class FastBatchingCellReader implements CellReader {
             MondrianProperties.instance().CellBatchSize.get() <= 0
                 ? 100000 // TODO Make this logic into a pluggable algorithm.
                 : MondrianProperties.instance().CellBatchSize.get();
+    }
+
+    public void addNativeRequest(RolapNativeRequest request) {
+      ++missCount;
+      nativeRequests.add(request);
     }
 
     public Object get(RolapEvaluator evaluator) {
@@ -184,7 +192,7 @@ public class FastBatchingCellReader implements CellReader {
      * called.
      */
     public boolean isDirty() {
-        return dirty || !cellRequests.isEmpty();
+        return dirty || !cellRequests.isEmpty() || !nativeRequests.isEmpty();
     }
 
     /**
@@ -226,6 +234,27 @@ public class FastBatchingCellReader implements CellReader {
     boolean loadAggregations() {
         if (!isDirty()) {
             return false;
+        }
+        // Process any native evaluations
+        List<Future<Object>> nativeFutures = new ArrayList<Future<Object>>();
+        if (!nativeRequests.isEmpty()) {
+            final Locus locus = Locus.peek();
+            for (final RolapNativeRequest nr : nativeRequests) {
+                Future<Object> future = cacheMgr.nativeExecutor.submit(new Callable<Object>() {
+                    @Override
+                    public Object call() throws Exception {
+                        try {
+                            Locus.push(locus);
+                            nr.execute();
+                            return null;
+                        } catch (RuntimeException t) {
+                            return t;
+                        }
+                    }
+                });
+                nativeFutures.add(future);
+            }
+            nativeRequests.clear();
         }
 
         // List of futures yielding segments populated by SQL statements. If
@@ -440,6 +469,14 @@ public class FastBatchingCellReader implements CellReader {
 
             // Continue loop; form and execute a new request with the smaller
             // set of cell requests.
+        }
+
+        // Wait for native evaluation to complete.
+        for (Future<Object> f : nativeFutures) {
+            Object exception = Util.safeGet(f, "Waiting for native eval to load via SQL");
+            if (exception != null) {
+                throw (RuntimeException)exception;
+            }
         }
 
         dirty = false;

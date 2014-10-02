@@ -1045,6 +1045,17 @@ Defaults to 100.</p>
         <Default>100</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>SegmentCacheManagerNumberNativeThreads</Name>
+        <Path>mondrian.rolap.maxNativeThreads</Path>
+        <Description>
+<p>Maximum number of threads per Mondrian server instance that
+are used to run Native SQL queries when populating native member cache.
+Defaults to 50.</p>
+        </Description>
+        <Type>int</Type>
+        <Default>20</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>SegmentCacheManagerNumberCacheThreads</Name>
         <Path>mondrian.rolap.maxCacheThreads</Path>
         <Description>

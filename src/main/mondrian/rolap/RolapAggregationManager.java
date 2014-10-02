@@ -16,6 +16,7 @@ package mondrian.rolap;
 import mondrian.olap.*;
 import mondrian.olap.fun.VisualTotalsFunDef.VisualTotalMember;
 import mondrian.resource.MondrianResource;
+import mondrian.rolap.RolapNativeSet.SetEvaluator;
 import mondrian.rolap.RolapStar.Column;
 import mondrian.rolap.agg.*;
 
@@ -928,6 +929,11 @@ public abstract class RolapAggregationManager {
 
             public boolean isDirty() {
                 return false;
+            }
+
+            // native requests should already exist in cache
+            public void addNativeRequest(RolapNativeRequest request) {
+                throw new UnsupportedOperationException();
             }
         };
     }

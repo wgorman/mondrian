@@ -12,6 +12,8 @@ package mondrian.olap;
 
 import mondrian.calc.ParameterSlot;
 import mondrian.calc.TupleIterable;
+import mondrian.rolap.RolapCube;
+import mondrian.rolap.RolapNativeRequest;
 
 import java.util.*;
 
@@ -508,6 +510,30 @@ public interface Evaluator {
      * @return list of calculated cell expressions
      */
     List<Exp> getCurrentCellExpressions();
+
+    /**
+     * Saves away the base cubes related to the virtual cube
+     * referenced in this query
+     *
+     * @param baseCubes set of base cubes
+     */
+    void setBaseCubes(List<RolapCube> baseCubes);
+
+    /**
+     * return the set of base cubes associated with the virtual cube referenced
+     * in this query
+     *
+     * @return set of base cubes
+     */
+    List<RolapCube> getBaseCubes();
+
+    /**
+     * Adds a native evaluation request to the evaluator, which is
+     * then picked up by the cellreader for parallel processing during phases
+     *
+     * @param request
+     */
+    void addNativeRequest(RolapNativeRequest request);
 
     /**
      * Interface for evaluating a particular named set.

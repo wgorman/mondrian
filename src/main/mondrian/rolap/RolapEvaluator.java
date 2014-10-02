@@ -114,6 +114,32 @@ public class RolapEvaluator implements Evaluator {
     // TODO: review alternative approaches
     Set<CellCalc> activeCellCalcs = new HashSet<CellCalc>();
 
+    List<RolapCube> baseCubes;
+
+    /**
+     * Saves away the base cubes related to the virtual cube
+     * referenced in this query
+     *
+     * @param baseCubes set of base cubes
+     */
+    public void setBaseCubes(List<RolapCube> baseCubes) {
+        this.baseCubes = baseCubes;
+    }
+
+    /**
+     * return the set of base cubes associated with the virtual cube referenced
+     * in this query
+     *
+     * @return set of base cubes
+     */
+    public List<RolapCube> getBaseCubes() {
+        return baseCubes;
+    }
+
+    public void addNativeRequest(RolapNativeRequest request) {
+      cellReader.addNativeRequest(request);
+    }
+
     /**
      * Set of expressions actively being expanded. Prevents infinite cycle of
      * expansions.
@@ -172,7 +198,7 @@ public class RolapEvaluator implements Evaluator {
         commands[0] = Command.SAVEPOINT; // sentinel
         commandCount = 1;
         activeCellCalcs.addAll(parent.activeCellCalcs);
-
+        baseCubes = parent.baseCubes;
         // Build aggregationLists, combining parent's aggregationLists (if not
         // null) and the new aggregation list (if any).
         List<List<List<Member>>> aggregationLists = null;

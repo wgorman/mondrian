@@ -202,8 +202,8 @@ public class HighCardSqlTupleReader extends SqlTupleReader {
         return maxRows;
     }
 
-    Collection<RolapCube> getBaseCubeCollection(final Query query) {
-        return query.getBaseCubes();
+    Collection<RolapCube> getBaseCubeCollection(final Evaluator evaluator) {
+        return evaluator.getBaseCubes();
     }
 }
 // End HighCardSqlTupleReader.java
