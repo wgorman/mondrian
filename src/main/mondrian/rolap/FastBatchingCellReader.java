@@ -241,7 +241,6 @@ public class FastBatchingCellReader implements CellReader {
             final Locus locus = Locus.peek();
             for (final RolapNativeRequest nr : nativeRequests) {
                 Future<Object> future = cacheMgr.nativeExecutor.submit(new Callable<Object>() {
-                    @Override
                     public Object call() throws Exception {
                         try {
                             Locus.push(locus);
