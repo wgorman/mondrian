@@ -10,27 +10,18 @@
 package mondrian.rolap;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 
-import mondrian.mdx.MemberExpr;
-import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
 import mondrian.olap.Literal;
-import mondrian.olap.Member;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.NativeEvaluator;
 import mondrian.olap.SchemaReader;
 import mondrian.olap.Util;
-import mondrian.olap.fun.CrossJoinFunDef;
-import mondrian.olap.fun.TupleFunDef;
 import mondrian.rolap.RolapNativeFilter.FilterConstraint;
-import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.CrossJoinArg;
-import mondrian.rolap.sql.SqlQuery;
 
 public class RolapNativeExists extends RolapNativeSet {
 
@@ -84,9 +75,8 @@ public class RolapNativeExists extends RolapNativeSet {
         if (!(args[2] instanceof Literal)) {
           return null;
         }
-      
+
         String cubeName = ((Literal)args[2]).getValue().toString();
-        
         if (cubeName == null) {
           return null;
         }
