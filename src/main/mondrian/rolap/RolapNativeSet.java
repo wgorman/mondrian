@@ -163,6 +163,8 @@ public abstract class RolapNativeSet extends RolapNative {
         }
     }
 
+    private boolean multiThreaded = MondrianProperties.instance().SegmentCacheManagerNumberNativeThreads.get() > 0;
+
     protected class SetEvaluator implements NativeEvaluator {
         private final CrossJoinArg[] args;
         private final SchemaReaderWithMemberReaderAvailable schemaReader;
@@ -281,7 +283,7 @@ public abstract class RolapNativeSet extends RolapNative {
             // to be executed in a separate thread.  return a dummy empty list for now.
             // TODO: figure out partial result case
 
-            if (!hasEnumTargets && !MondrianProperties.instance().DisableCaching.get()) {
+            if (multiThreaded && !hasEnumTargets && !MondrianProperties.instance().DisableCaching.get()) {
                 // register this for separate thread execution
                 tr.constraint.getEvaluator().addNativeRequest(
                     new NativeRequest(this, key, tr));
@@ -392,7 +394,7 @@ public abstract class RolapNativeSet extends RolapNative {
                 return result;
             }
 
-            if (!MondrianProperties.instance().DisableCaching.get()) {
+            if (multiThreaded && !MondrianProperties.instance().DisableCaching.get()) {
                 tr.constraint.getEvaluator().addNativeRequest(
                     new NativeSumRequest(this, key, tr));
                 return 0.0;
@@ -462,7 +464,7 @@ public abstract class RolapNativeSet extends RolapNative {
                 return result;
             }
 
-            if (!MondrianProperties.instance().DisableCaching.get()) {
+            if (multiThreaded && !MondrianProperties.instance().DisableCaching.get()) {
               tr.constraint.getEvaluator().addNativeRequest(new NativeCountRequest(
                   this, key, tr));
               return 0;
