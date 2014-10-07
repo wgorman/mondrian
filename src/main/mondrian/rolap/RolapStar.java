@@ -991,7 +991,7 @@ public class RolapStar {
             // Note: Views are excluded from this optimization due to issues with data types
             // The attribute might be considered a double vs. an integer for keys, causing issues
             // Test case InlineTableTest.testInlineTable() demonstrates the issue.
-            if (table != null && table.getParentTable() != null && table.addlParents.size() == 0 && table.getRelation() instanceof MondrianDef.Table) {
+            if (table != null && table.getParentTable() != null && table.getSubQueryAlias() == null && table.addlParents.size() == 0 && table.getRelation() instanceof MondrianDef.Table) {
                 if (table.getJoinCondition().getRight().equals( this.getExpression() )) {
                     Column col = table.getParentTable().lookupColumnByExpression(table.getJoinCondition().getLeft());
                     if (col != null) {
