@@ -55,9 +55,11 @@ class DescendantsConstraint implements TupleConstraint {
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimize
+        )
     {
-        mcc.addLevelConstraint(sqlQuery, baseCube, aggStar, level);
+        mcc.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
     }
 
     public MemberChildrenConstraint getMemberChildrenConstraint(

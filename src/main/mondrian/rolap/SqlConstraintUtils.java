@@ -638,7 +638,8 @@ public class SqlConstraintUtils {
                     baseCube,
                     aggStar,
                     evaluator,
-                    (RolapCubeLevel) entry.getKey());
+                    (RolapCubeLevel) entry.getKey(),
+                    false);
                 // add constraints
                 sqlQuery.addWhere(where);
             }
@@ -1067,9 +1068,13 @@ public class SqlConstraintUtils {
         RolapCube baseCube,
         AggStar aggStar,
         Evaluator e,
-        RolapCubeLevel level)
+        RolapCubeLevel level,
+        boolean optimize)
     {
         RolapStar.Column starColumn = level.getBaseStarKeyColumn(baseCube);
+        if (optimize) {
+        starColumn = starColumn.optimize();
+        }
         if (aggStar != null) {
             int bitPos = starColumn.getBitPosition();
             AggStar.Table.Column aggColumn = aggStar.lookupColumn(bitPos);

@@ -55,9 +55,10 @@ class ChildByNameConstraint extends DefaultMemberChildrenConstraint {
         SqlQuery query,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimize)
     {
-        super.addLevelConstraint(query, baseCube, aggStar, level);
+        super.addLevelConstraint(query, baseCube, aggStar, level, optimize);
         query.addWhere(
             SqlConstraintUtils.constrainLevel(
                 level, query, baseCube, aggStar, childName, true));

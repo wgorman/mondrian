@@ -72,7 +72,8 @@ public interface MemberChildrenConstraint extends SqlConstraint {
         SqlQuery query,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level);
+        RolapLevel level,
+        boolean optimize);
 
 }
 

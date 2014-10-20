@@ -597,7 +597,7 @@ RME is this right
 
         // in non empty mode the level table must be joined to the fact
         // table
-        constraint.addLevelConstraint(sqlQuery, null, aggStar, level);
+        constraint.addLevelConstraint(sqlQuery, null, aggStar, level, false);
 
         if (levelCollapsed) {
             // if this is a collapsed level, add a join between key and aggstar

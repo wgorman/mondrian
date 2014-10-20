@@ -352,12 +352,13 @@ public class RolapNativeSum extends RolapNativeSet {
             SqlQuery sqlQuery,
             RolapCube baseCube,
             AggStar aggStar,
-            RolapLevel level) 
+            RolapLevel level,
+            boolean optimize) 
         {
             if (delegatingConstraint != null) { 
-                delegatingConstraint.addLevelConstraint(sqlQuery, baseCube, aggStar, level);
+                delegatingConstraint.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
             } else {
-                super.addLevelConstraint(sqlQuery, baseCube, aggStar, level);
+                super.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
             }
         }
 

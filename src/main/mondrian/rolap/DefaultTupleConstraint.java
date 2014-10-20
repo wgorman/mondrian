@@ -37,7 +37,8 @@ public class DefaultTupleConstraint implements TupleConstraint {
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimized)
     {
     }
 

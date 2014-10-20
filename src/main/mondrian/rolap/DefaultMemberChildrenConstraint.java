@@ -56,7 +56,8 @@ public class DefaultMemberChildrenConstraint
         SqlQuery query,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimize)
     {
     }
 

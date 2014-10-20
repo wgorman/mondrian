@@ -54,7 +54,8 @@ public interface TupleConstraint extends SqlConstraint {
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level);
+        RolapLevel level,
+        boolean optimize);
 
     /**
      * When the members of a level are fetched, the result is grouped

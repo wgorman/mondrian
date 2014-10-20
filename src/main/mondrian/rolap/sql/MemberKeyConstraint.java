@@ -63,7 +63,8 @@ public class MemberKeyConstraint
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimize)
     {
     }
 

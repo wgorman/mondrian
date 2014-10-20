@@ -357,7 +357,8 @@ public class SqlContextConstraint
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,
-        RolapLevel level)
+        RolapLevel level,
+        boolean optimize)
     {
         if (!isJoinRequired()
             || level.getHierarchy().getDimension().isHanger())
@@ -365,7 +366,7 @@ public class SqlContextConstraint
             return;
         }
         SqlConstraintUtils.joinLevelTableToFactTable(
-            sqlQuery, baseCube, aggStar, evaluator, (RolapCubeLevel)level);
+            sqlQuery, baseCube, aggStar, evaluator, (RolapCubeLevel)level, optimize);
     }
 
     public MemberChildrenConstraint getMemberChildrenConstraint(

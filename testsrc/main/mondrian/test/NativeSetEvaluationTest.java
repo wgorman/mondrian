@@ -1915,14 +1915,11 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    COUNT(*)\n"
             + "from\n"
             + "    (select\n"
-            + "    `customer`.`customer_id` as `c0`\n"
+            + "    `sales_fact_1997`.`customer_id` as `c0`\n"
             + "from\n"
-            + "    `customer` as `customer`,\n"
             + "    `sales_fact_1997` as `sales_fact_1997`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
             + "group by\n"
-            + "    `customer`.`customer_id`) as `countQuery`";
+            + "    `sales_fact_1997`.`customer_id`) as `countQuery`";
 
         testContext.flushSchemaCache();
 
@@ -2049,12 +2046,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    sum(`m1`)\n"
             + "from\n"
             + "    (select\n"
-            + "    `product_class`.`product_family` as `c0`,\n"
-            + "    `product_class`.`product_department` as `c1`,\n"
-            + "    `product_class`.`product_category` as `c2`,\n"
-            + "    `product_class`.`product_subcategory` as `c3`,\n"
-            + "    `product`.`brand_name` as `c4`,\n"
-            + "    `product`.`product_name` as `c5`,\n"
             + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
             + "from\n"
             + "    `product_class` as `product_class`,\n"
@@ -2430,9 +2421,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2468,9 +2456,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2513,9 +2498,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2566,9 +2548,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2625,9 +2604,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2695,9 +2671,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "    sum(`m1`)\n"
           + "from\n"
           + "    (select\n"
-          + "    `store`.`store_country` as `c0`,\n"
-          + "    `store`.`store_state` as `c1`,\n"
-          + "    `store`.`store_city` as `c2`,\n"
           + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
           + "from\n"
           + "    `store` as `store`,\n"
@@ -2836,9 +2809,6 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "    sum(`m1`)\n"
             + "from\n"
             + "    (select\n"
-            + "    `store`.`store_country` as `c0`,\n"
-            + "    `store`.`store_state` as `c1`,\n"
-            + "    `store`.`store_city` as `c2`,\n"
             + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
             + "from\n"
             + "    `store` as `store`,\n"
@@ -2908,6 +2878,77 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #2: 6,235\n");
     }
 
+    /**
+     * This test verifies the removal of unnecessary select clause members for sums
+     */
+    public void testNativeSumInVirtualCubeSqlOptimization() {
+
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        String mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Customers].[Name].members},[Measures].[Unit Sales] > 10), [Measures].[Sales Count])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    sum(`m1`)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q1'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Food'\n"
+            + "group by\n"
+            + "    `customer`.`country`,\n"
+            + "    `customer`.`state_province`,\n"
+            + "    `customer`.`city`,\n"
+            + "    `sales_fact_1997`.`customer_id`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 10)) as `sumQuery`";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalCount]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 242\n"
+            + "Row #1: 12,888\n"
+            + "Row #2: 1,433\n");
+    }
+    
     public void testNativeFilterWithCompoundSlicer() {
         String mdx =
             "WITH MEMBER [Measures].[TotalVal] AS 'Aggregate(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000))'\n"
