@@ -1253,10 +1253,24 @@ public class SqlTupleReader implements TupleReader {
             // Add the contextual level constraints.
             // Do this ahead of adding other parts of the SQL, so that
             // if there is different context with a subquery, it'll be detected later.
-            constraint.addLevelConstraint(
-                sqlQuery, baseCube, aggStar, currLevel);
-
             MondrianDef.Expression keyExp = currLevel.getKeyExp();
+            constraint.addLevelConstraint(
+                sqlQuery, baseCube, aggStar, currLevel, keyOnly && keyExp instanceof MondrianDef.Column);
+
+            boolean optimized = false;
+            // this should only kick in if a join to the fact table is required.
+            if (keyOnly && keyExp instanceof MondrianDef.Column) {
+                // possible opportunity to optimize key
+                RolapStar.Column keyCol = ((RolapCubeLevel)currLevel).getBaseStarKeyColumn(baseCube).optimize();
+                // if we have been optimized, that is important downstream.
+                if (keyCol.getTable().getParentTable() == null) {
+                    if (sqlQuery.hasFrom(keyCol.getTable().getRelation(), null)) {
+                        optimized = true;
+                        keyExp = keyCol.getExpression(); 
+                    }
+                }
+            }
+
             MondrianDef.Expression ordinalExp = currLevel.getOrdinalExp();
             MondrianDef.Expression captionExp = currLevel.getCaptionExp();
             MondrianDef.Expression parentExp = currLevel.getParentExp();
@@ -1281,19 +1295,34 @@ public class SqlTupleReader implements TupleReader {
             String keySql = keyExp.getExpression(sqlQuery);
             String ordinalSql = ordinalExp.getExpression(sqlQuery);
 
-            if (!levelCollapsed) {
+            if (!levelCollapsed && !optimized) {
                 hierarchy.addToFrom(sqlQuery, keyExp);
                 if (!keyOnly) {
                     hierarchy.addToFrom(sqlQuery, ordinalExp);
                 }
             }
 
-            final String keyAliasAndExpr[] =
-                sqlQuery.addSelect(keyExp, currLevel.getInternalType());
-            if (needsGroupBy) {
-                // We pass both the expression and the alias.
-                // The SQL query will figure out what to use.
-                sqlQuery.addGroupBy(keyAliasAndExpr[1], keyAliasAndExpr[0]);
+            final String keyAliasAndExpr[];
+
+            // if there aren't any select statements, we can't optimize.
+            if (!(constraint instanceof RolapNativeSum.SumConstraint) 
+                || sqlQuery.getDialect().requiresGroupByAlias() 
+                || ((RolapCubeHierarchy)level.getHierarchy()).isManyToMany()) 
+            {
+                keyAliasAndExpr =
+                    sqlQuery.addSelect(keyExp, currLevel.getInternalType());
+                if (needsGroupBy) {
+                    // We pass both the expression and the alias.
+                    // The SQL query will figure out what to use.
+                    sqlQuery.addGroupBy(keyAliasAndExpr[1], keyAliasAndExpr[0]);
+                }
+            } else {
+                keyAliasAndExpr = null;
+                if (needsGroupBy) {
+                    // We pass both the expression and the alias.
+                    // The SQL query will figure out what to use.
+                    sqlQuery.addGroupBy(keySql, null);
+                }
             }
 
             if (!keyOnly) {
