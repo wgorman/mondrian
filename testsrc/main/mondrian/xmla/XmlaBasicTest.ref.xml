@@ -13521,6 +13521,14 @@ xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"
                         <Value>${mondrianVersion}</Value>
                     </row>
                     <row>
+                        <PropertyName>DBMSVersion</PropertyName>
+                        <PropertyDescription>The version of the Mondrian Database</PropertyDescription>
+                        <PropertyType>string</PropertyType>
+                        <PropertyAccessType>Read</PropertyAccessType>
+                        <IsRequired>false</IsRequired>
+                        <Value>${mondrianVersion}</Value>
+                    </row>
+                    <row>
                         <PropertyName>ResponseMimeType</PropertyName>
                         <PropertyDescription>Accepted mime type for RPC response; accepted are 'text/xml' (default), 'application/xml' (equivalent to 'text/xml'), or 'application/json'. If not specified, value in the 'Accept' header of the HTTP request is used.</PropertyDescription>
                         <PropertyType>string</PropertyType>

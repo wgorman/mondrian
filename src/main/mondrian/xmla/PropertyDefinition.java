@@ -179,6 +179,21 @@ public enum PropertyDefinition {
         XmlaConstants.Method.DISCOVER,
         "The version of the Mondrian XMLA Provider"),
 
+    DBMSVersion(
+        RowsetDefinition.Type.String,
+        null,
+        XmlaConstants.Access.Read,
+        // this prevents some adomd properties (ie Cubes) from
+        // automatically throwing a NotSupportedException
+        MondrianProperties.instance()
+            .XmlaCustomProviderVersion.get().trim().equals("")
+                ? MondrianServer.forId(null).getVersion().getVersionString()
+                    :  MondrianProperties.instance()
+                       .XmlaCustomProviderVersion.get(),
+        XmlaConstants.Method.DISCOVER,
+        "The version of the Mondrian Database"),
+
+        
     // Mondrian-specific extension to XMLA.
     /**
      * @see Enumeration.ResponseMimeType
