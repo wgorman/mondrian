@@ -1204,6 +1204,75 @@ public class FilterTest extends BatchTestCase {
             });
     }
 
+    public void testNativeTopCountFilter() {
+        TestContext context = getTestContext().withFreshConnection();
+          final boolean useAgg =
+              MondrianProperties.instance().UseAggregates.get()
+              && MondrianProperties.instance().ReadAggregates.get();
+          // should nativize with separate measures, but not when they are both referenced.
+          // peanut butter! 3 items in sales, 2 in warehouse
+          String mdx =
+              "SELECT TopCount(Filter(NonEmpty([Product].[All Products].[Food].[Baking Goods].[Baking Goods].Children,{[Measures].[Unit Sales]}), [Measures].[Sales Count] > 300), 2, [Measures].[Sales Count]) "
+              + " on 0, {[Measures].[Unit Sales], [Measures].[Sales Count]} on 1 from [Sales]";
+
+          // verify SQL
+          String sql =
+              "select `product_class`.`product_family` as `c0`, "
+              + "`product_class`.`product_department` as `c1`, "
+              + "`product_class`.`product_category` as `c2`, "
+              + "`product_class`.`product_subcategory` as `c3`, "
+              + "count(`sales_fact_1997`.`product_id`) as `c4` "
+              + "from `product_class` as `product_class`, "
+              + "`product` as `product`, `sales_fact_1997` as `sales_fact_1997`, "
+              + "`time_by_day` as `time_by_day` where "
+              + "`sales_fact_1997`.`product_id` = `product`.`product_id` "
+              + "and `product`.`product_class_id` = `product_class`.`product_class_id` "
+              + "and `sales_fact_1997`.`time_id` = `time_by_day`.`time_id` "
+              + "and `time_by_day`.`the_year` = 1997 "
+              + "and (`product_class`.`product_category` = 'Baking Goods' "
+              + "and `product_class`.`product_department` = 'Baking Goods' "
+              + "and `product_class`.`product_family` = 'Food') "
+              + "and `sales_fact_1997`.`unit_sales` is not null "
+              + "group by `product_class`.`product_family`, "
+              + "`product_class`.`product_department`, "
+              + "`product_class`.`product_category`, "
+              + "`product_class`.`product_subcategory` "
+              + "having (count(`sales_fact_1997`.`product_id`) > 300) "
+              + "order by count(`sales_fact_1997`.`product_id`) DESC, "
+              + "ISNULL(`product_class`.`product_family`) ASC, "
+              + "`product_class`.`product_family` ASC, "
+              + "ISNULL(`product_class`.`product_department`) ASC, "
+              + "`product_class`.`product_department` ASC, "
+              + "ISNULL(`product_class`.`product_category`) ASC, "
+              + "`product_class`.`product_category` ASC, "
+              + "ISNULL(`product_class`.`product_subcategory`) ASC, "
+              + "`product_class`.`product_subcategory` ASC";
+
+          if (!useAgg && propSaver.properties.EnableNativeFilter.get()) {
+              assertQuerySql(
+                  context,
+                  mdx,
+                  new SqlPattern[] {
+                      new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null)
+                  });
+          }
+
+          context.assertQueryReturns(
+              mdx,
+              "Axis #0:\n"
+              + "{}\n"
+              + "Axis #1:\n"
+              + "{[Product].[Food].[Baking Goods].[Baking Goods].[Cooking Oil]}\n"
+              + "{[Product].[Food].[Baking Goods].[Baking Goods].[Spices]}\n"
+              + "Axis #2:\n"
+              + "{[Measures].[Unit Sales]}\n"
+              + "{[Measures].[Sales Count]}\n"
+              + "Row #0: 3,277\n"
+              + "Row #0: 2,574\n"
+              + "Row #1: 1,067\n"
+              + "Row #1: 827\n");
+    }
+
     /**
      * This tests Filter(,Count(,EXCLUDEEMPTY)) scenarios in a virtual cube context.
      */

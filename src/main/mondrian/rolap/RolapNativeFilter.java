@@ -13,6 +13,7 @@ package mondrian.rolap;
 
 import mondrian.mdx.MdxVisitorImpl;
 import mondrian.mdx.MemberExpr;
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.*;
@@ -38,22 +39,26 @@ public class RolapNativeFilter extends RolapNativeSet {
             MondrianProperties.instance().EnableNativeFilter.get());
     }
 
-    static class FilterConstraint extends SetConstraint {
+    static class FilterConstraint extends DelegatingSetConstraint {
         Exp filterExpr;
         boolean existing = false;
         Map<String, String> preEvaluatedExpressions;
+        RolapLevel level;
 
         public FilterConstraint(
             CrossJoinArg[] args,
             RolapEvaluator evaluator,
             Exp filterExpr,
             boolean existing,
-            Map<String, String> preEvaluatedExpressions)
+            Map<String, String> preEvaluatedExpressions,
+            RolapLevel level,
+            SetConstraint parentConstraint)
         {
-            super(args, evaluator, true);
+            super(args, evaluator, true, parentConstraint);
             this.filterExpr = filterExpr;
             this.existing = existing;
             this.preEvaluatedExpressions = preEvaluatedExpressions;
+            this.level = level;
         }
 
         /**
@@ -93,7 +98,7 @@ public class RolapNativeFilter extends RolapNativeSet {
             // Use aggregate table to generate filter condition
             RolapNativeSql sql =
                 new RolapNativeSql(
-                    sqlQuery, aggStar, getEvaluator(), args[0].getLevel(), preEvaluatedExpressions);
+                    sqlQuery, aggStar, getEvaluator(), level, preEvaluatedExpressions);
             String filterSql = sql.generateFilterCondition(filterExpr);
 
             // <NOOP> is used because there is a previous check to make sure filter conditions aren't null,
@@ -155,10 +160,9 @@ public class RolapNativeFilter extends RolapNativeSet {
             return null;
         }
 
-        // Determine if this Filter wraps an Existing function, of so apply
+        // Determine if this Filter wraps an Existing function, if so apply
         // the whole context to the filter.
         boolean existing = false;
-        Exp arg0 = args[0];
 //        if (args[0] instanceof ResolvedFunCall) {
 //            if (((ResolvedFunCall)args[0]).getFunName().equalsIgnoreCase("existing")) {
 //                existing = true;
@@ -166,25 +170,34 @@ public class RolapNativeFilter extends RolapNativeSet {
 //            }
 //        }
 
-        // extract the set expression
-        List<CrossJoinArg[]> allArgs =
-            crossJoinArgFactory().checkCrossJoinArg(evaluator, arg0);
+        // first see if filter wraps another native evaluation
+        SetEvaluator eval = getNestedEvaluator(args[0], evaluator);
 
-        // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
-        // array is the CrossJoin dimensions.  The second array, if any,
-        // contains additional constraints on the dimensions. If either the
-        // list or the first array is null, then native cross join is not
-        // feasible.
-        if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
-            return null;
+        List<CrossJoinArg[]> allArgs = null;
+        CrossJoinArg[] cjArgs = null;
+        RolapLevel firstCrossjoinLevel = null;
+        if (eval == null) {
+            // extract the set expression
+            allArgs = crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
+            // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
+            // array is the CrossJoin dimensions.  The second array, if any,
+            // contains additional constraints on the dimensions. If either the
+            // list or the first array is null, then native cross join is not
+            // feasible.
+            if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
+                return null;
+            }
+
+            cjArgs = allArgs.get(0);
+            if (isPreferInterpreter(cjArgs, false)) {
+                return null;
+            }
+            firstCrossjoinLevel = cjArgs[0].getLevel();
+        } else {
+          firstCrossjoinLevel = ((SetConstraint)eval.getConstraint()).args[0].getLevel();
         }
 
-        CrossJoinArg[] cjArgs = allArgs.get(0);
-        if (isPreferInterpreter(cjArgs, false)) {
-            return null;
-        }
-
-        // extract "order by" expression
+        // extract filter expression
         SchemaReader schemaReader = evaluator.getSchemaReader();
         DataSource ds = schemaReader.getDataSource();
 
@@ -195,7 +208,7 @@ public class RolapNativeFilter extends RolapNativeSet {
         SqlQuery sqlQuery = SqlQuery.newQuery(ds, "NativeFilter");
         RolapNativeSql sql =
             new RolapNativeSql(
-                sqlQuery, null, evaluator, cjArgs[0].getLevel(), new HashMap<String, String>());
+                sqlQuery, null, evaluator, firstCrossjoinLevel, new HashMap<String, String>());
         final Exp filterExpr = args[1];
         String filterExprStr = sql.generateFilterCondition(filterExpr);
         if (filterExprStr == null) {
@@ -216,57 +229,71 @@ public class RolapNativeFilter extends RolapNativeSet {
             return null;
         }
 
-
         final int savepoint = evaluator.savepoint();
         try {
-            if (!existing) {
-                overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-            } else {
-                // exclude the crossjoin args from overriding the context
-                overrideContext(evaluator, new CrossJoinArg[]{}, sql.getStoredMeasure());
-            }
-
-            // TODO: Test potential issues, like reference members in crossjoin
-            for (Member m : sql.addlContext) {
-                evaluator.setContext(m);
-            }
-            // no need to have any context if there is no measure, we are doing
-            // a filter only on the current dimension.  This prevents
-            // SqlContextConstraint from expanding unnecessary calculated members on the 
-            // slicer calling expandSupportedCalculatedMembers
-            if (!existing && !evaluator.isNonEmpty() && sql.getStoredMeasure() == null) {
-              // No need to have anything on the context
-              for (Member m : evaluator.getMembers()) {
-                evaluator.setContext(m.getLevel().getHierarchy().getDefaultMember());
-              }
-            }
-
-            evaluator.setInlineSubqueryNecessary(true);
-
-            // Now construct the TupleConstraint that contains both the CJ
-            // dimensions and the additional filter on them.
-            CrossJoinArg[] combinedArgs = cjArgs;
-            if (allArgs.size() == 2) {
-                CrossJoinArg[] predicateArgs = allArgs.get(1);
-                if (predicateArgs != null) {
-                    // Combined the CJ and the additional predicate args.
-                    combinedArgs =
-                        Util.appendArrays(cjArgs, predicateArgs);
+            if (eval == null) {
+                if (!existing) {
+                    overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
+                } else {
+                    // exclude the crossjoin args from overriding the context
+                    overrideContext(evaluator, new CrossJoinArg[]{}, sql.getStoredMeasure());
                 }
-            }
 
-            SetConstraint constraint =
-                new FilterConstraint(combinedArgs, evaluator, filterExpr, existing, sql.preEvalExprs);
-            // constraint may still fail
-            if (!isValidFilterConstraint(constraint, evaluator, combinedArgs)) {
-                return null;
+                // TODO: Test potential issues, like reference members in crossjoin
+                for (Member m : sql.addlContext) {
+                    evaluator.setContext(m);
+                }
+                // no need to have any context if there is no measure, we are doing
+                // a filter only on the current dimension.  This prevents
+                // SqlContextConstraint from expanding unnecessary calculated members on the 
+                // slicer calling expandSupportedCalculatedMembers
+                if (!existing && !evaluator.isNonEmpty() && sql.getStoredMeasure() == null) {
+                    // No need to have anything on the context
+                    for (Member m : evaluator.getMembers()) {
+                        evaluator.setContext(m.getLevel().getHierarchy().getDefaultMember());
+                    }
+                }
+                evaluator.setInlineSubqueryNecessary(true);
+
+                // Now construct the TupleConstraint that contains both the CJ
+                // dimensions and the additional filter on them.
+                CrossJoinArg[] combinedArgs = cjArgs;
+                if (allArgs.size() == 2) {
+                    CrossJoinArg[] predicateArgs = allArgs.get(1);
+                    if (predicateArgs != null) {
+                        // Combined the CJ and the additional predicate args.
+                        combinedArgs =
+                            Util.appendArrays(cjArgs, predicateArgs);
+                    }
+                }
+
+                SetConstraint constraint =
+                    new FilterConstraint(combinedArgs, evaluator, filterExpr, existing, sql.preEvalExprs, firstCrossjoinLevel, null);
+                // constraint may still fail
+                if (!isValidFilterConstraint(constraint, evaluator, combinedArgs)) {
+                    return null;
+                }
+                LOGGER.debug("using native filter");
+                return new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
+            } else {
+                // dummy crossjoin args
+                CrossJoinArg[] crossjoinargs = new CrossJoinArg[0];
+                SetConstraint parentConstraint = (SetConstraint)eval.getConstraint();
+                evaluator = (RolapEvaluator)parentConstraint.getEvaluator();
+                overrideContext(evaluator, crossjoinargs, sql.getStoredMeasure());
+                for (Member m : sql.addlContext) {
+                    evaluator.setContext(m);
+                }
+                evaluator.setInlineSubqueryNecessary(true);
+                SetConstraint constraint =
+                    new FilterConstraint(crossjoinargs, evaluator, filterExpr, existing, sql.preEvalExprs, firstCrossjoinLevel, parentConstraint);
+                LOGGER.debug("using native filter");
+                eval.setConstraint(constraint);
+                return eval;
             }
-            LOGGER.debug("using native filter");
-            return new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
         } finally {
             evaluator.restore(savepoint);
         }
-
     }
 
     /**

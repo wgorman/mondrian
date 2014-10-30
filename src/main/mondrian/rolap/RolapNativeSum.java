@@ -357,9 +357,9 @@ public class RolapNativeSum extends RolapNativeSet {
         {
             if (delegatingConstraint != null) { 
                 delegatingConstraint.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
-            } else {
-                super.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
             }
+            // we should always join sum to the fact table, even if the delegate does not.
+            super.addLevelConstraint(sqlQuery, baseCube, aggStar, level, optimize);
         }
 
         @Override

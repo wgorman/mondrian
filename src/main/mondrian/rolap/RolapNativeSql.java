@@ -836,6 +836,15 @@ public class RolapNativeSql {
      * tuple can be used in this context, more than one and there's an issue.
      */
     class TupleSqlCompiler extends StoredMeasureSqlCompiler {
+
+        // The measue at play may be stored or calculated, bot are supported
+        // so we inherit from storedmeasure and delegate to the calculated member compiler
+        CalculatedMemberSqlCompiler calcCompiler;
+
+        public TupleSqlCompiler(CalculatedMemberSqlCompiler calcCompiler) {
+            this.calcCompiler = calcCompiler;
+        }
+
         public String compile(Exp exp) {
           // first determine if we are in a tuple function
 
@@ -849,6 +858,7 @@ public class RolapNativeSql {
           Exp[] args = fc.getArgs();
           // for now, support regular members and one calculation
           Exp measureExp = null;
+          boolean calculated = false;
           for (Exp argExp : args) {
               if (getMeasure( argExp) != null) {
                   if (measureExp != null) {
@@ -857,18 +867,35 @@ public class RolapNativeSql {
                   }
                   measureExp = argExp;
               } else {
-                  if (!(argExp instanceof MemberExpr)) {
-                      return null;
+                  // if there is a current member reference, we skip over it
+                  // because we'd just be using the current context.
+                  boolean currentMember = false;
+                  if (argExp instanceof ResolvedFunCall && ((ResolvedFunCall) argExp).getFunName().equalsIgnoreCase("CurrentMember")) {
+                      currentMember = true;
                   }
-                  Member member = ((MemberExpr)argExp).getMember();
-                  if (member.isCalculated()) {
-                      return null;
-                  } else {
-                      addlContext.add(member);
+                  if (!currentMember) {
+                      if (!(argExp instanceof MemberExpr)) {
+                          return null;
+                      }
+                      Member member = ((MemberExpr)argExp).getMember();
+                      if (member.isCalculated()) {
+                          // first check to see if this is of the measures dim
+                          if (measureExp != null) {
+                              return null;
+                          }
+                          calculated = true;
+                          measureExp = argExp;
+                      } else {
+                          addlContext.add(member);
+                      }
                   }
               }
           }
-          return super.compile(measureExp);
+          if (calculated) {
+              return calcCompiler.compile(measureExp);
+          } else {
+              return super.compile(measureExp);
+          }
         }
     }
 
@@ -971,10 +998,11 @@ public class RolapNativeSql {
         booleanCompiler = new CompositeSqlCompiler();
 
         numericCompiler.add( new PreEvalSqlCompiler() );
-        numericCompiler.add( new TupleSqlCompiler() );
         numericCompiler.add(new NumberSqlCompiler());
         numericCompiler.add(new StoredMeasureSqlCompiler());
-        numericCompiler.add(new CalculatedMemberSqlCompiler(numericCompiler));
+        CalculatedMemberSqlCompiler calcCompiler = new CalculatedMemberSqlCompiler(numericCompiler);
+        numericCompiler.add(calcCompiler);
+        numericCompiler.add(new TupleSqlCompiler(calcCompiler));
         numericCompiler.add(
             new ParenthesisSqlCompiler(Category.Numeric, numericCompiler));
         numericCompiler.add(

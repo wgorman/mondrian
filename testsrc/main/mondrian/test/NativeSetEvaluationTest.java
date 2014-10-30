@@ -1480,6 +1480,100 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #2:\n");
     }
 
+    public void testNativeNonEmptyWithBasicCalcMeasure() {
+        final String mdx =
+            "WITH MEMBER [Measures].[Calc] AS '[Measures].[Store Sales]'\n"
+            + "SELECT\n"
+            + "NonEmpty([Store].[Store City].Members, {[Measures].[Calc]}) ON 0\n"
+            + "FROM [Sales]";
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[CA].[San Francisco]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bellingham]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Walla Walla]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Row #0: 21,333\n"
+            + "Row #0: 25,663\n"
+            + "Row #0: 25,635\n"
+            + "Row #0: 2,117\n"
+            + "Row #0: 26,079\n"
+            + "Row #0: 41,580\n"
+            + "Row #0: 2,237\n"
+            + "Row #0: 24,576\n"
+            + "Row #0: 25,011\n"
+            + "Row #0: 23,591\n"
+            + "Row #0: 35,257\n"
+            + "Row #0: 2,203\n"
+            + "Row #0: 11,491\n");
+
+        if (!MondrianProperties.instance().EnableNativeNonEmptyFunction.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mysqlQuery = isUseAgg()
+            ? "select\n"
+              + "    `store`.`store_country` as `c0`,\n"
+              + "    `store`.`store_state` as `c1`,\n"
+              + "    `store`.`store_city` as `c2`\n"
+              + "from\n"
+              + "    `store` as `store`,\n"
+              + "    `agg_c_14_sales_fact_1997` as `agg_c_14_sales_fact_1997`\n"
+              + "where\n"
+              + "    `agg_c_14_sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+              + "and\n"
+              + "    `agg_c_14_sales_fact_1997`.`the_year` = 1997\n"
+              + "and\n"
+              + "    `agg_c_14_sales_fact_1997`.`store_sales` is not null\n"
+              + "group by\n"
+              + "    `store`.`store_country`,\n"
+              + "    `store`.`store_state`,\n"
+              + "    `store`.`store_city`\n"
+              + "order by\n"
+              + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+              + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+              + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC"
+            : "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`store_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+    }
+
     public void testNativeNonEmptyWithMeasure() {
         final String mdx =
             "SELECT\n"
@@ -3336,6 +3430,21 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #1: 295\n"
             + "Row #1: 1,560\n"
             + "Row #1: 294\n"); //existing+nonempty
+    }
+
+    public void testNativeCountFilterExistingScenarioSimple() {
+        String mdx =
+            "WITH MEMBER [Measures].[ExistingNonEmpty] AS Count(Filter(NonEmpty(Existing [Product].[Product Name].Members), 1=1))\n"
+            + "SELECT {[Measures].[ExistingNonEmpty]} ON 0, {[Time].[1997].[Q4].[12]} ON 1 FROM [Sales] WHERE [Product].[Non-Consumable]";
+
+        assertQueryReturns(mdx,
+          "Axis #0:\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[ExistingNonEmpty]}\n"
+            + "Axis #2:\n"
+            + "{[Time].[1997].[Q4].[12]}\n"
+            + "Row #0: 294\n"); //existing+nonempty
     }
 
     public void testNativeFilterNoMeasureUnconstrained() {

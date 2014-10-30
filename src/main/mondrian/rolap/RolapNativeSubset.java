@@ -25,7 +25,6 @@ import mondrian.olap.SchemaReader;
 import mondrian.olap.Util;
 import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.sql.CrossJoinArg;
-import mondrian.rolap.sql.MemberChildrenConstraint;
 import mondrian.rolap.sql.SqlQuery;
 import mondrian.rolap.sql.TupleConstraint;
 
@@ -46,10 +45,9 @@ public class RolapNativeSubset extends RolapNativeSet {
      * This constraint can act in two ways.  Either as a self contained
      * constraint, or as a wrapper around an existing native constraint.
      */
-    static class SubsetConstraint extends SetConstraint {
+    static class SubsetConstraint extends DelegatingSetConstraint {
         Integer start;
         Integer count;
-        SetConstraint parentConstraint;
 
         public SubsetConstraint(
             Integer start,
@@ -59,23 +57,9 @@ public class RolapNativeSubset extends RolapNativeSet {
             SetConstraint parentConstraint
             )
         {
-            super(args, evaluator, true);
+            super(args, evaluator, true, parentConstraint);
             this.start = start;
             this.count = count;
-            this.parentConstraint = parentConstraint;
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * <p>Subset doesn't require a join to the fact table.
-         */
-        protected boolean isJoinRequired() {
-            if (parentConstraint != null) {
-                return parentConstraint.isJoinRequired();
-            } else {
-                return super.isJoinRequired();
-            }
         }
 
         public void addConstraint(
@@ -89,20 +73,12 @@ public class RolapNativeSubset extends RolapNativeSet {
             if (count != null) {
               sqlQuery.setLimit(count);
             }
-            if (parentConstraint != null) {
-                parentConstraint.addConstraint( sqlQuery, baseCube, aggStar);
-            } else {
-                super.addConstraint(sqlQuery, baseCube, aggStar);
-            }
+            super.addConstraint(sqlQuery, baseCube, aggStar);
         }
 
         public Object getCacheKey() {
             List<Object> key = new ArrayList<Object>();
-            if (parentConstraint != null) {
-                key.add(parentConstraint.getCacheKey());
-            } else {
-                key.add(super.getCacheKey());
-            }
+            key.add(super.getCacheKey());
             key.add(start);
             key.add(count);
 
@@ -112,27 +88,6 @@ public class RolapNativeSubset extends RolapNativeSet {
                     .getSlicerMembers());
             }
             return key;
-        }
-
-        public MemberChildrenConstraint getMemberChildrenConstraint(
-            RolapMember parent)
-        {
-            if (parentConstraint != null) {
-                return parentConstraint.getMemberChildrenConstraint(parent);
-            } else {
-                return super.getMemberChildrenConstraint(parent);
-            }
-        }
-
-        public void constrainExtraLevels(
-            RolapCube baseCube,
-            BitKey levelBitKey)
-        {
-            if (parentConstraint != null) {
-                parentConstraint.constrainExtraLevels(baseCube, levelBitKey);
-            } else {
-                super.constrainExtraLevels(baseCube, levelBitKey);
-            }
         }
     }
 
@@ -187,19 +142,8 @@ public class RolapNativeSubset extends RolapNativeSet {
 
         // first see if subset wraps another native evaluation (other than count and sum)
 
-        SetEvaluator eval = null;
-        if (args[0] instanceof ResolvedFunCall) {
-            ResolvedFunCall call = (ResolvedFunCall)args[0];
-            if (call.getFunDef().getName().equals("Cache")) {
-                if (call.getArg( 0 ) instanceof ResolvedFunCall) {
-                    call = (ResolvedFunCall)call.getArg(0);
-                } else {
-                    return null;
-                }
-            }
-            eval = (SetEvaluator)evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
-                evaluator, call.getFunDef(), call.getArgs());
-        }
+        SetEvaluator eval = getNestedEvaluator(args[0], evaluator);
+
         if (eval == null) {
             // extract the set expression
             List<CrossJoinArg[]> allArgs =

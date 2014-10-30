@@ -117,7 +117,7 @@ public class RolapNativeNonEmptyFunction extends RolapNativeSet {
                 nativeMeasures.add((RolapStoredMeasure) m);
                 measure = (RolapStoredMeasure)m;
               }
-              if (m.isCalculated()) {
+              if (m.isCalculated() && !SqlConstraintUtils.isSupportedCalculatedMember(m)) {
                 calculatedMeasures = true;
               }
           }

@@ -14,6 +14,7 @@ package mondrian.rolap;
 import mondrian.calc.ResultStyle;
 import mondrian.calc.TupleList;
 import mondrian.calc.impl.*;
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.RolapNativeCount.CountConstraint;
 import mondrian.rolap.RolapNativeSum.SumConstraint;
@@ -68,6 +69,56 @@ public abstract class RolapNativeSet extends RolapNative {
 
     protected CrossJoinArgFactory crossJoinArgFactory() {
         return new CrossJoinArgFactory(restrictMemberTypes());
+    }
+
+    /**
+     * This function is used to allow nesting of native functions, for instance
+     * TopCount(Filter(NonEmpty())) as an example.
+     *
+     * @param exp The expression to nest
+     * @param evaluator the current evaluation context
+     * @return a set evaluator if available for this function
+     */
+    protected SetEvaluator getNestedEvaluator(Exp exp, RolapEvaluator evaluator) {
+        SetEvaluator eval = null;
+        if (exp instanceof ResolvedFunCall) {
+            ResolvedFunCall call = (ResolvedFunCall)exp;
+            if (call.getFunDef().getName().equals("Cache")) {
+                if (call.getArg( 0 ) instanceof ResolvedFunCall) {
+                    call = (ResolvedFunCall)call.getArg(0);
+                } else {
+                    return null;
+                }
+            }
+            if (supportsNesting(call)) {
+                eval = (SetEvaluator)evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
+                    evaluator, call.getFunDef(), call.getArgs());
+            }
+        }
+        return eval;
+    }
+
+    /**
+     * This function checks to make sure that native evaluation is possible for this
+     * usecase.  Note that at the moment Existing() is not compatible with nested evaluation.
+     *
+     * @param fun The function to verify
+     * @return true if this function is available for nesting
+     */
+    protected boolean supportsNesting(ResolvedFunCall fun) {
+        if (fun.getFunName().equalsIgnoreCase("existing")) {
+            return false;
+        } else {
+            boolean containsExisting = false;
+            for (Exp exp : fun.getArgs()) {
+                if (exp instanceof ResolvedFunCall) {
+                    if (!supportsNesting((ResolvedFunCall)exp)) {
+                        containsExisting = true;
+                    }
+                }
+            }
+            return !containsExisting;
+        }
     }
 
     /**
@@ -163,6 +214,75 @@ public abstract class RolapNativeSet extends RolapNative {
         }
     }
 
+    /**
+     * This is an optionally delegating set constraint used for nested native evaluation.
+     */
+    protected static abstract class DelegatingSetConstraint extends SetConstraint {
+        protected SetConstraint parentConstraint;
+
+        DelegatingSetConstraint(
+            CrossJoinArg[] args,
+            RolapEvaluator evaluator,
+            boolean strict,
+            SetConstraint parentConstraint)
+        {
+            super(args, evaluator, strict);
+            this.args = args;
+            this.parentConstraint = parentConstraint;
+        }
+
+        protected boolean isJoinRequired() {
+            if (parentConstraint != null) {
+                return parentConstraint.isJoinRequired();
+            } else {
+                return super.isJoinRequired();
+            }
+        }
+
+        public void addConstraint(
+            SqlQuery sqlQuery,
+            RolapCube baseCube,
+            AggStar aggStar)
+        {
+            if (parentConstraint != null) {
+                parentConstraint.addConstraint(sqlQuery, baseCube, aggStar);
+            } else {
+                super.addConstraint(sqlQuery, baseCube, aggStar);
+            }
+        }
+
+        public Object getCacheKey() {
+            List<Object> key = new ArrayList<Object>();
+            if (parentConstraint != null) {
+                key.add(parentConstraint.getCacheKey());
+            } else {
+                key.add(super.getCacheKey());
+            }
+            return key;
+        }
+
+        public MemberChildrenConstraint getMemberChildrenConstraint(
+            RolapMember parent)
+        {
+            if (parentConstraint != null) {
+                return parentConstraint.getMemberChildrenConstraint(parent);
+            } else {
+                return super.getMemberChildrenConstraint(parent);
+            }
+        }
+
+        public void constrainExtraLevels(
+            RolapCube baseCube,
+            BitKey levelBitKey)
+        {
+            if (parentConstraint != null) {
+                parentConstraint.constrainExtraLevels(baseCube, levelBitKey);
+            } else {
+                super.constrainExtraLevels(baseCube, levelBitKey);
+            }
+        }
+    }
+
     private boolean multiThreaded = MondrianProperties.instance().SegmentCacheManagerNumberNativeThreads.get() > 0;
 
     protected class SetEvaluator implements NativeEvaluator {
@@ -199,6 +319,12 @@ public abstract class RolapNativeSet extends RolapNative {
             this.constraint = constraint;
         }
 
+        /**
+         * Used by native evaluation verifying that a nested native set exists in the same cube as others.
+         * See RolapNativeSubset.
+         *
+         * @return The measure related to this set evaluation.
+         */
         public Member getMeasure() {
             return measure;
         }
