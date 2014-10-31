@@ -12,6 +12,7 @@ package mondrian.rolap;
 import java.util.ArrayList;
 import java.util.List;
 
+import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
@@ -65,8 +66,18 @@ public class RolapNativeExists extends RolapNativeSet {
             return null;
         }
         // we want the second arg to be added just as a crossjoin constraint
-        List<CrossJoinArg[]> extraArgs =
-            crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1]);
+
+        // support for empty second parameter
+        List<CrossJoinArg[]> extraArgs = null;
+        if (args[1] instanceof ResolvedFunCall
+            && "".equals(((ResolvedFunCall)args[1]).getFunName())
+            && ((ResolvedFunCall)args[1]).getArgCount() == 0)
+        {
+            extraArgs = new ArrayList<CrossJoinArg[]>();
+            extraArgs.add(new CrossJoinArg[0]);
+        } else {
+            extraArgs = crossJoinArgFactory().checkCrossJoinArg(evaluator, args[1]);
+        }
         if (extraArgs == null) {
             return null;
         }
