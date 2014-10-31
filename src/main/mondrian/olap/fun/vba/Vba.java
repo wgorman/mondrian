@@ -365,7 +365,7 @@ public class Vba {
     @Description(
         "Returns the numbers contained in a string as a numeric value of "
         + "appropriate type.")
-    public static double val(String string) {
+    public static double val(Object stringobj) {
         // The Val function stops reading the string at the first character it
         // can't recognize as part of a number. Symbols and characters that are
         // often considered parts of numeric values, such as dollar signs and
@@ -384,7 +384,7 @@ public class Vba {
         // decimal separator. When different decimal separators are used, as in
         // international applications, use CDbl instead to convert a string to
         // a number.
-
+        String string = stringobj == null ? "" : stringobj.toString();
         string = WHITESPACE_PATTERN.matcher(string).replaceAll(""); // remove all whitespace
         if (string.startsWith("&H")) {
             string = string.substring(2);
