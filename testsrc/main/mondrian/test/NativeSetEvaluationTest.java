@@ -2749,70 +2749,138 @@ public class NativeSetEvaluationTest extends BatchTestCase {
     }
 
     public void testNativeSumWithSecondParam() {
-      propSaver.set(propSaver.properties.EnableNativeSum, true);
-      propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        propSaver.set(propSaver.properties.EnableNativeSum, true);
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
-      final boolean useAgg =
-          MondrianProperties.instance().UseAggregates.get()
-          && MondrianProperties.instance().ReadAggregates.get();
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
 
-      String mdx =
-          "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Sales Count])'\n"
-          + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE [Time].[1997].[Q1]";
+        String mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Sales Count])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE [Time].[1997].[Q1]";
 
-      String mysqlQuery =
-          "select\n"
-          + "    sum(`m1`)\n"
-          + "from\n"
-          + "    (select\n"
-          + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
-          + "from\n"
-          + "    `store` as `store`,\n"
-          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-          + "    `time_by_day` as `time_by_day`,\n"
-          + "    `product_class` as `product_class`,\n"
-          + "    `product` as `product`\n"
-          + "where\n"
-          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-          + "and\n"
-          + "    `time_by_day`.`the_year` = 1997\n"
-          + "and\n"
-          + "    `time_by_day`.`quarter` = 'Q1'\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-          + "and\n"
-          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-          + "and\n"
-          + "    `product_class`.`product_family` = 'Drink'\n"
-          + "group by\n"
-          + "    `store`.`store_country`,\n"
-          + "    `store`.`store_state`,\n"
-          + "    `store`.`store_city`\n"
-          + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+        String mysqlQuery =
+            "select\n"
+            + "    sum(`m1`)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q1'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
-      if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
-          getTestContext().flushSchemaCache();
-          SqlPattern mysqlPattern =
-              new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
-          assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
-      }
+        if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
 
-      assertQueryReturns(
-          mdx,
-          "Axis #0:\n"
-          + "{[Time].[1997].[Q1]}\n"
-          + "Axis #1:\n"
-          + "{[Measures].[TotalCount]}\n"
-          + "Axis #2:\n"
-          + "{[Product].[Drink]}\n"
-          + "{[Product].[Food]}\n"
-          + "{[Product].[Non-Consumable]}\n"
-          + "Row #0: 347\n"
-          + "Row #1: 14,898\n"
-          + "Row #2: 3,201\n");
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalCount]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 347\n"
+            + "Row #1: 14,898\n"
+            + "Row #2: 3,201\n");
+    }
+
+    public void testNativeSumWithCalcSecondParam() {
+        propSaver.set(propSaver.properties.EnableNativeSum, true);
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        String mdx =
+            "WITH MEMBER [Measures].[Calc] AS '[Measures].[Store Cost]'\n"
+            + "MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Store].[Store City].members},[Measures].[Unit Sales] > 1000), [Measures].[Calc])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, [Product].[All Products].Children on 1 FROM [Sales] WHERE [Time].[1997].[Q1]";
+
+        String mysqlQuery =
+            "select\n"
+            + "    sum(`m1`)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    sum(`sales_fact_1997`.`store_cost`) as `m1`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `time_by_day`.`quarter` = 'Q1'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalCount]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 817\n"
+            + "Row #1: 39,572\n"
+            + "Row #2: 8,603\n");
     }
 
     public void testNativeFilterWithVirtualCube() {

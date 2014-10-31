@@ -223,7 +223,11 @@ public class RolapNativeSum extends RolapNativeSet {
                 }
             } else if (member instanceof RolapCalculatedMember) {
                 if (!foundMeasure.contains(member)) {
-                    foundMeasure.add(member);
+                    // if a measure's expression is very basic,
+                    // don't add the calc to the list
+                    if (!(member.getExpression() instanceof MemberExpr)) {
+                        foundMeasure.add(member);
+                    }
                     findMeasure(member.getExpression(),foundMeasure);
                 }
             }
@@ -337,7 +341,7 @@ public class RolapNativeSum extends RolapNativeSet {
             if (delegatingConstraint != null) {
                 key.add(delegatingConstraint.getCacheKey());
             } else {
-                key.add(super.getCacheKey());              
+                key.add(super.getCacheKey());
                 if (this.getEvaluator() instanceof RolapEvaluator) {
                     key.add(
                         ((RolapEvaluator)this.getEvaluator())
