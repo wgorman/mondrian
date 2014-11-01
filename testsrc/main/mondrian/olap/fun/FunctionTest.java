@@ -12171,6 +12171,7 @@ Intel platforms):
 
         // If any arg is null, result is null.
         assertExprReturns("exp(cast(null as numeric))", "");
+        assertExprReturns("val(ccur(123.5))", "124");
     }
 
     // Test a VBA function with variable number of args.
