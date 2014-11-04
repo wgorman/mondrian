@@ -2019,6 +2019,17 @@ public class XmlaHandler {
                         hierarchies.add(hierarchy);
                     }
                 }
+
+                // merge the default set of hierarchies with the ones included
+                // in the slicer
+                Set<Hierarchy> hierSet = new HashSet<Hierarchy>(hierarchies);
+                List<Hierarchy> slicerHier = getAxisHierarchies(slicerAxis);
+                for (Hierarchy h : slicerHier) {
+                    if (!hierSet.contains(h)) {
+                        hierarchies.add(h);
+                    }
+                }
+
                 writer.startElement(
                     "AxisInfo",
                     "name", "SlicerAxis");
@@ -2078,23 +2089,28 @@ public class XmlaHandler {
                 "AxisInfo",
                 "name", axisName);
 
-            List<Hierarchy> hierarchies;
-            Iterator<org.olap4j.Position> it = axis.getPositions().iterator();
-            if (it.hasNext()) {
-                final org.olap4j.Position position = it.next();
-                hierarchies = new ArrayList<Hierarchy>();
-                for (Member member : position.getMembers()) {
-                    hierarchies.add(member.getHierarchy());
-                }
-            } else {
-                hierarchies = axis.getAxisMetaData().getHierarchies();
-            }
+            List<Hierarchy> hierarchies = getAxisHierarchies(axis);
             List<Property> props = getProps(axis.getAxisMetaData());
             writeHierarchyInfo(writer, hierarchies, props);
 
             writer.endElement(); // AxisInfo
 
             return hierarchies;
+        }
+
+        private List<Hierarchy> getAxisHierarchies(CellSetAxis axis) {
+          List<Hierarchy> hierarchies;
+          Iterator<org.olap4j.Position> it = axis.getPositions().iterator();
+          if (it.hasNext()) {
+              final org.olap4j.Position position = it.next();
+              hierarchies = new ArrayList<Hierarchy>();
+              for (Member member : position.getMembers()) {
+                  hierarchies.add(member.getHierarchy());
+              }
+          } else {
+              hierarchies = axis.getAxisMetaData().getHierarchies();
+          }
+          return hierarchies;
         }
 
         private void writeHierarchyInfo(
