@@ -120,6 +120,10 @@ public class CrossJoinArgFactory {
         if (cjArgs != null) {
             return Collections.singletonList(cjArgs);
         }
+        cjArgs = checkDescendantLeaves(role, fun, args);
+        if (cjArgs != null) {
+            return Collections.singletonList(cjArgs);
+        }
         final boolean exclude = false;
         cjArgs = checkEnumeration(evaluator, fun, args, exclude);
         if (cjArgs != null) {
@@ -756,6 +760,65 @@ public class CrossJoinArgFactory {
         } else {
             return null;
         }
+
+        if (!level.isSimple()) {
+            return null;
+        }
+        // Descendants of a member in an access-controlled hierarchy cannot be
+        // converted to SQL. (We could be smarter; we don't currently notice
+        // when the member is in a part of the hierarchy that is not
+        // access-controlled.)
+        final Access access = role.getAccess(level.getHierarchy());
+        switch (access) {
+        case ALL:
+            break;
+        default:
+            return null;
+        }
+        return new CrossJoinArg[]{
+            new DescendantsCrossJoinArg(level, member)
+        };
+    }
+
+    /**
+     * Checks for Descendants(&lt;hierarchy&gt;,,LEAVES)
+     *
+     * @return an {@link mondrian.rolap.sql.CrossJoinArg} instance describing the Descendants
+     *         function, or null if <code>fun</code> represents something else.
+     */
+    private CrossJoinArg[] checkDescendantLeaves(
+        Role role,
+        FunDef fun,
+        Exp[] args)
+    {
+        if (!"Descendants".equalsIgnoreCase(fun.getName())) {
+            return null;
+        }
+        if (args.length != 3) {
+            return null;
+        }
+        if (!(args[0] instanceof HierarchyExpr)) {
+            return null;
+        }
+
+        Hierarchy hierarchy = ((HierarchyExpr) args[0]).getHierarchy();
+        if (hierarchy == null) {
+            return null;
+        }
+
+        RolapMember member = (RolapMember) hierarchy.getAllMember();
+        if (member == null || member.isCalculated()) {
+            return null;
+        }
+
+        if (!(args[1] instanceof ResolvedFunCall) || !((ResolvedFunCall)args[1]).getFunName().equals("")) {
+            return null;
+        }
+
+        if (!(args[2] instanceof Literal) || !"LEAVES".equalsIgnoreCase( ((Literal)args[2]).getValue().toString())) {
+            return null;
+        }
+        RolapLevel level = (RolapLevel)hierarchy.getLevels()[hierarchy.getLevels().length - 1];
 
         if (!level.isSimple()) {
             return null;
