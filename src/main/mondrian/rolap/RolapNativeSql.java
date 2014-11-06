@@ -908,6 +908,8 @@ public class RolapNativeSql {
                 FunCall funcall = (FunCall) exp;
                 if (funcall.getFunName().equalsIgnoreCase("val") && funcall.getArgCount() == 1) {
                     return supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("ccur") && funcall.getArgCount() == 1) {
+                    return supportsExp(funcall.getArg(0));
                 } else if (funcall.getFunName().equalsIgnoreCase("strtomember") && funcall.getArgCount() == 1) {
                     return supportsExp(funcall.getArg(0));
                 } else if (funcall.getFunName().equalsIgnoreCase("CurrentMember")) {
