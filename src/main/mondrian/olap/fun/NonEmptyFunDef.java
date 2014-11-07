@@ -139,9 +139,14 @@ public class NonEmptyFunDef extends FunDefBase {
             inner : while (auxCursor.forward()) {
                 auxCursor.currentToArray(currentMembers, arityMain);
                 eval.setContext(currentMembers);
-                if (eval.evaluateCurrent() != null) {
+                Object currval = eval.evaluateCurrent();
+                if (currval != null) {
                     isNonEmpty = true;
-                    break inner;
+                    // if currval comes back as a Double 0.0, that may mean there was a missed hit in cache.
+                    // skip the break, so we can build up all cell requests.
+                    if (!(currval instanceof Double) || !(((Double)currval).doubleValue() == 0.0)) {
+                        break inner;
+                    }
                 }
             }
             if (isNonEmpty) {
