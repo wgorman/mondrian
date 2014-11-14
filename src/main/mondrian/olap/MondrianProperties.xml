@@ -1050,7 +1050,7 @@ Defaults to 100.</p>
         <Description>
 <p>Maximum number of threads per Mondrian server instance that
 are used to run Native SQL queries when populating native member cache.
-Defaults to 50.</p>
+Defaults to 20.</p>
         </Description>
         <Type>int</Type>
         <Default>20</Default>
@@ -1434,6 +1434,15 @@ how member key segments are looked up by default (when no level specified).</p>
 
 <p>If true, using a key on a hierarchy look into the top level,
 otherwise looks at the bottom level.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
+        <Name>SsasPropertyHandling</Name>
+        <Path>mondrian.olap.SsasPropertyHandling</Path>
+        <Description>
+<p>Property that defines whether to behave like SSAS for handling invalid Properties.  SSAS returns null, while Mondrian proper throws an exception.</p>
         </Description>
         <Type>boolean</Type>
         <Default>false</Default>

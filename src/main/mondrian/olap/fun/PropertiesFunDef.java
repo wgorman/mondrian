@@ -62,7 +62,9 @@ class PropertiesFunDef extends FunDefBase {
         boolean matchCase = MondrianProperties.instance().CaseSensitive.get();
         Object o = member.getPropertyValue(s, matchCase);
         if (o == null) {
-            if (!Util.isValidProperty(s, member.getLevel())) {
+            if (!MondrianProperties.instance().SsasPropertyHandling.get()
+                && !Util.isValidProperty(s, member.getLevel()))
+            {
                 throw new MondrianEvaluationException(
                     "Property '" + s
                     + "' is not valid for member '" + member + "'");
