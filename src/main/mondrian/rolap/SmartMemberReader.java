@@ -97,6 +97,20 @@ public class SmartMemberReader implements MemberReader {
     public RolapMember getMemberByKey(
         RolapLevel level, List<Comparable> keyValues)
     {
+        // look in key cache first for top level members.
+        if (level.getParentLevel() != null
+            && level.getParentLevel().isAll()
+            && level.getHierarchy().getAllMember() != null
+            && keyValues.size() == 1)
+        {
+            Object key = cacheHelper.makeKey(
+                level.getHierarchy().getAllMember(), keyValues.get(0));
+            RolapMember member = cacheHelper.getMember(key, false);
+            if (member != null) {
+                return member;
+            }
+        }
+
         TupleConstraint constraint =
             sqlConstraintFactory.getMemberKeyConstraint(level, keyValues);
         List<RolapMember> list = getMembersInLevel(level, constraint);

@@ -2123,6 +2123,65 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "Row #0: 131,558\n");
     }
 
+    /**
+     * This test demonstrates sharing of the key cache between queries.
+     */
+    public void testSharedLookupByKeyCache() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        String mdx =
+            "SELECT TopCount(Filter(NonEmpty([Product].[Product Family].Members), [Measures].[Unit Sales] > 5000), 2, [Measures].[Unit Sales]) on 0 FROM [Sales] WHERE ([Time].[1997].[Q1])";
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 47,809\n"
+            + "Row #0: 12,506\n");
+
+        mdx =
+            "SELECT {[Product].[Product Family].&[Non-Consumable],\n"
+            + " [Product].[Product Family].&[Food]} on 0 FROM [Sales] WHERE ([Time].[1997].[Q1])";
+
+        // Make sure this SQL does not occur!
+        String sql =
+            "select\n"
+            + "    `product_class`.`product_family` as `c0`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Food'\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC";
+
+        if (!useAgg) {
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, sql, null);
+            assertNoQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "{[Product].[Food]}\n"
+            + "Row #0: 12,506\n"
+            + "Row #0: 47,809\n");
+    }
+
     public void testNativeFilterWithTupleAndVal() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
