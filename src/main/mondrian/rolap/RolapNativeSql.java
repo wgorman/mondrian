@@ -967,6 +967,10 @@ public class RolapNativeSql {
             ExpCompiler compiler = evaluator.getQuery().createCompiler();
             Calc calc = compiler.compileScalar(exp, true);
             Object results = calc.evaluate(evaluator);
+            // convert a null string to a SQL string
+            if (results == null) {
+                results = "NULL";
+            }
             preEvalExprs.put(exp.toString(), results.toString());
             return results.toString();
         }
