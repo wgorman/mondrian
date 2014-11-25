@@ -815,6 +815,16 @@ public interface Dialect {
         throws SQLException;
 
     /**
+     * Attempts to translate datatypes, this is used when generating keys to guarantee
+     * the same lookup types. Please see SmartMemberReader for usage.
+     *
+     * @param value the value to translate
+     * @param datatype the datatype to translate it to
+     * @return the new value
+     */
+    Object translateValue(Object value, Datatype datatype);
+
+    /**
      * Enumeration of common database types.
      *
      * <p>Branching on this enumeration allows you to write code which behaves

@@ -10,6 +10,7 @@
 package mondrian.spi.impl;
 
 import mondrian.rolap.SqlStatement;
+import mondrian.spi.Dialect;
 
 import java.sql.Connection;
 import java.sql.ResultSetMetaData;
@@ -20,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 /**
  * Implementation of {@link mondrian.spi.Dialect} for the Vertica database.
  *
@@ -27,6 +31,8 @@ import java.util.Map;
  * @since Sept 11, 2009
  */
 public class VerticaDialect extends JdbcDialectImpl {
+
+    private static final Log LOGGER = LogFactory.getLog(VerticaDialect.class);
 
     public static final JdbcDialectFactory FACTORY =
         new JdbcDialectFactory(
@@ -130,6 +136,22 @@ public class VerticaDialect extends JdbcDialectImpl {
 
     public boolean supportsMultiValueInExpr() {
         return true;
+    }
+
+    public Object translateValue(Object value, Datatype datatype) {
+        if (datatype == Dialect.Datatype.Integer) {
+            if (value instanceof String) {
+                // attempt to convert the value to a long (Vertica treats ints as longs, so we need to do override the default behavior.
+                try {
+                    return new Long((String)value);
+                } catch (NumberFormatException excpetion) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Unable to convert value '" + value + "' to Long");
+                    }
+                }
+            }
+        }
+        return value;
     }
 }
 

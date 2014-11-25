@@ -1175,6 +1175,22 @@ public class JdbcDialectImpl implements Dialect {
     public boolean supportsLimitAndOffset() {
       return false;
     }
+
+    public Object translateValue(Object value, Datatype datatype) {
+        if (datatype == Dialect.Datatype.Integer) {
+            if (value instanceof String) {
+                // attempt to convert the value to an integer
+                try {
+                    return new Integer((String)value);
+                } catch (NumberFormatException excpetion) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Unable to convert value " + value + " to Integer.");
+                    }
+                }
+            }
+        }
+        return value;
+    }
 }
 
 // End JdbcDialectImpl.java

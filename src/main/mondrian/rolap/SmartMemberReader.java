@@ -103,8 +103,12 @@ public class SmartMemberReader implements MemberReader {
             && level.getHierarchy().getAllMember() != null
             && keyValues.size() == 1)
         {
+            Object keyValue = keyValues.get(0);
+            // key value may be of a different type
+            keyValue = ((RolapSchema)level.getDimension().getSchema())
+                .getDialect().translateValue(keyValue, level.getDatatype());
             Object key = cacheHelper.makeKey(
-                level.getHierarchy().getAllMember(), keyValues.get(0));
+                level.getHierarchy().getAllMember(), keyValue);
             RolapMember member = cacheHelper.getMember(key, false);
             if (member != null) {
                 return member;
