@@ -9281,6 +9281,16 @@ public class FunctionTest extends FoodMartTestCase {
             "4");
     }
 
+    /**
+     * Note, before this fix, this threw a SQL Exception vs. a regular member
+     * not found Exception.
+     */
+    public void testStrToMemberNonNumeric() {
+        assertExprThrows(
+            "StrToMember(\"[Time].[Year].&[NULLNULL]\").Name",
+            "Member '[Time].[Year].&[NULLNULL]' not found");
+    }
+
     public void testStrToMemberConstrained() {
         assertExprReturns(
                 "StrToMember(\"[Time].[1997].[Q2].[4]\", CONSTRAINED).Name",
