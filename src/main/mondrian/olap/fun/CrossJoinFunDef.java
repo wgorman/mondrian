@@ -970,11 +970,19 @@ public class CrossJoinFunDef extends FunDefBase {
                             "CrossJoinFunDef.nonEmptyListNEW: ERROR");
                     }
                 } else {
-                    // The Hierarchy does NOT have an All member
-                    Member[] rootMembers =
-                        rootMemberList.toArray(
-                            new Member[rootMemberList.size()]);
-                    nonAllMemberList.add(rootMembers);
+                    // The Hierarchy does NOT have an All member.
+                    // If it has a default member, use that. Otherwise,
+                    // fallback to original behavior.
+                    if (h.isDefaultMemberExplicit() && h.getDefaultMember() != null) {
+                        Member[] rootMembers =
+                            new Member[] {h.getDefaultMember()};
+                        nonAllMemberList.add(rootMembers);
+                    } else {
+                         Member[] rootMembers =
+                         rootMemberList.toArray(
+                             new Member[rootMemberList.size()]);
+                         nonAllMemberList.add(rootMembers);
+                    }
                 }
             }
         }
