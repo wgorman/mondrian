@@ -192,18 +192,37 @@ public class ValueColumnPredicate
                 }
                 buf.append(keys.get(i));
             }
-            query.getSubQuery(column.getTable().getSubQueryAlias()).addWhere(sb.toString());
+            SqlQuery subquery = query.getSubQuery(column.getTable().getSubQueryAlias());
+            subquery.addWhere(sb.toString());
 
             // TODO: If the dialect can't support the IN subquery scenario, then we can't
             // nativize.  We'll need a check in the Native layer for this.
-            buf.append(") IN (");
-            buf.append(query.getSubQuery(column.getTable().getSubQueryAlias()).toString());
-            buf.append(")");
+            if (sqlQuery.getDialect().supportsWithClause()) {
+                // todo: the query needs to generate column aliases
+                subquery.updateSelectListForWithClause(sqlQuery.getCurrentWithListSize() + 1);
+                String name = sqlQuery.addWith(subquery.toString());
+
+                // need to wipe out the select list clause again
+                subquery.clearSelectListForWithClause();
+                int columnCount = subquery.getCurrentSelectListSize();
+                buf.append(") IN (select ");
+                for (int i = 0; i < columnCount; i++) {
+                  if (i > 0) {
+                    buf.append(", ");
+                  }
+                  buf.append(name + "_c" + i);
+                }
+                buf.append(" from " + name + ")");
+            } else {
+                buf.append(") IN (");
+                buf.append(subquery.toString());
+                buf.append(")");
+            }
 
             // remove the where clause just created so other predicates can apply their own
             // constraints.
             // TODO: support query.clone() instead of this approach.
-            ((List)query.getSubQuery(column.getTable().getSubQueryAlias()).where).remove(sb.toString());
+            ((List<String>)subquery.where).remove(sb.toString());
         } else {
             buf.append(expr);
             Object key = getValue();

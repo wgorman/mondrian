@@ -450,6 +450,7 @@ public class SqlConstraintUtils {
                 column.getTable().addToFrom(sqlQuery, false, true);
                 sqlQuery.subqueries.remove(column.getTable().getSubQueryAlias());
                 sqlQuery.subwhereExpr.remove(column.getTable().getSubQueryAlias());
+                sqlQuery.subwhereExprKeys.remove(column.getTable().getSubQueryAlias());
                 subqueryMap.put(column.getTable().getSubQueryAlias(), subSqlQuery);
             } else {
                 column.getTable().addToFrom(sqlQuery, false, true);

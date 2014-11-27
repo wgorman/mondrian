@@ -317,7 +317,6 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
         }
 
         final RolapStar.Column column = getConstrainedColumn().optimize();
-        String expr = column.generateExprString(sqlQuery);
         if (sqlQuery.correlatedSubquery && subqueryMap != null
             && column.getTable() != null
             && column.getTable().getSubQueryAlias() != null)
@@ -343,18 +342,37 @@ public class ListColumnPredicate extends AbstractColumnPredicate {
                 }
                 buf.append(keys.get(i));
             }
-            query.getSubQuery(column.getTable().getSubQueryAlias()).addWhere(sb.toString());
+
+            SqlQuery subquery = query.getSubQuery(column.getTable().getSubQueryAlias());
+            subquery.addWhere(sb.toString());
 
             // TODO: If the dialect can't support the IN subquery scenario, then we can't
             // nativize.  We'll need a check in the Native layer for this.
-            buf.append(") IN (");
-            buf.append(query.getSubQuery(column.getTable().getSubQueryAlias()).toString());
-            buf.append(")");
+            if (sqlQuery.getDialect().supportsWithClause()) {
+                // TODO: Come up with a better data model so query doesn't need modified
+                subquery.updateSelectListForWithClause(sqlQuery.getCurrentWithListSize() + 1);
+                String name = sqlQuery.addWith(subquery.toString());
+                // need to wipe out the select list clause again
+                subquery.clearSelectListForWithClause();
+                int columnCount = subquery.getCurrentSelectListSize();
+                buf.append(") IN (select ");
+                for (int i = 0; i < columnCount; i++) {
+                    if (i > 0) {
+                        buf.append(", ");
+                    }
+                    buf.append(name + "_c" + i);
+                }
+                buf.append(" from " + name + ")");
+            } else {
+                buf.append(") IN (");
+                buf.append(subquery.toString());
+                buf.append(")");
+            }
 
             // remove the where clause just created so other predicates can apply their own
             // constraints.
             // TODO: support query.clone() instead of this approach.
-            ((List)query.getSubQuery(column.getTable().getSubQueryAlias()).where).remove(sb.toString());
+            ((List<String>)subquery.where).remove(sb.toString());
         } else {
             toSqlGenExpr(sqlQuery, buf);
         }

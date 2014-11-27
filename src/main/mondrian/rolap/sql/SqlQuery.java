@@ -83,6 +83,7 @@ public class SqlQuery {
     private final ClauseList groupBy;
     private final ClauseList having;
     private final ClauseList orderBy;
+    private final ClauseList with;
     private final List<ClauseList> groupingSets;
     private final ClauseList groupingFunctions;
     private Integer offset;
@@ -139,6 +140,7 @@ public class SqlQuery {
 
         // both select and from allow duplications
         this.select = new ClauseList(true);
+        this.with = new ClauseList(true);
         this.from = new FromClauseList(true);
 
         this.groupingFunctions = new ClauseList(false);
@@ -360,6 +362,7 @@ public class SqlQuery {
     // query.
     public Map<String, SqlQuery> correlatedSubqueries = new HashMap<String, SqlQuery>();
     public Map<String, List<String>> subwhereExpr = new HashMap<String, List<String>>();
+    public List<String> subwhereExprKeys = new ArrayList<String>();
     public boolean correlatedSubquery = false;
 
     public boolean addFrom(
@@ -700,6 +703,27 @@ public class SqlQuery {
         return "c" + select.size();
     }
 
+    public int getCurrentWithListSize() {
+      return with.size();
+    }
+
+    public void updateSelectListForWithClause(int id) {
+        String queryAlias = "wq" + id;
+        for (int i = 0; i < select.size(); i++) {
+            String col = select.get(i);
+            String ncol = col + " as " + dialect.quoteIdentifier(queryAlias + "_c" + i);
+            select.set(i, ncol);
+        }
+    }
+
+    public void clearSelectListForWithClause() {
+        for (int i = 0; i < select.size(); i++) {
+            String col = select.get(i);
+            String ncol = col.substring(0, col.indexOf(" as "));
+            select.set(i, ncol);
+        }
+    }
+
     public SqlQuery getSubQuery(String subQueryAlias) {
       if (correlatedSubquery) {
           return correlatedSubqueries.get(subQueryAlias);
@@ -786,10 +810,11 @@ public class SqlQuery {
     public void addSubWhere(final RolapStar.Condition joinCondition, final String subquery) {
         String subSelectExpr = joinCondition.getRight(this);
         if (correlatedSubquery) {
-            List<String> subwhereList = subwhereExpr.get( subquery );
+            List<String> subwhereList = subwhereExpr.get(subquery);
             if (subwhereList == null) {
-              subwhereList = new ArrayList<String>();
-              subwhereExpr.put(subquery, subwhereList);
+                subwhereList = new ArrayList<String>();
+                subwhereExpr.put(subquery, subwhereList);
+                subwhereExprKeys.add(subquery);
             }
             String condition = joinCondition.getLeft(this);
             // only add the condition once
@@ -805,6 +830,12 @@ public class SqlQuery {
                 getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
             }
         }
+    }
+
+    public String addWith(final String expression) {
+        assert expression != null && !expression.equals("");
+        with.add(expression);
+        return "wq" + with.size();
     }
 
     public void addWhere(final String expression)
@@ -898,6 +929,42 @@ public class SqlQuery {
      * @param prefix Prefix for each line
      */
     public void toBuffer(StringBuilder buf, String prefix) {
+        // generate with clause
+        if (dialect.supportsWithClause()) {
+            int withCount = 0;
+            for (int i = 0; i < with.size(); i++) {
+                if (withCount == 0) {
+                    buf.append( "with " );
+                } else {
+                    buf.append(", ");
+                }
+                buf.append("wq" + (++withCount));
+                buf.append(" as (");
+                buf.append(with.get(i));
+                buf.append(")");
+            }
+
+            if (correlatedSubqueries.size() > 0 && subwhereExpr.size() > 0) {
+                for (String subquery : subwhereExprKeys) {
+                    if (withCount == 0) {
+                        buf.append( "with " );
+                    } else {
+                        buf.append(", ");
+                    }
+                    buf.append("wq" + (++withCount));
+                    buf.append(" as (");
+                    SqlQuery sqlsub = correlatedSubqueries.get(subquery);
+                    sqlsub.updateSelectListForWithClause(withCount);
+                    buf.append(sqlsub.toString());
+                    buf.append(")");
+                }
+            }
+            if (withCount > 0) {
+                buf.append(" ");
+            }
+        }
+
+        // generate select clause
         final String first = distinct ? "select distinct " : "select ";
         select.toBuffer(buf, generateFormattedSql, prefix, first, ", ", "", "");
         groupingFunctionsToBuffer(buf, prefix);
@@ -930,7 +997,9 @@ public class SqlQuery {
         // many to many dimensions
         if (correlatedSubqueries.size() > 0 && subwhereExpr.size() > 0) {
             ClauseList newWhere = (ClauseList)where.clone();
-            for (String subquery : subwhereExpr.keySet()) {
+            int withCount = with.size();
+            for (String subquery : subwhereExprKeys) {
+                SqlQuery sqlsub = correlatedSubqueries.get(subquery);
                 StringBuilder subbuf = new StringBuilder();
                 subbuf.append("(");
                 List<String> keys = subwhereExpr.get(subquery);
@@ -941,7 +1010,19 @@ public class SqlQuery {
                     subbuf.append(keys.get(i));
                 }
                 subbuf.append(") IN (");
-                subbuf.append(correlatedSubqueries.get(subquery).toString());
+                if (dialect.supportsWithClause()) {
+                    String name = "wq" + (++withCount);
+                    subbuf.append("select ");
+                    for (int i = 0; i < sqlsub.getCurrentSelectListSize(); i++) {
+                        if (i > 0) {
+                            subbuf.append(", ");
+                        }
+                        subbuf.append(name + "_c" + i);
+                    }
+                    subbuf.append(" from " + name);
+                } else {
+                    subbuf.append(sqlsub.toString());
+                }
                 subbuf.append(")");
                 newWhere.add(subbuf.toString());
             }

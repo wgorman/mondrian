@@ -153,6 +153,10 @@ public class VerticaDialect extends JdbcDialectImpl {
         }
         return value;
     }
+
+    public boolean supportsWithClause() {
+        return true;
+    }
 }
 
 // End VerticaDialect.java

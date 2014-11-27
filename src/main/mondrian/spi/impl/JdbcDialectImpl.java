@@ -1173,7 +1173,7 @@ public class JdbcDialectImpl implements Dialect {
     }
 
     public boolean supportsLimitAndOffset() {
-      return false;
+        return false;
     }
 
     public Object translateValue(Object value, Datatype datatype) {
@@ -1190,6 +1190,10 @@ public class JdbcDialectImpl implements Dialect {
             }
         }
         return value;
+    }
+
+    public boolean supportsWithClause() {
+        return false;
     }
 }
 

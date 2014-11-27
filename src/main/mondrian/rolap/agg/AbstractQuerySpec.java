@@ -431,6 +431,7 @@ public abstract class AbstractQuerySpec implements QuerySpec {
                     table.addToFrom(sqlQuery, false, true);
                     sqlQuery.subqueries.remove(table.getSubQueryAlias());
                     sqlQuery.subwhereExpr.remove(table.getSubQueryAlias());
+                    sqlQuery.subwhereExprKeys.remove(table.getSubQueryAlias());
                     if (subqueryMap.containsKey( table.getSubQueryAlias() )) {
                         // subquery is already present, only add if this subquery contains more tables.
                         SqlQuery orig = subqueryMap.get(table.getSubQueryAlias());

@@ -825,6 +825,17 @@ public interface Dialect {
     Object translateValue(Object value, Datatype datatype);
 
     /**
+     * Return true if the specific database supports defining subqueries via a
+     * with clause.  This is useful for many to many dimensions which inline
+     * distinct select clauses for native pushdown. Note that from some basic
+     * research, Oracle, Postgres and Vertica support this syntax, MySQL does
+     * not.
+     *
+     * @return true if dialect supports with clause
+     */
+    boolean supportsWithClause();
+
+    /**
      * Enumeration of common database types.
      *
      * <p>Branching on this enumeration allows you to write code which behaves
