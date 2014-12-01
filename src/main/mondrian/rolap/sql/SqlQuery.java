@@ -956,6 +956,7 @@ public class SqlQuery {
                     SqlQuery sqlsub = correlatedSubqueries.get(subquery);
                     sqlsub.updateSelectListForWithClause(withCount);
                     buf.append(sqlsub.toString());
+                    sqlsub.clearSelectListForWithClause();
                     buf.append(")");
                 }
             }
