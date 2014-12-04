@@ -390,6 +390,23 @@ public class RolapCubeHierarchy extends RolapHierarchy {
             ((RolapCubeHierarchy)bridgeJoinDim.getHierarchies()[0])
                 .usage.getForeignKey();
 
+        // EXPERIMENTAL OPTIMIZATION - remove left portion of join & update
+        // primary key, primary key table if:
+        // hier.primary_key = left_key && hier.primary_key_table = left_table
+
+        if (right.left instanceof MondrianDef.Table
+            && hier.primaryKey.equals(join.leftKey)
+            && join.left instanceof MondrianDef.Table
+            && hier.primaryKeyTable
+            .equals(((MondrianDef.Table)join.left).getAlias()))
+        {
+            hier.primaryKey = join.rightKey;
+            hier.primaryKeyTable = ((MondrianDef.Table)right.left).getAlias();
+            join = right;
+        }
+
+        // END EXPERIMENTAL OPTIMIZATION
+
         // now overwrite xmlHierarchy with new foreign key and
         // foreign key table
         this.xmlHierarchy = hier;

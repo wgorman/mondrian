@@ -1856,6 +1856,19 @@ public class RolapCube extends CubeBase {
                                     new MondrianDef.Column(
                                         star.getFactTable().getAlias(),
                                         addlJoin.cubeForeignKey);
+                                /* EXPERIMENTAL: OPTIMIZED JOIN PATH
+                                   FOR MANY TO MANY */
+                                MondrianDef.Column bridgeForeignKeyColumn =
+                                    new MondrianDef.Column(
+                                        addlJoin.bridgeTable,
+                                        addlJoin.bridgeForeignKey);
+                                RolapStar.Table addlParent = star.getFactTable();
+                                RolapStar.Condition bridgeCond =
+                                    new RolapStar.Condition(
+                                        factForeignKeyColumn,
+                                        bridgeForeignKeyColumn);
+
+                                /* ORIGINAL
                                 MondrianDef.Column dimPrimaryKeyColumn =
                                     new MondrianDef.Column(
                                         addlJoin.relation.getAlias(),
@@ -1875,6 +1888,7 @@ public class RolapCube extends CubeBase {
                                 RolapStar.Table addlParent =
                                     star.getFactTable().addJoin(
                                         this, addlJoin.relation, factJoin);
+                                 END ORIG */
                                 t.addAdditionalParent(addlParent);
                                 t.addAdditionalJoinCondition(bridgeCond);
                             }
