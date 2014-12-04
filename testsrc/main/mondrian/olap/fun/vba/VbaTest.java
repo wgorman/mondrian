@@ -262,8 +262,7 @@ public class VbaTest extends TestCase {
         assertEquals(1615.19, Vba.val(" 1615 . 19 . 8th Street N.E."));
         assertEquals((double)0xffff, Vba.val("&HFFFF"));
         assertEquals(668.0, Vba.val("&O1234"));
-
-        // verify the long type works as well with Val
+        assertEquals(14956392.90, Vba.val(14956392.90));
         assertEquals(668.0, Vba.val(668l));
     }
 

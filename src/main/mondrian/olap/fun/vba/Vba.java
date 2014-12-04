@@ -384,6 +384,17 @@ public class Vba {
         // decimal separator. When different decimal separators are used, as in
         // international applications, use CDbl instead to convert a string to
         // a number.
+
+        if (stringobj instanceof Number) {
+            Number number = (Number)stringobj;
+            if (number instanceof Float || number instanceof Double
+                || number instanceof BigDecimal)
+            {
+                return number.doubleValue();
+            }
+            return number.intValue();
+        }
+
         String string = stringobj == null ? "" : stringobj.toString();
         string = WHITESPACE_PATTERN.matcher(string).replaceAll(""); // remove all whitespace
         if (string.startsWith("&H")) {
