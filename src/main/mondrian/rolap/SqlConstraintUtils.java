@@ -126,7 +126,7 @@ public class SqlConstraintUtils {
             if ((RolapUtil.mdxNullLiteral().equalsIgnoreCase(value))
                 || (value.equalsIgnoreCase(RolapUtil.sqlNullValue.toString())))
             {
-                sqlQuery.addWhere(expr, " is ", RolapUtil.sqlNullLiteral);
+                sqlQuery.addWhere(expr, " is ", RolapUtil.sqlNullLiteral, subquery);
             } else {
                 if (column.getDatatype().isNumeric()) {
                     // make sure it can be parsed
@@ -642,7 +642,18 @@ public class SqlConstraintUtils {
                     (RolapCubeLevel) entry.getKey(),
                     false);
                 // add constraints
-                sqlQuery.addWhere(where);
+                RolapStar.Column column = null;
+                if (entry.getKey() instanceof RolapCubeLevel) {
+                    column = ((RolapCubeLevel)entry.getKey()).getBaseStarKeyColumn(baseCube);
+                }
+                String subquery = null;
+                // TODO: Support Agg Tables for M2M scenario
+                if (column != null && aggStar == null
+                    && sqlQuery.getEnableDistinctSubquery())
+                {
+                    subquery = column.getTable().getSubQueryAlias();
+                }
+                sqlQuery.addWhere(where, subquery);
             }
         }
     }
@@ -1207,9 +1218,20 @@ public class SqlConstraintUtils {
         }
 
         if (condition.length() > 1) {
+            RolapStar.Column column = null;
+            String subquery = null;
+            // TODO: Support Agg Tables for M2M scenario
+            if (memberLevel instanceof RolapCubeLevel) {
+                column = ((RolapCubeLevel)memberLevel).getBaseStarKeyColumn(baseCube);
+            }
+            if (column != null && aggStar == null
+                && sqlQuery.getEnableDistinctSubquery())
+            {
+                subquery = column.getTable().getSubQueryAlias();
+            }
             // condition is not empty
             condition += ")";
-            sqlQuery.addWhere(condition);
+            sqlQuery.addWhere(condition, subquery);
         }
     }
 

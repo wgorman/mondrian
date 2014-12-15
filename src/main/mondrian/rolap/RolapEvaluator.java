@@ -103,8 +103,6 @@ public class RolapEvaluator implements Evaluator {
     // extra info on slicer tuples (temp)
     private boolean disjointSlicerTuple;
     private boolean multiLevelSlicerTuple;
-    // true if we need valid results from the native evaluator or if this is just a non-empty tuple evaluator.
-    private boolean inlineSubqueryNecessary = false;
     private boolean nativeEnabled;
     private Member[] nonAllMembers;
     private int commandCount;
@@ -193,7 +191,6 @@ public class RolapEvaluator implements Evaluator {
         slicerTuples = parent.slicerTuples;
         disjointSlicerTuple = parent.disjointSlicerTuple;
         multiLevelSlicerTuple = parent.multiLevelSlicerTuple;
-        inlineSubqueryNecessary = parent.inlineSubqueryNecessary;
         commands = new Object[10];
         commands[0] = Command.SAVEPOINT; // sentinel
         commandCount = 1;
@@ -1195,34 +1192,6 @@ public class RolapEvaluator implements Evaluator {
         }
     }
 
-    /**
-     * This is called by various native evaluation paths to specify if inline
-     * subqueries are necessary.
-     *
-     * @param inlineSubqueryNecessary
-     */
-    public final void setInlineSubqueryNecessary(boolean inlineSubqueryNecessary) {
-        if (inlineSubqueryNecessary != this.inlineSubqueryNecessary) {
-            ensureCommandCapacity(commandCount + 2);
-            commands[commandCount++] = this.inlineSubqueryNecessary;
-            commands[commandCount++] = Command.SET_INLINE_SUBQUERY_NECESSARY;
-            this.inlineSubqueryNecessary = inlineSubqueryNecessary;
-        }
-    }
-
-    /**
-     * This method is used by native evaluation to determine if an inline
-     * subquery related to many to many dimensions is necessary.  When doing a
-     * regular non empty tuple determination, this is not necessary.  When
-     * calculating any numbers, such as filters, top count, count, or sum, we
-     * must use inline subqueries.
-     *
-     * @return true if inline subquery is necessary.
-     */
-    public final boolean isInlineSubqueryNecessary() {
-        return inlineSubqueryNecessary;
-    }
-
     public final RuntimeException newEvalException(Object context, String s) {
         return FunUtil.newEvalException((FunDef) context, s);
     }
@@ -1502,13 +1471,6 @@ public class RolapEvaluator implements Evaluator {
             @Override
             void execute(RolapEvaluator evaluator) {
                 evaluator.nonEmpty =
-                    (Boolean) evaluator.commands[--evaluator.commandCount];
-            }
-        },
-        SET_INLINE_SUBQUERY_NECESSARY(1) {
-            @Override
-            void execute(RolapEvaluator evaluator) {
-                evaluator.inlineSubqueryNecessary =
                     (Boolean) evaluator.commands[--evaluator.commandCount];
             }
         },

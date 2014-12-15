@@ -253,7 +253,6 @@ public class RolapNativeFilter extends RolapNativeSet {
                         evaluator.setContext(m.getLevel().getHierarchy().getDefaultMember());
                     }
                 }
-                evaluator.setInlineSubqueryNecessary(true);
 
                 // Now construct the TupleConstraint that contains both the CJ
                 // dimensions and the additional filter on them.
@@ -284,7 +283,6 @@ public class RolapNativeFilter extends RolapNativeSet {
                 for (Member m : sql.addlContext) {
                     evaluator.setContext(m);
                 }
-                evaluator.setInlineSubqueryNecessary(true);
                 SetConstraint constraint =
                     new FilterConstraint(crossjoinargs, evaluator, filterExpr, existing, sql.preEvalExprs, firstCrossjoinLevel, parentConstraint);
                 LOGGER.debug("using native filter");

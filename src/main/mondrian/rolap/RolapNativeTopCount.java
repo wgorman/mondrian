@@ -213,7 +213,6 @@ public class RolapNativeTopCount extends RolapNativeSet {
 
                 LOGGER.debug("using native topcount");
                 overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-                evaluator.setInlineSubqueryNecessary(true);
                 for (Member member : sql.addlContext) {
                     evaluator.setContext(member);
                 }
@@ -244,7 +243,6 @@ public class RolapNativeTopCount extends RolapNativeSet {
                 // empty crossjoin args, parent contains args
                 CrossJoinArg[] cjArgs = new CrossJoinArg[0];
                 overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-                evaluator.setInlineSubqueryNecessary(true);
                 for (Member member : sql.addlContext) {
                     evaluator.setContext(member);
                 }

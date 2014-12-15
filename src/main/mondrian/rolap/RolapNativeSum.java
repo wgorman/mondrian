@@ -128,7 +128,6 @@ public class RolapNativeSum extends RolapNativeSet {
         // just minor changes are needed to be made to the evaluator.
         SetEvaluator eval = (SetEvaluator)evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
             evaluator, call.getFunDef(), call.getArgs());
-        evaluator.setInlineSubqueryNecessary(true);
         if (eval != null) {
             // TopCount or Filter measure does not share the same cube as the current measure
             if (eval.getMeasure() != null && !areFromSameCube(eval.getMeasure(), measure)) {

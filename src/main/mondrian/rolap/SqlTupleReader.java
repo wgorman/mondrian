@@ -1058,14 +1058,7 @@ public class SqlTupleReader implements TupleReader {
         Evaluator evaluator = getEvaluator(constraint);
         // Certain Native Evaluations require Many to Many dimensions
         // to generate SQL in a particular way.
-        boolean subqueriesNecessary = false;
-        if (evaluator != null
-            && evaluator instanceof RolapEvaluator
-            && ((RolapEvaluator)evaluator).isInlineSubqueryNecessary())
-        {
-            subqueriesNecessary = true;
-            sqlQuery.setEnableDistinctSubquery(true);
-        }
+        sqlQuery.setEnableDistinctSubquery(true);
         AggStar aggStar = chooseAggStar(constraint, evaluator, baseCube);
 
         // add the selects for all levels to fetch
@@ -1082,9 +1075,10 @@ public class SqlTupleReader implements TupleReader {
                     keyOnly);
             }
         }
-        if (subqueriesNecessary) {
-            sqlQuery.correlatedSubquery = true;
-        }
+
+        // inform the query to generate correlated subqueries
+        // vs. subqueries in from clause
+        sqlQuery.correlatedSubquery = true;
 
         // this is the only time we need to do a correlated subquery.
         constraint.addConstraint(sqlQuery, baseCube, aggStar);
