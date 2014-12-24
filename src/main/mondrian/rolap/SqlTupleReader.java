@@ -1493,6 +1493,11 @@ public class SqlTupleReader implements TupleReader {
         for (TargetBase target : targets) {
             RolapLevel level = target.level;
             if (!level.isAll()) {
+                // there is a chance that this path is used by existing non-native eval
+                // which uses RolapLevel vs. RolapCubeLevel to avoid fact joins
+                if (!(level instanceof RolapCubeLevel)) {
+                  return null;
+                }
                 RolapStar.Column column =
                     ((RolapCubeLevel)level).getBaseStarKeyColumn(baseCube);
                 if (column != null) {
@@ -1508,6 +1513,12 @@ public class SqlTupleReader implements TupleReader {
         measureBitKey.set(bitPosition);
 
         if (constraint instanceof RolapNativeSet.SetConstraint) {
+            // Due to later logic selecting members from agg tables,
+            // we skip agg table lookup if the constraint believes there
+            // is no reason to join to the fact table.
+            if (((RolapNativeSet.SetConstraint) constraint).skipAggTable()) {
+                return null;
+            }
             ((RolapNativeSet.SetConstraint) constraint)
                 .constrainExtraLevels(baseCube, levelBitKey);
         }

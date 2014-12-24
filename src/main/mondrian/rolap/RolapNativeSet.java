@@ -147,6 +147,15 @@ public abstract class RolapNativeSet extends RolapNative {
             return args.length > 1 || super.isJoinRequired();
         }
 
+        /**
+         * If no join is required, there is no need to resolve an agg table.
+         * specifing an aggstar downstream leads to unnecessary joins during
+         * member resolution. 
+         */
+        public boolean skipAggTable() {
+            return !isJoinRequired();
+        }
+
         public void addConstraint(
             SqlQuery sqlQuery,
             RolapCube baseCube,

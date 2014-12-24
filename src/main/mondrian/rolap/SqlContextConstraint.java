@@ -360,8 +360,11 @@ public class SqlContextConstraint
         RolapLevel level,
         boolean optimize)
     {
+        // there is a chance that this path is used by existing non-native eval
+        // which uses RolapLevel vs. RolapCubeLevel to avoid fact joins
         if (!isJoinRequired()
-            || level.getHierarchy().getDimension().isHanger())
+            || level.getHierarchy().getDimension().isHanger()
+            || !(level instanceof RolapCubeLevel))
         {
             return;
         }

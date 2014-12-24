@@ -146,6 +146,16 @@
 1,2014,2,500
 2,2014,1,150
 2,2014,2,150
+## TableName: m2m_spending_genderyear_fact_mlvl_agg
+## ColumnNames: id_gender,id_year,spending_sum,spending_count,fact_count
+## ColumnTypes: INTEGER,INTEGER,INTEGER,INTEGER,INTEGER
+## NosOfRows: 6
+1,2012,175,2,2
+2,2012,375,2,2
+1,2013,250,2,2
+2,2013,350,2,2
+1,2014,725,2,2
+2,2014,300,2,2
 ## TableName: m2m_spending_genderyear_count_fact
 ## ColumnNames: id_gender,id_year,id_location,amount_count
 ## ColumnTypes: INTEGER,INTEGER,INTEGER,INTEGER

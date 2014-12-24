@@ -299,6 +299,12 @@ public class RolapNativeFilter extends RolapNativeSet {
      * with member constraints to get the right results.<br/>
      * A proper solution would involve changing how joins can be handled in
      * {@link SqlConstraintUtils}, until then we better bail out.
+     *
+     * TODO: If there are only args related to the current filter (for
+     * instance parent member ref for children) this still causes issues
+     * because SqlConstraintUtils forces a join when adding the member
+     * constraint.  We'll need to add those constraints differently vs.
+     * through the fact table.
      */
     private static boolean isValidFilterConstraint(
       SetConstraint filterConstraint,

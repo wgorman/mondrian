@@ -507,6 +507,13 @@ public class AggStar {
             }
 
             /**
+             * Return the right join expression.
+             */
+            public String getRight(final SqlQuery query) {
+                return this.right.getExpression(query);
+            }
+
+            /**
              * This is used to create part of a SQL where clause.
              */
             String toString(final SqlQuery query) {
@@ -739,11 +746,29 @@ public class AggStar {
         private final MondrianDef.Relation relation;
         protected final List<Level> levels = new ArrayList<Level>();
         protected List<DimTable> children;
+        protected boolean wrapInDistinctSubselect = false;
+        protected List<Table> addlParents;
+        protected List<JoinCondition> addlJoinConditions;
 
         Table(final String name, final MondrianDef.Relation relation) {
             this.name = name;
             this.relation = relation;
             this.children = Collections.emptyList();
+        }
+
+        /**
+         * Return whether this table should be wrapped in a distinct subselect
+         * This functionality is related to Many To Many SQL Generation.
+         */
+        public boolean getWrapInDistinctSubselect() {
+            return wrapInDistinctSubselect;
+        }
+
+        /**
+         * set the property wrapInDistinctSubselect
+         */
+        public void setWrapInDistinctSubselect(boolean wrapInDistinctSubselect) {
+            this.wrapInDistinctSubselect =  wrapInDistinctSubselect;
         }
 
         /**
@@ -914,6 +939,54 @@ public class AggStar {
             DimTable dimTable =
                 new DimTable(this, tableName, relation, joinCondition);
 
+            // Initialize Many to Many related properties of the AggStar Table if
+            // the exist.
+            dimTable.setWrapInDistinctSubselect(rTable.getWrapInDistinctSubselect());
+            if (rTable.getAdditionalParents() != null) {
+                dimTable.addlParents = new ArrayList<Table>();
+                dimTable.addlJoinConditions = new ArrayList<JoinCondition>();
+                for (RolapStar.Table table : rTable.getAdditionalParents()) {
+                    // traverse the star, parents will be siblings of the current
+                    // parent, or the parent itself if there are no siblings.
+                    List<Table> siblings = new ArrayList<Table>();
+                    siblings.add(this);
+                    if (this.getParent() != null) {
+                        for (DimTable child : this.getParent().getChildTables()) {
+                            siblings.add(child);
+                        }
+                    }
+                    if (siblings.size() == 1) {
+                        // we must have a match or fact table
+                        dimTable.addlParents.add(siblings.get(0));
+                    } else {
+                        for (Table sibling : siblings) {
+                            if (sibling.getName().equals(table.getAlias())) {
+                                dimTable.addlParents.add(sibling);
+                            }
+                        }
+                    }
+                }
+            }
+            if (rTable.getAdditionalJoinConditions() != null) {
+                for (int i = 0; i < rTable.getAdditionalJoinConditions().size(); i++) {
+                    RolapStar.Condition condition =
+                        rTable.getAdditionalJoinConditions().get(i);
+                    MondrianDef.Column leftcol = null; 
+                    if (condition.getLeft() instanceof MondrianDef.Column) {
+                        MondrianDef.Column lcolumn =
+                            (MondrianDef.Column) condition.getLeft();
+                        leftcol =
+                            new MondrianDef.Column(
+                                dimTable.addlParents.get(i).getName(), lcolumn.name);
+                    } else {
+                        throw Util.newInternal("not implemented: rleft=" + rleft);
+                    }
+                    JoinCondition addlJoinCondition =
+                        new JoinCondition(leftcol, condition.getRight());
+                    dimTable.addlJoinConditions.add(addlJoinCondition);
+                }
+            }
+
             if (usage == null
                 || usage.getUsageType() != UsageType.LEVEL
                 || (usage.getUsageType() == UsageType.LEVEL
@@ -965,6 +1038,19 @@ public class AggStar {
         }
 
         /**
+         * Returns the current subquery alias of self or parent if one exists.
+         */
+        public String getSubQueryAlias() {
+            if (wrapInDistinctSubselect) {
+                return name;
+            } else if (hasParent()) {
+                return getParent().getSubQueryAlias();
+            } else {
+                return null;
+            }
+        }
+
+        /**
          * This is a copy of the code found in RolapStar used to generate an SQL
          * query.
          */
@@ -973,13 +1059,57 @@ public class AggStar {
             final boolean failIfExists,
             final boolean joinToParent)
         {
-            query.addFrom(relation, name, failIfExists);
+            String subqueryAlias =
+                query.getEnableDistinctSubquery() ? getSubQueryAlias() : null;
+            query.addFrom(relation, name, failIfExists, subqueryAlias);
             if (joinToParent) {
                 if (hasParent()) {
                     getParent().addToFrom(query, failIfExists, joinToParent);
                 }
                 if (hasJoinCondition()) {
-                    query.addWhere(getJoinCondition().toString(query));
+                    if (subqueryAlias != null && !wrapInDistinctSubselect) {
+                        query.getSubQuery(subqueryAlias).addWhere(
+                                getJoinCondition().toString(query));
+                    } else {
+                        if (subqueryAlias != null) {
+                            // we need to add the join condition selector
+                            // to the select clause
+                            query.addSubWhere(
+                                getJoinCondition().getLeft(query),
+                                getJoinCondition().getRight(query),
+                                getJoinCondition().toString(query), subqueryAlias);
+                        } else {
+                            query.addWhere(getJoinCondition().toString(query));
+                        }
+                    }
+                }
+
+                // if there are additional parents, add them to the
+                // query as well. this is used by many to many dims
+                if (addlParents != null) {
+                    for (Table table : addlParents) {
+                        table.addToFrom(query,  failIfExists, joinToParent);
+                    }
+                    // also add any additional join conditions
+                    if (addlJoinConditions != null) {
+                        for (JoinCondition condition : addlJoinConditions) {
+                            if (subqueryAlias != null && !wrapInDistinctSubselect) {
+                                query.getSubQuery(subqueryAlias).addWhere(
+                                    condition.toString(query));
+                            } else {
+                                if (subqueryAlias != null) {
+                                    // we need to add the join condition selector
+                                    // to the select clause
+                                    query.addSubWhere(
+                                        condition.getLeft(query),
+                                        condition.getRight(query),
+                                        condition.toString(query), subqueryAlias);
+                                } else {
+                                    query.addWhere(condition.toString(query));
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

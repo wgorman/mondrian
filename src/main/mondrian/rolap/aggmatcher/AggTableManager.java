@@ -377,14 +377,19 @@ public class AggTableManager {
                 }
 
                 // it still might be a foreign key
-                RolapStar.Table rTable =
-                    star.getFactTable().findTableWithLeftJoinCondition(cname);
-                if (rTable != null) {
+                // support more than one foreign key usage
+                // This is particularly important for many to many
+                // dimensions because hidden dimensions are created
+                // with identical foreign keys.
+                List<RolapStar.Table> rTables = star.getFactTable().findTablesWithLeftJoinCondition( cname );
+                for (RolapStar.Table rTable : rTables) {
                     JdbcSchema.Table.Column.Usage usage =
                         factColumn.newUsage(JdbcSchema.UsageType.FOREIGN_KEY);
                     usage.setSymbolicName("FOREIGN_KEY");
                     usage.rTable = rTable;
-                } else {
+                }
+
+                if (rTables.size() == 0) {
                     RolapStar.Column rColumn =
                         star.getFactTable().lookupColumn(cname);
                     if ((rColumn != null)

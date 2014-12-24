@@ -717,6 +717,11 @@ RME is this right
 
         RolapStar.Column column = childLevel.getStarKeyColumn();
 
+        // most likely a hanger dimension
+        if (column == null) {
+          return null;
+        }
+        
         // set a bit for each level which is constrained in the context
         final CellRequest request =
             RolapAggregationManager.makeRequest(members);

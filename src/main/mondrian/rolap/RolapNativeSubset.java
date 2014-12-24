@@ -134,7 +134,7 @@ public class RolapNativeSubset extends RolapNativeSet {
 
         SchemaReader schemaReader = evaluator.getSchemaReader();
         DataSource ds = schemaReader.getDataSource();
-        SqlQuery sqlQuery = SqlQuery.newQuery(ds, "NativeFilter");
+        SqlQuery sqlQuery = SqlQuery.newQuery(ds, "NativeSubset");
 
         if (!sqlQuery.getDialect().supportsLimitAndOffset()) {
           return null;

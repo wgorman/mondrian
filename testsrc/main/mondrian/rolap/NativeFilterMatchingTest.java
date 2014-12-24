@@ -263,6 +263,11 @@ public class NativeFilterMatchingTest extends BatchTestCase {
             true);
     }
 
+    public void _testNativeFilterMatchesScenario() {
+        // TODO: Enable non-joining native filter evaluation for examples
+        // like that below.  At the moment this is not natively evaluated.
+        assertQueryReturns("SELECT Filter([Store].[All Stores].Children,  [Store].CurrentMember.Name matches \"Mexico\") on columns from [Sales]", "");
+    }
 
     public void testNativeFilterSameAsNonNative() {
         // http://jira.pentaho.com/browse/MONDRIAN-1694

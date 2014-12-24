@@ -807,8 +807,12 @@ public class SqlQuery {
         }
     }
 
-    public void addSubWhere(final RolapStar.Condition joinCondition, final String subquery) {
-        String subSelectExpr = joinCondition.getRight(this);
+    public void addSubWhere(
+        String left, String right,
+        String expression,
+        final String subquery)
+    {
+        String subSelectExpr = right;
         if (correlatedSubquery) {
             List<String> subwhereList = subwhereExpr.get(subquery);
             if (subwhereList == null) {
@@ -816,14 +820,13 @@ public class SqlQuery {
                 subwhereExpr.put(subquery, subwhereList);
                 subwhereExprKeys.add(subquery);
             }
-            String condition = joinCondition.getLeft(this);
+            String condition = left;
             // only add the condition once
             if (!subwhereList.contains(condition)) {
-                subwhereList.add(joinCondition.getLeft(this));
+                subwhereList.add(left);
                 getSubQuery(subquery).addSelect( subSelectExpr,  null, null );
             }
         } else {
-            String expression = joinCondition.toString(this);
             assert expression != null && !expression.equals("");
             boolean added = where.add(expression);
             if (added) {

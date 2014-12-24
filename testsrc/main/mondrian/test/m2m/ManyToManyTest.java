@@ -180,7 +180,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "\n"
             + "  <Cube name=\"M2M\">\n"
             + "    <Table name=\"m2m_fact_balance\">\n"
-            + (withAggTbl ? 
+            + (withAggTbl ?
               "      <AggName name=\"m2m_fact_balance_mlvl_agg\">\n"
             + "        <AggFactCount column=\"fact_count\"/>\n"
             + "        <AggForeignKey factColumn=\"id_date\" aggColumn=\"id_date\" />\n"
@@ -189,7 +189,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "        <AggLevel name=\"[Account].[AcctType]\" column=\"acct_type\"/>\n"
             + "        <AggLevel name=\"[Customer].[Location]\" column=\"cust_loc\"/>\n"
             + "      </AggName>\n"
-              : "" )
+            : "")
             + "    </Table>\n"
             + "    <DimensionUsage name=\"Account\" source=\"Account\" foreignKey=\"id_account\"/>\n"
             + "    <DimensionUsage name=\"Customer\" source=\"Customer\" foreignKey=\"id_account\" bridgeCube=\"CustomerAccountBridge\"/>\n"
@@ -293,7 +293,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
         return testContext;
     }
 
-    protected TestContext createMultiJoinManyToManySchema() {
+    protected TestContext createMultiJoinManyToManySchema(boolean withAggTbl) {
         final TestContext testContext = TestContext.instance().withSchema(
             "<?xml version=\"1.0\"?>\n"
             + "<Schema name=\"FoodMart\">\n"
@@ -334,7 +334,17 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "    <Measure name=\"Count\" aggregator=\"count\" column=\"id_category\"/>\n"
             + "  </Cube>"
             + "  <Cube name=\"GenderYearSpending\">\n"
-            + "    <Table name=\"m2m_spending_genderyear_fact\"/>\n"
+            + "    <Table name=\"m2m_spending_genderyear_fact\">\n"
+            + (withAggTbl ?
+              "      <AggName name=\"m2m_spending_genderyear_fact_mlvl_agg\">\n"
+            + "        <AggFactCount column=\"fact_count\"/>\n"
+            + "        <AggForeignKey factColumn=\"id_gender\" aggColumn=\"id_gender\" />\n"
+            + "        <AggForeignKey factColumn=\"id_year\" aggColumn=\"id_year\" />\n"
+            + "        <AggMeasure name=\"[Measures].[Spending]\" column=\"spending_sum\"/>\n"
+            + "        <AggMeasure name=\"[Measures].[Count]\" column=\"spending_count\" />\n"
+            + "      </AggName>\n"
+            : "")
+            + "    </Table>\n"
             + "    <DimensionUsage name=\"Gender\" source=\"Gender\" foreignKey=\"id_gender\"/>\n"
             + "    <DimensionUsage name=\"Year\" source=\"Year\" foreignKey=\"id_year\"/>\n"
             + "    <DimensionUsage name=\"Category\" source=\"Category\" foreignKey=\"id_gender\" bridgeCube=\"GenderYearCategoryBridge\"/>\n"
@@ -792,11 +802,31 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiJoinM2MScenarios() {
-        testMultiJoinM2MScenarios(createMultiJoinManyToManySchema());
+        testMultiJoinM2MScenarios(createMultiJoinManyToManySchema(false));
+    }
+
+    public void testMultiJoinM2MAggTableScenarios() {
+        boolean origUseAgg = prop.UseAggregates.get();
+        boolean origReadAgg = prop.ReadAggregates.get();
+        prop.UseAggregates.set(true);
+        prop.ReadAggregates.set(true);
+        // need to flush the db cache
+        TestContext context = createMultiJoinManyToManySchema(true);
+        context.assertQueryReturns(
+            "select Filter([Gender].[Gender].Members, [Measures].[Spending]<= 300) on columns\n"
+            + "from [GenderYearSpending] where {[Category].[Category 2014]}",
+            "Axis #0:\n"
+            + "{[Category].[Category 2014]}\n"
+            + "Axis #1:\n"
+            + "{[Gender].[Male]}\n"
+            + "Row #0: 300\n");
+
+        prop.UseAggregates.set(origUseAgg);
+        prop.ReadAggregates.set(origReadAgg);
     }
 
     public void testMultiJoinM2MNativeScenarios() {
-        TestContext context = createMultiJoinManyToManySchema();
+        TestContext context = createMultiJoinManyToManySchema(false);
         context.assertQueryReturns(
             "select Filter([Gender].[Gender].Members, [Measures].[Spending]<= 300) on columns\n"
             + "from [GenderYearSpending] where {[Category].[Category 2014]}",
@@ -825,7 +855,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiJoinM2MTupleInVirtual() {
-        TestContext context = createMultiJoinManyToManySchema();
+        TestContext context = createMultiJoinManyToManySchema(false);
         context.assertQueryReturns(
             "select NonEmptyCrossJoin([Gender].[Gender].[Female], [Year].[Year].Members) on columns,\n"
             + "{[Measures].[Spending]/*, [Measures].[Total Count]*/} on rows\n"
@@ -925,7 +955,7 @@ public class ManyToManyTest  extends CsvDBTestCase {
     }
 
     public void testMultiJoinM2MSlicer() {
-      testMultiJoinM2MSlicer(createMultiJoinManyToManySchema());
+      testMultiJoinM2MSlicer(createMultiJoinManyToManySchema(false));
     }
 
     public void testMultiJoinM2MSlicer(TestContext context) {
@@ -1520,6 +1550,30 @@ public class ManyToManyTest  extends CsvDBTestCase {
             + "{[Customer].[San Francisco].[Luke]}\n"
             + "Row #0: 100\n"
             + "Row #0: 1\n");
+    }
+
+    public void testAggTableWithNativeFilter() {
+        getConnection().getCacheControl(null).flushSchemaCache();
+        boolean origUseAgg = prop.UseAggregates.get();
+        boolean origReadAgg = prop.ReadAggregates.get();
+        prop.UseAggregates.set(true);
+        prop.ReadAggregates.set(true);
+        TestContext context = createTestContext();
+        String mdx =
+            "Select {Filter([Account].[Account].Members, [Measures].[Amount] > 100)} on columns,"
+            + " {[Measures].[Amount]} on rows from [M2M] WHERE {[Customer].[Mark]}";
+        context.assertQueryReturns( mdx,
+            "Axis #0:\n"
+                + "{[Customer].[Mark]}\n"
+                + "Axis #1:\n"
+                + "{[Account].[Mark]}\n"
+                + "{[Account].[Mark-Robert]}\n"
+                + "Axis #2:\n"
+                + "{[Measures].[Amount]}\n"
+                + "Row #0: 205\n"
+                + "Row #0: 205\n");
+        prop.UseAggregates.set(origUseAgg);
+        prop.ReadAggregates.set(origReadAgg);
     }
 
     public void testAggTableWithForeignKeyLink() {

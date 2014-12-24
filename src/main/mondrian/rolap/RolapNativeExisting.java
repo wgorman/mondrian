@@ -160,9 +160,7 @@ public class RolapNativeExisting extends RolapNativeSet {
         {
             super(args, evaluator, true);
         }
-        protected boolean isJoinRequired() {
-            return false;
-        }
+
         public void addConstraint(
             SqlQuery sqlQuery,
             RolapCube baseCube,

@@ -1363,6 +1363,20 @@ public class RolapStar {
         }
 
         /**
+         * Used by AggStar Many To Many Multi-Joins
+         */
+        public List<RolapStar.Table> getAdditionalParents() {
+            return addlParents;
+        }
+
+        /**
+         * Used by AggStar Many To Many Multi-Joins
+         */
+        public List<RolapStar.Condition> getAdditionalJoinConditions() {
+            return addlJoinConditions;
+        }
+
+        /**
          * Question: can I re-use the alias in the inner and outer query? would simplify things.
          * 
          * @param wrapInDistinctSubselect
@@ -1889,7 +1903,11 @@ public class RolapStar {
                     } else {
                         if (subqueryAlias != null) {
                             // we need to add the join condition selector to the select clause
-                            query.addSubWhere(joinCondition, subqueryAlias);
+                            query.addSubWhere(
+                                joinCondition.getLeft(query),
+                                joinCondition.getRight(query),
+                                joinCondition.toString(query),
+                                subqueryAlias);
                         } else {
                             query.addWhere(joinCondition.toString(query));
                         }
@@ -1909,8 +1927,11 @@ public class RolapStar {
                             } else {
                                 if (subqueryAlias != null) {
                                     // we need to add the join condition selector to the select clause
-                                    query.addSubWhere(condition, subqueryAlias);
-                                    // need to include the left alias
+                                    query.addSubWhere(
+                                        condition.getLeft(query),
+                                        condition.getRight(query),
+                                        condition.toString(query),
+                                        subqueryAlias);
                                 } else {
                                     query.addWhere(condition.toString(query));
                                 }
@@ -1940,9 +1961,10 @@ public class RolapStar {
          * used in its left join condition. This is used by the AggTableManager
          * while characterizing the fact table columns.
          */
-        public RolapStar.Table findTableWithLeftJoinCondition(
+        public List<RolapStar.Table> findTablesWithLeftJoinCondition(
             final String columnName)
         {
+            List<RolapStar.Table> tables = new ArrayList<RolapStar.Table>();
             for (Table child : getChildren()) {
                 Condition condition = child.joinCondition;
                 if (condition != null) {
@@ -1950,12 +1972,12 @@ public class RolapStar {
                         MondrianDef.Column mcolumn =
                             (MondrianDef.Column) condition.left;
                         if (mcolumn.name.equals(columnName)) {
-                            return child;
+                            tables.add(child);
                         }
                     }
                 }
             }
-            return null;
+            return tables;
         }
 
         /**
