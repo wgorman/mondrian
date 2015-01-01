@@ -304,10 +304,17 @@ public class SqlConstraintUtils {
         return tupleList.size() < piatory;
     }
 
+    /**
+     * Utility function used by RolapEvaluator to determine if slicer.
+     * positions are multi-level  RolapEvaluator caches the result.
+     *
+     * @param evaluator the related evaluator
+     * @return true if this is a multi-level slicer.
+     */
     public static boolean hasMultipleLevelSlicer(Evaluator evaluator) {
-        Map<Dimension, Level> levels = new HashMap<Dimension, Level>();
+        Map<Hierarchy, Level> levels = new HashMap<Hierarchy, Level>();
         for (Member member: ((RolapEvaluator) evaluator).getSlicerMembers()) {
-            Level before = levels.put(member.getDimension(), member.getLevel());
+            Level before = levels.put(member.getHierarchy(), member.getLevel());
             if (before != null && !before.equals(member.getLevel())) {
                 return true;
             }
@@ -664,6 +671,19 @@ public class SqlConstraintUtils {
             new HashMap<MondrianDef.Expression, Set<RolapMember>>();
         List<Member> slicerMembers =
             ((RolapEvaluator) evaluator).getSlicerMembers();
+
+        // if any of the members have been replaced in the context
+        // we need to swap them out with the overridden context.
+        List<Member> updatedSlicerMembers = new ArrayList<Member>();
+        for (Member member : slicerMembers) {
+            Member m = evaluator.getContext(member.getHierarchy());
+            if (!(m instanceof RolapResult.CompoundSlicerRolapMember)) {
+              updatedSlicerMembers.add(m);
+            } else {
+              updatedSlicerMembers.add(member);
+            }
+        }
+        slicerMembers = updatedSlicerMembers;
         Member[] expandedSlicers =
             evaluator.isEvalAxes()
                 ? expandSupportedCalculatedMembers(
@@ -787,7 +807,7 @@ public class SqlConstraintUtils {
 {
         List<Member> members = new ArrayList<Member>();
         for (Member slicerMember : evaluator.getSlicerMembers()) {
-            if (slicerMember.getDimension().equals(member.getDimension())) {
+            if (slicerMember.getHierarchy().equals(member.getHierarchy())) {
                 members.add(slicerMember);
             }
         }

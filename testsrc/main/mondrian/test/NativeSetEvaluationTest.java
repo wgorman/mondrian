@@ -3257,6 +3257,74 @@ public class NativeSetEvaluationTest extends BatchTestCase {
         assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
     }
 
+    public void testOverridingNonDisjointCompoundFilter() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "WITH MEMBER [Gender].[All Gender].[NoSlicer] AS '([Product].[Drink], [Time].[1997])', solve_order=1000\n "
+            + "MEMBER [Measures].[TotalVal] AS 'Aggregate(Filter({[Store].[Store City].members},[Measures].[Unit Sales] < 2300)), solve_order=900'\n"
+            + "SELECT {[Measures].[TotalVal], [Measures].[Unit Sales]} on 0, {[Gender].[All Gender], [Gender].[All Gender].[NoSlicer]} on 1 from [Sales]\n"
+            + "WHERE {([Product].[Non-Consumable], [Time].[1997].[Q1]),([Product].[Drink], [Time].[1997].[Q1])}";
+
+        String mysqlQuery = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Drink'\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (sum(`sales_fact_1997`.`unit_sales`) < 2300)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Product].[Non-Consumable], [Time].[1997].[Q1]}\n"
+            + "{[Product].[Drink], [Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[TotalVal]}\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Gender].[All Gender]}\n"
+            + "{[Gender].[All Gender].[NoSlicer]}\n"
+            + "Row #0: 14,865\n"
+            + "Row #0: 18,482\n"
+            + "Row #1: 10,417\n"
+            + "Row #1: 24,597\n");
+    }
+
     /**
      * This test demonstrates complex interaction between member calcs and a compound slicer 
      */
