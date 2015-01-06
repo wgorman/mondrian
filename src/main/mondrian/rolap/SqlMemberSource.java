@@ -326,6 +326,8 @@ class SqlMemberSource
             }
 
             int limit = MondrianProperties.instance().ResultLimit.get();
+            final int checkCancelPeriod =
+                MondrianProperties.instance().CancelPhaseInterval.get();
             ResultSet resultSet = stmt.getResultSet();
             while (resultSet.next()) {
                 ++stmt.rowCount;
@@ -334,6 +336,13 @@ class SqlMemberSource
                     throw stmt.handle(
                         MondrianResource.instance().MemberFetchLimitExceeded.ex(
                             limit));
+                }
+
+                // Check if the MDX query was canceled.
+                if (checkCancelPeriod > 0
+                    && stmt.rowCount % checkCancelPeriod == 0)
+                {
+                    Locus.peek().execution.checkCancelOrTimeout();
                 }
 
                 int column = 0;
@@ -949,6 +958,8 @@ RME is this right
                 -1, -1, null);
         try {
             int limit = MondrianProperties.instance().ResultLimit.get();
+            final int checkCancelPeriod =
+                MondrianProperties.instance().CancelPhaseInterval.get();
             boolean checkCacheStatus = true;
 
             final List<SqlStatement.Accessor> accessors = stmt.getAccessors();
@@ -960,6 +971,13 @@ RME is this right
                     // result limit exceeded, throw an exception
                     throw MondrianResource.instance().MemberFetchLimitExceeded
                         .ex(limit);
+                }
+
+                // Check if the MDX query was canceled.
+                if (checkCancelPeriod > 0
+                    && stmt.rowCount % checkCancelPeriod == 0)
+                {
+                    Locus.peek().execution.checkCancelOrTimeout();
                 }
 
                 Object value = accessors.get(0).get();
