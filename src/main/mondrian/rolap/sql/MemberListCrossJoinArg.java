@@ -274,6 +274,9 @@ public class MemberListCrossJoinArg implements CrossJoinArg {
         if (this.exclude != that.exclude) {
             return false;
         }
+        if (this.members.size() != that.members.size()) {
+            return false;
+        }
         for (int i = 0; i < members.size(); i++) {
             if (this.members.get(i) != that.members.get(i)) {
                 return false;

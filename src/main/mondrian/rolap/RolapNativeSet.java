@@ -196,6 +196,13 @@ public abstract class RolapNativeSet extends RolapNative {
             return null;
         }
 
+        /**
+         * Used by SqlTupleReader for specific native functions to determine
+         * if an Aggregate table can be utilized for SQL generation.
+         *
+         * @param baseCube the main cube related to the active measure
+         * @param levelBitKey will be populated with various extra level bits
+         */
         public void constrainExtraLevels(
             RolapCube baseCube,
             BitKey levelBitKey)
@@ -881,6 +888,17 @@ public abstract class RolapNativeSet extends RolapNative {
 
         public void execute() {
             eval.populateListCache(tr, key);
+        }
+
+        /**
+         * two requests are considered identical if their keys match.
+         * This prevents duplicate requests to be executed in parallel.
+         */
+        public boolean equals(Object other) {
+            if (other instanceof NativeRequest) {
+                return ((NativeRequest)other).key.equals(key); 
+            }
+            return false;
         }
     }
 

@@ -116,8 +116,10 @@ public class FastBatchingCellReader implements CellReader {
     }
 
     public void addNativeRequest(RolapNativeRequest request) {
-      ++missCount;
-      nativeRequests.add(request);
+        if (!nativeRequests.contains(request)) {
+            ++missCount;
+            nativeRequests.add(request);
+        }
     }
 
     public Object get(RolapEvaluator evaluator) {
