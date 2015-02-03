@@ -129,17 +129,48 @@ public class RolapNativeSum extends RolapNativeSet {
         SetEvaluator eval = (SetEvaluator)evaluator.getSchemaReader().getSchema().getNativeRegistry().createEvaluator(
             evaluator, call.getFunDef(), call.getArgs());
         if (eval != null) {
-            // TopCount or Filter measure does not share the same cube as the current measure
+            // If TopCount or Filter measure does not share the same cube as the sum measure,
+            // we may not be able to support the virtual cube scenario.
             if (eval.getMeasure() != null && !areFromSameCube(eval.getMeasure(), measure)) {
-              return null;
-            }
+                CrossJoinArg[] evalArgs =
+                    ((SetConstraint)eval.getConstraint()).args;
+                if (evalArgs.length != 1) {
+                    LOGGER.debug("Sum() Cannot go native due to measures from "
+                        + "multiple base cubes and multiple members in tuple");
+                    return null;
+                }
 
+                // At the moment, virtual cube sum joins only work with levels
+                // that are unique due to the additional complexity
+                // of bridging two fact tables.
+                if (!evalArgs[0].getLevel().isUnique()) {
+                    LOGGER.debug("Sum() Cannot go native due to level in play "
+                        + "not having uniqueMembers = true.");
+                    return null;
+                }
+
+                // also, the level must be related to both base cubes.  If not,
+                // the SQL generated is bogus.
+                if (((RolapStoredMeasure)measure).getCube().findBaseCubeLevel(evalArgs[0].getLevel()) == null 
+                    || ((RolapStoredMeasure)eval.getMeasure()).getCube().findBaseCubeLevel(evalArgs[0].getLevel()) == null) 
+                {
+                    LOGGER.debug("Sum() Cannot go native due to level not existing in both cubes.");
+                    return null;
+                }
+            }
             // create a delegating sum constraint
             int cardinality = estimateCardinality(eval.getArgs());
             if (cardinality <= 1) { // change to a reasonable cardinality limit.
               return null;
             }
-            SumConstraint sumConstraint = new SumConstraint(eval.getConstraint(), new CrossJoinArg[0], evaluator, false, measure);
+            SumConstraint sumConstraint =
+                new SumConstraint(
+                    eval.getConstraint(),
+                    new CrossJoinArg[0],
+                    evaluator,
+                    false,
+                    measure,
+                    eval.getMeasure());
             eval.setConstraint(sumConstraint);
         } else {
             List<CrossJoinArg[]> allArgs =
@@ -155,9 +186,13 @@ public class RolapNativeSum extends RolapNativeSet {
             final int savepoint = evaluator.savepoint();
             try {
                 overrideContext(evaluator, allArgs.get(0), null);
-                SumConstraint sumConstraint = new SumConstraint(null,
+                SumConstraint sumConstraint = new SumConstraint(
+                    null,
                     Util.appendArrays(allArgs.get(0), allArgs.size() == 2 ? allArgs.get(1) : new CrossJoinArg[0]),
-                    evaluator, false, measure); 
+                    evaluator,
+                    false,
+                    measure,
+                    null);
                 eval = new SetEvaluator(allArgs.get(0), evaluator.getSchemaReader(), sumConstraint);
             } finally {
                 evaluator.restore(savepoint);
@@ -170,7 +205,7 @@ public class RolapNativeSum extends RolapNativeSet {
         return eval;
     }
 
-    private boolean areFromSameCube(Member m1, Member m2) {
+    private static boolean areFromSameCube(Member m1, Member m2) {
         if (!(m1 instanceof RolapStoredMeasure) 
             || !(m2 instanceof RolapStoredMeasure)) 
         {
@@ -180,7 +215,7 @@ public class RolapNativeSum extends RolapNativeSet {
                 == getStar((RolapStoredMeasure)m2);
     }
 
-    private RolapStar getStar(RolapStoredMeasure m) {
+    private static RolapStar getStar(RolapStoredMeasure m) {
       return ((RolapStar.Measure) m.getStarMeasure()).getStar();
     }
 
@@ -241,15 +276,41 @@ public class RolapNativeSum extends RolapNativeSet {
 
     static class SumConstraint extends SetConstraint {
 
+        boolean virtualCubeQueryMode = false;
+        String innerSql = null;
         Member measure;
+        Member evalMeasure;
         TupleConstraint delegatingConstraint;
 
         SumConstraint(TupleConstraint delegatingConstraint,
-            CrossJoinArg[] args, RolapEvaluator evaluator, boolean restrict, Member measure)
+            CrossJoinArg[] args, RolapEvaluator evaluator, boolean restrict, Member measure, Member evalMeasure)
         {
             super(args, evaluator, restrict);
             this.measure = measure;
+            this.evalMeasure = evalMeasure;
             this.delegatingConstraint = delegatingConstraint;
+            virtualCubeQueryMode = !((evalMeasure == null) || areFromSameCube(this.measure, evalMeasure));
+        }
+
+        /**
+         * Virtual cube query mode is a complex scenario where
+         * the first native tuple evaluation is based on a different
+         * base cube as the sum tuple evaluation.
+         */
+        public boolean isVirtualCubeQueryMode() {
+          return virtualCubeQueryMode;
+        }
+
+        public boolean inFirstPhase() {
+          return virtualCubeQueryMode == true && innerSql == null;
+        }
+
+        public void setInnerQuery(String innerSql) {
+          this.innerSql = innerSql;
+            // change the base cube to the summed measure
+            List<RolapCube> baseCubes = new ArrayList<RolapCube>();
+            baseCubes.add(((RolapStoredMeasure)measure).getCube());
+            getEvaluator().setBaseCubes(baseCubes);
         }
 
         @Override
@@ -258,14 +319,74 @@ public class RolapNativeSum extends RolapNativeSet {
             RolapCube baseCube,
             AggStar aggStar)
         {
-            if (delegatingConstraint != null) {
-                delegatingConstraint.addConstraint( sqlQuery, baseCube, aggStar );
+            if (!virtualCubeQueryMode) {
+                // this is the normal path
+                if (delegatingConstraint != null) {
+                    delegatingConstraint.addConstraint(sqlQuery, baseCube, aggStar);
+                } else {
+                    super.addConstraint(sqlQuery, baseCube, aggStar);
+                }
+                // Add the measure to the query as "m1", make sure the fact table is also present.
+                addMeasureFact(measure, aggStar, sqlQuery);
+                sqlQuery.addSelect( getMeasureExpression(measure, aggStar, sqlQuery), null, "m1");
             } else {
-                super.addConstraint( sqlQuery, baseCube, aggStar );
+                // this is the virtual cube multiple base cube scenario
+                if (inFirstPhase()) {
+                    // the first phase generates an inner query based on the
+                    // parent native evaluation context
+                    delegatingConstraint.addConstraint(sqlQuery, baseCube, aggStar);
+                } else {
+                    // the second phase generates an outer query based on the
+                    // current native evaluation context
+                    super.getEvaluator().setContext(measure);
+                    super.addConstraint(sqlQuery, baseCube, aggStar);
+                    addMeasureFact(measure, aggStar, sqlQuery);
+                    sqlQuery.addSelect(getMeasureExpression(measure, aggStar, sqlQuery), null, "m1");
+                    RolapStar.Column column = null;
+                    RolapLevel level = ((SetConstraint)delegatingConstraint).args[0].getLevel();
+                    column = ((RolapCubeLevel)level).getBaseStarKeyColumn(baseCube);
+                    String columnExpr = null;
+                    // if the column is null, then there is no join to the inner
+                    // query.  This could happen if the level is unrelated to
+                    // the measure in play. at the moment this scenario is not supported,
+                    // there is a check during native eval creation to avoid the
+                    // scenario.
+                    if (column != null) {
+                        if (aggStar != null) {
+                            int bitPos = column.getBitPosition();
+                            AggStar.Table.Column aggColumn =
+                                aggStar.lookupColumn(bitPos);
+                            if (aggColumn == null) {
+                                throw Util.newInternal(
+                                    "AggStar " + aggStar + " has no column for "
+                                    + column + " (bitPos " + bitPos + ")");
+                            }
+                            // TODO: Optimize AggTable Column
+                            AggStar.Table table = aggColumn.getTable();
+                            table.addToFrom(sqlQuery, false, true);
+                            columnExpr = aggColumn.generateExprString(sqlQuery);
+                        } else {
+                            RolapStar.Column optimized = column.optimize();
+                            RolapStar.Table targetTable = optimized.getTable();
+                            // add a join path to the level
+                            ((SetConstraint)delegatingConstraint).args[0].getLevel().getHierarchy().addToFrom(sqlQuery, targetTable);
+                            columnExpr = optimized.generateExprString(sqlQuery);
+                        }
+                    }
+                    // join the inner query to the outer query here,
+                    // will depend on the current args foreign key
+                    // this assumes we are working with a flat dimension
+                    // a check during the evaluation creation verifies this
+                    if (sqlQuery.getDialect().supportsWithClause()) {
+                        String str = sqlQuery.addWith(innerSql);
+                        sqlQuery.addWhere(columnExpr + " IN ( select * from " + str + " )");
+                    } else {
+                        sqlQuery.addFromQuery(innerSql,  "tbl001", true);
+                        sqlQuery.addWhere(columnExpr + " = " + sqlQuery.getDialect().quoteIdentifier("tbl001")
+                            + "." + sqlQuery.getDialect().quoteIdentifier("c0"));
+                    }
+                }
             }
-            // Add the measure to the query as "m1", make sure the fact table is also present.
-            addMeasureFact(measure, aggStar, sqlQuery);
-            sqlQuery.addSelect( getMeasureExpression(measure, aggStar, sqlQuery), null, "m1");
         }
 
         private void addMeasureFact(Member member, AggStar aggStar, SqlQuery sqlQuery) {
@@ -337,6 +458,7 @@ public class RolapNativeSum extends RolapNativeSet {
             //  // we're "special"
             key.add(this.getClass());
             key.add(measure);
+            key.add(evalMeasure);
             if (delegatingConstraint != null) {
                 key.add(delegatingConstraint.getCacheKey());
             } else {

@@ -578,24 +578,42 @@ public class SqlTupleReader implements TupleReader {
         String message = "Calculating sum of members for " + targets;
         final ResultSet resultSet;
         try {
-            List<TargetBase> partialTargets = new ArrayList<TargetBase>();
+          String sql = null;
+          List<TargetBase> partialTargets = new ArrayList<TargetBase>();
             for (TargetBase target : targets) {
                 if (target.srcMembers == null) {
                     partialTargets.add(target);
                 }
             }
-
-            final Pair<String, List<SqlStatement.Type>> pair =
-                makeLevelMembersSql(dataSource, true);
-
-            SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
-            // Add the subquery to the wrapper query.
-            sumQuery.addFromQuery(
-                pair.left, "sumQuery", true);
-            // Dont forget to select all columns.
-            sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
-            String sql = sumQuery.toSqlAndTypes().left;
-
+            if (!((RolapNativeSum.SumConstraint)constraint).isVirtualCubeQueryMode()) {
+                // single cube use case
+                final Pair<String, List<SqlStatement.Type>> pair =
+                    makeLevelMembersSql(dataSource, true);
+                SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
+                // Add the subquery to the wrapper query.
+                sumQuery.addFromQuery(
+                    pair.left, "sumQuery", true);
+                // Don't forget to select all columns.
+                sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
+                sql = sumQuery.toSqlAndTypes().left;
+            } else {
+                // Two cube Usecase, triggers more complex SQL generation
+                // First generate the inner query selecting the tuple from the first fact 
+                // table based on it's current constraint
+                final Pair<String, List<SqlStatement.Type>> pair =
+                    makeLevelMembersSql(dataSource, true);
+                // let the sum constraint know about the inner query
+                ((RolapNativeSum.SumConstraint)constraint).setInnerQuery(pair.left);
+                final Pair<String, List<SqlStatement.Type>> pair2 =
+                    makeLevelMembersSql(dataSource, true);
+                SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
+                // Add the subquery to the wrapper query.
+                sumQuery.addFromQuery(
+                    pair2.left, "sumQuery", true);
+                // Don't forget to select all columns.
+                sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
+                sql = sumQuery.toSqlAndTypes().left;
+            }
             assert sql != null && !sql.equals("");
 
             stmt = RolapUtil.executeQuery(
@@ -1309,8 +1327,9 @@ public class SqlTupleReader implements TupleReader {
 
             // if there aren't any select statements, we can't optimize.
             if (!(constraint instanceof RolapNativeSum.SumConstraint) 
-                || sqlQuery.getDialect().requiresGroupByAlias() 
-                || ((RolapCubeHierarchy)level.getHierarchy()).isManyToMany()) 
+                || sqlQuery.getDialect().requiresGroupByAlias()
+                || ((RolapCubeHierarchy)level.getHierarchy()).isManyToMany()
+                || (((RolapNativeSum.SumConstraint)constraint).inFirstPhase())) 
             {
                 keyAliasAndExpr =
                     sqlQuery.addSelect(keyExp, currLevel.getInternalType());

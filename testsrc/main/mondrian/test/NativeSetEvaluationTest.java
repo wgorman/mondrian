@@ -3006,10 +3006,113 @@ public class NativeSetEvaluationTest extends BatchTestCase {
           + "Row #2: 6,235\n");
     }
 
-    public void testNativeSumInVirtualCube() {
 
+    // test a scenario where the members are not related to base cube
+    public void testNativeSumInVirtCubeWithMultipleBaseCubes() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
 
+        String mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Product].[All Products].Children},[Measures].[Unit Sales] > 10000), [Measures].[Warehouse Sales])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, NON EMPTY [Store].[Store State].members on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+        String mysqlQuery =
+            "select\n"
+        + "    sum(`m1`)\n"
+        + "from\n"
+        + "    (select\n"
+        + "    sum(`inventory_fact_1997`.`warehouse_sales`) as `m1`\n"
+        + "from\n"
+        + "    `product_class` as `product_class`,\n"
+        + "    `product` as `product`,\n"
+        + "    `inventory_fact_1997` as `inventory_fact_1997`,\n"
+        + "    `store` as `store`,\n"
+        + "    `time_by_day` as `time_by_day`,\n"
+        + "    (select\n"
+        + "    `product_class`.`product_family` as `c0`\n"
+        + "from\n"
+        + "    `product_class` as `product_class`,\n"
+        + "    `product` as `product`,\n"
+        + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+        + "    `store` as `store`,\n"
+        + "    `time_by_day` as `time_by_day`\n"
+        + "where\n"
+        + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+        + "and\n"
+        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+        + "and\n"
+        + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+        + "and\n"
+        + "    `store`.`store_state` = 'WA'\n"
+        + "and\n"
+        + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+        + "and\n"
+        + "    `time_by_day`.`the_year` = 1997\n"
+        + "and\n"
+        + "    `time_by_day`.`quarter` = 'Q1'\n"
+        + "group by\n"
+        + "    `product_class`.`product_family`\n"
+        + "having\n"
+        + "    (sum(`sales_fact_1997`.`unit_sales`) > 10000)) as `tbl001`\n"
+        + "where\n"
+        + "    `inventory_fact_1997`.`product_id` = `product`.`product_id`\n"
+        + "and\n"
+        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+        + "and\n"
+        + "    `inventory_fact_1997`.`store_id` = `store`.`store_id`\n"
+        + "and\n"
+        + "    `store`.`store_state` = 'WA'\n"
+        + "and\n"
+        + "    `inventory_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+        + "and\n"
+        + "    `time_by_day`.`the_year` = 1997\n"
+        + "and\n"
+        + "    `time_by_day`.`quarter` = 'Q1'\n"
+        + "and\n"
+        + "    `product_class`.`product_family` = `tbl001`.`c0`\n"
+        + "group by\n"
+        + "    `product_class`.`product_family`) as `sumQuery`";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
+            getTestContext().flushSchemaCache();
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(TestContext.instance(), mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+                + "{[Time].[1997].[Q1]}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[TotalCount]}\n"
+                + "Axis #2:\n"
+                + "{[Store].[USA].[CA]}\n"
+                + "{[Store].[USA].[OR]}\n"
+                + "{[Store].[USA].[WA]}\n"
+                + "Row #0: 6,121\n"
+                + "Row #1: 5,315\n"
+                + "Row #2: 24,075\n");
+
+        // In the second scenario, the promotion is not related to the warehouse
+        //  MondrianProperties.instance().EnableNativeSum.set( false );
+        mdx =
+            "WITH MEMBER [Measures].[TotalCount] AS 'SUM(Filter({[Promotions].[All Promotions].Children},[Measures].[Unit Sales] > 10000), [Measures].[Warehouse Sales])'\n"
+            + "SELECT [Measures].[TotalCount] ON 0, NON EMPTY [Store].[Store State].members on 1 FROM [Warehouse and Sales] WHERE [Time].[1997].[Q1]";
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+                + "{[Time].[1997].[Q1]}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[TotalCount]}\n"
+                + "Axis #2:\n");
+    }
+
+    public void testNativeSumInVirtualCube() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
         final boolean useAgg =
             MondrianProperties.instance().UseAggregates.get()
             && MondrianProperties.instance().ReadAggregates.get();
