@@ -1894,6 +1894,41 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #12: 24,329.23\n");
     }
 
+    public void testNativeCountWithoutMeasuresInVirtualCube() {
+        propSaver.set(propSaver.properties.UseAggregates, false);
+        String mdx =
+            "WITH MEMBER [Measures].[MyMeasure] AS 'Count([Product].[All Products].Children)'\n"
+            + "SELECT [Measures].[MyMeasure] ON 0 FROM [Warehouse and Sales]";
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n" +
+                "    COUNT(*)\n" +
+                "from\n" +
+                "    (select\n" +
+                "    `product_class`.`product_family` as `c0`\n" +
+                "from\n" +
+                "    `product` as `product`,\n" +
+                "    `product_class` as `product_class`\n" +
+                "where\n" +
+                "    `product`.`product_class_id` = `product_class`.`product_class_id`\n" +
+                "group by\n" +
+                "    `product_class`.`product_family`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[MyMeasure]}\n"
+            + "Row #0: 3\n");
+    }
+
     public void testNativeCountWithChildren() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
