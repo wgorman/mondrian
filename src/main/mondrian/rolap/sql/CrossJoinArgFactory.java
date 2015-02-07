@@ -262,7 +262,9 @@ public class CrossJoinArgFactory {
         Exp[] tupleArgs = getCalculatedTupleArgs(arg);
         for (Exp tupleArg : tupleArgs) {
             Dimension dimension = tupleArg.getType().getDimension();
-            if (dimension != null && !dimension.isMeasures()) {
+            if (tupleArg instanceof ResolvedFunCall) {
+                addConstrainingMembersToMap(tupleArg, memberLists);
+            } else if (dimension != null && !dimension.isMeasures()) {
                 List<RolapMember> members;
                 if (memberLists.containsKey(dimension)) {
                     members = memberLists.get(dimension);
