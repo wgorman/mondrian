@@ -163,7 +163,8 @@ public class MemberListCrossJoinArg implements CrossJoinArg {
         // level will be null for an empty CJ input that is pushed down
         // to the native evaluator.
         // This case is not treated as a non-native input.
-        if ((level != null) && (!level.isSimple()
+        if ((level != null)
+            && ((level.isMeasure() || level.isParentChild())
             && !supportedParentChild(level, args)))
         {
             return null;

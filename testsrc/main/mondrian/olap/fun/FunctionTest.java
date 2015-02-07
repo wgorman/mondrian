@@ -13027,6 +13027,62 @@ Intel platforms):
         }
     }
 
+    public void testExistingRagged() {
+        // there was an issue with non-native ragged existing
+        // using CrossJoinArgFactory
+        // we resolved the issue in MemberListCrossJoinArg
+        TestContext testContext = TestContext.instance().createSubstitutingCube(
+            "Sales Ragged",
+            "  <Dimension name=\"Geography2\" foreignKey=\"store_id\">\n"
+            + "<Hierarchy hasAll=\"true\" primaryKey=\"store_id\">\n"
+            + "<Table name=\"store_ragged\"/>\n"
+            + "<Level name=\"Country\" column=\"store_country\" uniqueMembers=\"true\"\n"
+            + "hideMemberIf=\"Never\"/>\n"
+            + "<Level name=\"State\" column=\"store_state\" uniqueMembers=\"true\" hideMemberIf=\"IfParentsName\"/>\n"
+            + "<Level name=\"City\" column=\"store_city\" uniqueMembers=\"false\" hideMemberIf=\"IfBlankName\"/>\n"
+            + "</Hierarchy>"
+            + "<Hierarchy hasAll=\"true\" name=\"Geo\" primaryKey=\"store_id\">\n"
+            + "<Table name=\"store_ragged\"/>\n"
+            + "<Level name=\"Country\" column=\"store_country\" uniqueMembers=\"true\"\n"
+            + "hideMemberIf=\"Never\"/>\n"
+            + "<Level name=\"State\" column=\"store_state\" uniqueMembers=\"true\" hideMemberIf=\"IfParentsName\"/>\n"
+            + "<Level name=\"City\" column=\"store_city\" uniqueMembers=\"false\" hideMemberIf=\"IfBlankName\"/>\n"
+            + "</Hierarchy>"
+            + "</Dimension>");
+        testContext.assertQueryReturns(
+            "with \n"
+            + "  member measures.ExistingCount as\n"
+            + "  count(Existing [Geography2].[State].Members)\n"
+            + "  select {measures.ExistingCount} on 0,\n"
+            + "  [Geography2.Geo].[State].Members on 1"
+            + "  from [Sales Ragged]",
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[ExistingCount]}\n"
+            + "Axis #2:\n"
+            + "{[Geography2.Geo].[Canada].[BC]}\n"
+            + "{[Geography2.Geo].[Mexico].[DF]}\n"
+            + "{[Geography2.Geo].[Mexico].[Guerrero]}\n"
+            + "{[Geography2.Geo].[Mexico].[Jalisco]}\n"
+            + "{[Geography2.Geo].[Mexico].[Veracruz]}\n"
+            + "{[Geography2.Geo].[Mexico].[Yucatan]}\n"
+            + "{[Geography2.Geo].[Mexico].[Zacatecas]}\n"
+            + "{[Geography2.Geo].[USA].[CA]}\n"
+            + "{[Geography2.Geo].[USA].[OR]}\n"
+            + "{[Geography2.Geo].[USA].[WA]}\n"
+            + "Row #0: 1\n"
+            + "Row #1: 1\n"
+            + "Row #2: 1\n"
+            + "Row #3: 1\n"
+            + "Row #4: 1\n"
+            + "Row #5: 1\n"
+            + "Row #6: 1\n"
+            + "Row #7: 1\n"
+            + "Row #8: 1\n"
+            + "Row #9: 1\n");
+    }
+
     public void testExisting() throws Exception {
         // basic test
         assertQueryReturns(
