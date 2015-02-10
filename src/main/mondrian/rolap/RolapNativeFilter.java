@@ -194,7 +194,7 @@ public class RolapNativeFilter extends RolapNativeSet {
             }
             firstCrossjoinLevel = cjArgs[0].getLevel();
         } else {
-          firstCrossjoinLevel = ((SetConstraint)eval.getConstraint()).args[0].getLevel();
+            firstCrossjoinLevel = ((SetConstraint)eval.getConstraint()).getArgs()[0].getLevel();
         }
 
         // extract filter expression

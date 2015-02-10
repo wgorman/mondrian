@@ -92,7 +92,7 @@ public class CrossJoinArgFactory {
     {
         if (exp instanceof NamedSetExpr) {
             NamedSet namedSet = ((NamedSetExpr) exp).getNamedSet();
-            exp = namedSet.getExp();
+            return checkCrossJoinArg(evaluator, namedSet.getExp(), returnAny, levelOnly);
         }
         if (!(exp instanceof ResolvedFunCall)) {
             return null;

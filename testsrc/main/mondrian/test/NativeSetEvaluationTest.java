@@ -1480,6 +1480,79 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #2:\n");
     }
 
+    public void testNativeNamedSetWithNesting() {
+        if (!propSaver.properties.EnableNativeSubset.get()
+            || propSaver.properties.UseAggregates.get()
+            || propSaver.properties.ReadAggregates.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS Subset([Product].[Food].Children, 2, 10)\n"
+            + "  SET TC1 AS TC\n"
+            + "  SELECT NON EMPTY [Measures].[Unit Sales] on 0,\n"
+            + "    TC1 ON 1 \n"
+            + "  FROM [Sales] WHERE {([Time].[1997])}\n";
+
+        String mysqlQuery =
+            "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` = 'Food')\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 10 offset 2";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Breakfast Foods]}\n"
+            + "{[Product].[Food].[Canned Foods]}\n"
+            + "{[Product].[Food].[Canned Products]}\n"
+            + "{[Product].[Food].[Dairy]}\n"
+            + "{[Product].[Food].[Deli]}\n"
+            + "{[Product].[Food].[Eggs]}\n"
+            + "{[Product].[Food].[Frozen Foods]}\n"
+            + "{[Product].[Food].[Meat]}\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "Row #0: 3,317\n"
+            + "Row #1: 19,026\n"
+            + "Row #2: 1,812\n"
+            + "Row #3: 12,885\n"
+            + "Row #4: 12,037\n"
+            + "Row #5: 4,132\n"
+            + "Row #6: 26,655\n"
+            + "Row #7: 1,714\n"
+            + "Row #8: 37,792\n"
+            + "Row #9: 1,764\n");
+    }
+
     public void testNativeNonEmptyWithBasicCalcMeasure() {
         final String mdx =
             "WITH MEMBER [Measures].[Calc] AS '[Measures].[Store Sales]'\n"
