@@ -37,16 +37,17 @@ public class RolapNativeOrder extends RolapNativeSet {
             MondrianProperties.instance().EnableNativeOrder.get());
     }
 
-    static class OrderConstraint extends SetConstraint {
+    static class OrderConstraint extends DelegatingSetConstraint {
         Exp orderByExpr;
         boolean ascending;
         Map<String, String> preEval;
 
         public OrderConstraint(
             CrossJoinArg[] args, RolapEvaluator evaluator,
-            Exp orderByExpr, boolean ascending, Map<String, String> preEval)
+            Exp orderByExpr, boolean ascending, Map<String, String> preEval,
+            SetConstraint parentConstraint)
         {
-            super(args, evaluator, true);
+            super(args, evaluator, true, parentConstraint);
             this.orderByExpr = orderByExpr;
             this.ascending = ascending;
             this.preEval = preEval;
@@ -147,37 +148,22 @@ public class RolapNativeOrder extends RolapNativeSet {
             return null;
         }
 
-        // extract the set expression
-        List<CrossJoinArg[]> allArgs =
-            crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
-
-        // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
-        // array is the CrossJoin dimensions.  The second array, if any,
-        // contains additional constraints on the dimensions. If either the list
-        // or the first array is null, then native cross join is not feasible.
-        if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
-            return null;
-        }
-
-        CrossJoinArg[] cjArgs = allArgs.get(0);
-        if (isPreferInterpreter(cjArgs, false)) {
-            return null;
-        }
-
         // Extract Order
+        boolean isHierarchical = true;
         if (args.length == 3) {
             if (!(args[2] instanceof Literal)) {
                 return null;
             }
-            
+
             String val = ((Literal) args[2]).getValue().toString();
-            if (val.equals( "ASC") || val.equals("BASC" )) {
+            if (val.equals("ASC") || val.equals("BASC")) {
                 ascending = true;
             } else if (val.equals("DESC") || val.equals("BDESC")) {
                 ascending = false;
             } else {
                 return null;
             }
+            isHierarchical = !val.startsWith("B");
         }
 
         // extract "order by" expression
@@ -206,36 +192,98 @@ public class RolapNativeOrder extends RolapNativeSet {
             return null;
         }
 
-        LOGGER.debug("using native order");
-        final int savepoint = evaluator.savepoint();
-        try {
-            overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
-            for (Member member : sql.addlContext) {
-                evaluator.setContext(member);
-            }
-            CrossJoinArg[] predicateArgs = null;
-            if (allArgs.size() == 2) {
-                predicateArgs = allArgs.get(1);
+        SetEvaluator eval = getNestedEvaluator(args[0], evaluator);
+
+        if (eval == null) {
+            if (!evaluator.isNonEmpty()) {
+                // requires OUTER JOIN which is not yet supported
+                return null;
             }
 
-            CrossJoinArg[] combinedArgs;
-            if (predicateArgs != null) {
-                // Combined the CJ and the additional predicate args
-                // to form the TupleConstraint.
-                combinedArgs =
-                        Util.appendArrays(cjArgs, predicateArgs);
-            } else {
-                combinedArgs = cjArgs;
+            // extract the set expression
+            List<CrossJoinArg[]> allArgs =
+                crossJoinArgFactory().checkCrossJoinArg(evaluator, args[0]);
+
+            // checkCrossJoinArg returns a list of CrossJoinArg arrays.  The first
+            // array is the CrossJoin dimensions.  The second array, if any,
+            // contains additional constraints on the dimensions. If either the list
+            // or the first array is null, then native cross join is not feasible.
+            if (allArgs == null || allArgs.isEmpty() || allArgs.get(0) == null) {
+                return null;
             }
+
+            CrossJoinArg[] cjArgs = allArgs.get(0);
+            if (isPreferInterpreter(cjArgs, false)) {
+                return null;
+            }
+
+            if (isHierarchical && !isParentLevelAll(cjArgs)) {
+                // cannot natively evaluate, parent-child hierarchies in play
+                return null;
+            }
+
+            LOGGER.debug("using native order");
+            final int savepoint = evaluator.savepoint();
+            try {
+                overrideContext(evaluator, cjArgs, sql.getStoredMeasure());
+                for (Member member : sql.addlContext) {
+                    evaluator.setContext(member);
+                }
+                CrossJoinArg[] predicateArgs = null;
+                if (allArgs.size() == 2) {
+                    predicateArgs = allArgs.get(1);
+                }
+
+                CrossJoinArg[] combinedArgs;
+                if (predicateArgs != null) {
+                    // Combined the CJ and the additional predicate args
+                    // to form the TupleConstraint.
+                    combinedArgs =
+                            Util.appendArrays(cjArgs, predicateArgs);
+                } else {
+                    combinedArgs = cjArgs;
+                }
+                TupleConstraint constraint =
+                    new OrderConstraint(
+                        combinedArgs, evaluator, orderByExpr, ascending, sql.preEvalExprs, null);
+                SetEvaluator sev =
+                    new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
+                return sev;
+            } finally {
+                evaluator.restore(savepoint);
+            }
+        } else {
+            if (isHierarchical && !isParentLevelAll(eval.getArgs())) {
+                // cannot natively evaluate, parent-child hierarchies in play
+                return null;
+            }
+
+            SetConstraint parentConstraint = (SetConstraint) eval.getConstraint();
+            if (!(parentConstraint instanceof RolapNativeFilter.FilterConstraint)
+                && !(parentConstraint instanceof RolapNativeNonEmptyFunction.NonEmptyFunctionConstraint)) {
+                return null;
+            }
+
+            CrossJoinArg[] cjArgs = new CrossJoinArg[0];
             TupleConstraint constraint =
                 new OrderConstraint(
-                    combinedArgs, evaluator, orderByExpr, ascending, sql.preEvalExprs);
-            SetEvaluator sev =
-                new SetEvaluator(cjArgs, schemaReader, constraint, sql.getStoredMeasure());
-            return sev;
-        } finally {
-            evaluator.restore(savepoint);
+                    cjArgs, evaluator, orderByExpr, ascending, sql.preEvalExprs, parentConstraint);
+            eval.setConstraint(constraint);
+            LOGGER.debug("using nested native order");
+            return eval;
         }
+    }
+
+    private boolean isParentLevelAll(CrossJoinArg[] cjArgs) {
+        for (CrossJoinArg cjArg : cjArgs) {
+            Level level = cjArg != null ? cjArg.getLevel() : null;
+            if (level != null && !level.isAll()
+                && level.getParentLevel() != null
+                && !level.getParentLevel().isAll()){
+                return false;
+            }
+        }
+        return true;
     }
 }
 

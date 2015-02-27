@@ -1553,6 +1553,62 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #9: 1,764\n");
     }
 
+    public void testNativeOrder() {
+        if (!propSaver.properties.EnableNativeOrder.get()
+            || !propSaver.properties.EnableNativeNonEmptyFunction.get()
+            || propSaver.properties.UseAggregates.get()
+            || propSaver.properties.ReadAggregates.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.ExpandNonNative, false);
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "WITH\n"
+            + "  SET [PRODUCT_SET] as 'NonEmpty([Product].[Product Family].Members, [Measures].[Store Cost])'\n"
+            + "  SET [PRODUCT_SET_SORTED] as 'Order([PRODUCT_SET], [Measures].[Store Cost], BDESC)' \n"
+            + "SELECT\n"
+            + "  [Measures].[Store Cost] ON COLUMNS,\n"
+            + "  [PRODUCT_SET_SORTED] ON ROWS\n"
+            + "FROM [Sales]";
+        String mysqlQuery =
+            "select\n"
+            + "    `time_by_day`.`the_year` as `c0`,\n"
+            + "    `product_class`.`product_family` as `c1`,\n"
+            + "    sum(`sales_fact_1997`.`store_cost`) as `m0`\n"
+            + "from\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "group by\n"
+            + "    `time_by_day`.`the_year`,\n"
+            + "    `product_class`.`product_family`";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Cost]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "{[Product].[Drink]}\n"
+            + "Row #0: 163,270.72\n"
+            + "Row #1: 42,879.28\n"
+            + "Row #2: 19,477.23\n");
+    }
+
     public void testNativeNonEmptyWithBasicCalcMeasure() {
         final String mdx =
             "WITH MEMBER [Measures].[Calc] AS '[Measures].[Store Sales]'\n"
