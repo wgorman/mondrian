@@ -536,6 +536,21 @@ public class RolapEvaluator implements Evaluator {
     }
 
     /**
+     * Returns the list of slicer members for specified hierarchy in the current evaluator context.
+     * @param hierarchy
+     * @return slicerMembers
+     */
+    public final List<RolapMember> getSlicerMembers(final Hierarchy hierarchy) {
+        List<RolapMember> members = new ArrayList<RolapMember>();
+        for (Member slicerMember : slicerMembers) {
+            if (slicerMember.getHierarchy().equals(hierarchy)) {
+                members.add((RolapMember)slicerMember);
+            }
+        }
+        return members;
+    }
+
+    /**
      * Sets the slicer tuple object, used later by native evaluation and
      * non-empty crossjoins.
      *

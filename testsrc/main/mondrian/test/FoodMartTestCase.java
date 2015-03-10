@@ -430,6 +430,8 @@ public class FoodMartTestCase extends TestCase {
         String query, String message, TestContext context)
     {
         propSaver.set(propSaver.properties.EnableNativeCrossJoin, true);
+        propSaver.set(propSaver.properties.EnableNativeExisting, true);
+        propSaver.set(propSaver.properties.EnableNativeExists, true);
         propSaver.set(propSaver.properties.EnableNativeFilter, true);
         propSaver.set(propSaver.properties.EnableNativeNonEmpty, true);
         propSaver.set(propSaver.properties.EnableNativeTopCount, true);
@@ -437,6 +439,8 @@ public class FoodMartTestCase extends TestCase {
         Result resultNative = context.executeQuery(query);
 
         propSaver.set(propSaver.properties.EnableNativeCrossJoin, false);
+        propSaver.set(propSaver.properties.EnableNativeExisting, false);
+        propSaver.set(propSaver.properties.EnableNativeExists, false);
         propSaver.set(propSaver.properties.EnableNativeFilter, false);
         propSaver.set(propSaver.properties.EnableNativeNonEmpty, false);
         propSaver.set(propSaver.properties.EnableNativeTopCount, true);

@@ -2705,7 +2705,7 @@ public class FunUtil extends Util {
             Member rightMember = getCorrespondingMember(
                 leftMember, rightTuple, rightHierarchies, eval);
             checkedMembers.add(rightMember);
-            if (!isOnSameHierarchyChain(leftMember, rightMember)) {
+            if (!isOnSameHierarchyChain(leftMember, rightMember, eval)) {
                 return false;
             }
         }
@@ -2719,7 +2719,7 @@ public class FunUtil extends Util {
             }
             Member leftMember = getCorrespondingMember(
                 rightMember, leftTuple, leftHierarchies, eval);
-            if (!isOnSameHierarchyChain(leftMember, rightMember)) {
+            if (!isOnSameHierarchyChain(leftMember, rightMember, eval)) {
                 return false;
             }
         }
@@ -2730,6 +2730,34 @@ public class FunUtil extends Util {
     {
         return (FunUtil.isAncestorOf(mA, mB, false))||
             (FunUtil.isAncestorOf(mB, mA, false));
+    }
+
+    private static boolean isOnSameHierarchyChain(Member mA, Member mB, Evaluator eval)
+    {
+        if ((mA instanceof RolapResult.CompoundSlicerRolapMember
+            || mB instanceof RolapResult.CompoundSlicerRolapMember)
+            && eval instanceof RolapEvaluator)
+        {
+            Collection<? extends Member> membersA = expandMember(mA, eval);
+            Collection<? extends Member> membersB = expandMember(mB, eval);
+            for (Member memberA : membersA) {
+                for (Member memberB : membersB) {
+                    if (isOnSameHierarchyChain(memberA, memberB)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return isOnSameHierarchyChain(mA, mB);
+    }
+
+    private static Collection<? extends Member> expandMember(Member member, Evaluator eval) {
+        if (member instanceof RolapResult.CompoundSlicerRolapMember
+            && eval instanceof RolapEvaluator) {
+            return  ((RolapEvaluator)eval).getSlicerMembers(member.getHierarchy());
+        }
+        return Collections.singletonList(member);
     }
 
     /**
