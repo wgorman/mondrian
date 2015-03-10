@@ -1280,7 +1280,7 @@ public class SqlTupleReader implements TupleReader {
 
             boolean optimized = false;
             // this should only kick in if a join to the fact table is required.
-            if (keyOnly && keyExp instanceof MondrianDef.Column) {
+            if (keyOnly && keyExp instanceof MondrianDef.Column && !hierarchy.getDimension().isHanger()) {
                 // possible opportunity to optimize key
                 // baseCube could be null in a Count() scenario that doesn't join with the fact table.
                 if (baseCube != null && !baseCube.isVirtual()) {

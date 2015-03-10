@@ -2195,6 +2195,50 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 5,581\n");
     }
 
+    public void testNativeCountWithHanger() {
+        TestContext testContext = TestContext.instance()
+            .createSubstitutingCube(
+                "Sales",
+                "<Dimension name=\"GenderHanger\" foreignKey=\"customer_id\" hanger=\"true\">"
+                + "<Hierarchy hasAll=\"true\" allMemberName=\"All GenderHanger\" primaryKey=\"customer_id\">\n"
+                + "  <Table name=\"customer\"/>\n"
+                + "  <Level name=\"GenderHanger\" column=\"gender\" uniqueMembers=\"true\"/>\n"
+                + "</Hierarchy>\n"
+                + "</Dimension>\n");
+        String mdx =
+            "with member [Measures].[Count] as 'Count([GenderHanger].AllMembers))'\n"
+            + "select {[Measures].[Count]} on 0 from [Sales]";
+        getTestContext().flushSchemaCache();
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        if (MondrianProperties.instance().EnableNativeCount.get() && !useAgg) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `customer`.`gender` as `c0`\n"
+                + "from\n"
+                + "    `customer` as `customer`\n"
+                + "group by\n"
+                + "    `customer`.`gender`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count]}\n"
+            + "Row #0: 3\n");
+    }
+
     /**
      * Found an issue with Native Filter NonEmpty behavior... Need to log a JIRA
      */
