@@ -167,9 +167,9 @@ public class RolapCube extends CubeBase {
             new RolapDimension(
                 schema,
                 Dimension.MEASURES_NAME,
-                null,
+                xmlSchema.measuresCaption,
                 true,
-                null,
+                xmlSchema.measuresDescription,
                 DimensionType.MeasuresDimension,
                 false,
                 Collections.<String, Annotation>emptyMap(),
@@ -180,11 +180,6 @@ public class RolapCube extends CubeBase {
         this.measuresHierarchy =
             measuresDimension.newHierarchy(null, false, null);
         hierarchyList.add(measuresHierarchy);
-
-        if (!Util.isEmpty(xmlSchema.measuresCaption)) {
-            measuresDimension.setCaption(xmlSchema.measuresCaption);
-            this.measuresHierarchy.setCaption(xmlSchema.measuresCaption);
-        }
 
         for (int i = 0; i < dimensions.length; i++) {
             MondrianDef.CubeDimension xmlCubeDimension = dimensions[i];
@@ -257,7 +252,9 @@ public class RolapCube extends CubeBase {
         // since MondrianDef.Measure and MondrianDef.VirtualCubeMeasure
         // can not be treated as the same, measure creation can not be
         // done in a common constructor.
-        RolapLevel measuresLevel = this.measuresHierarchy.newMeasuresLevel();
+        RolapLevel measuresLevel =
+            this.measuresHierarchy.newMeasuresLevel(
+                xmlSchema.measuresCaption, xmlSchema.measuresDescription);
 
         List<RolapMember> measureList =
             new ArrayList<RolapMember>(xmlCube.measures.length);
@@ -466,7 +463,9 @@ public class RolapCube extends CubeBase {
         // Since MondrianDef.Measure and MondrianDef.VirtualCubeMeasure cannot
         // be treated as the same, measure creation cannot be done in a common
         // constructor.
-        RolapLevel measuresLevel = this.measuresHierarchy.newMeasuresLevel();
+        RolapLevel measuresLevel =
+            this.measuresHierarchy.newMeasuresLevel(
+                xmlSchema.measuresCaption, xmlSchema.measuresDescription);
 
         // Recreate CalculatedMembers, as the original members point to
         // incorrect dimensional ordinals for the virtual cube.

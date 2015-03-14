@@ -3012,9 +3012,13 @@ public class SchemaTest extends FoodMartTestCase {
         final String salesCubeName = "DescSales";
         final String virtualCubeName = "DescWarehouseAndSales";
         final String warehouseCubeName = "Warehouse";
+        final String measuresCaption = warehouseCubeName + " Measures";
+        final String measuresDescription = warehouseCubeName + " Measures Description";
         final TestContext testContext = TestContext.instance().withSchema(
             "<Schema name=\"" + schemaName + "\"\n"
-            + " description=\"Schema to test descriptions and captions\">\n"
+            + " description=\"Schema to test descriptions and captions\"\n"
+            + " measuresCaption=\"" + measuresCaption + "\"\n"
+            + " measuresDescription=\"" + measuresDescription + "\">\n"
             + "  <Annotations>\n"
             + "    <Annotation name=\"a\">Schema</Annotation>\n"
             + "    <Annotation name=\"b\">Xyz</Annotation>\n"
@@ -3242,10 +3246,16 @@ public class SchemaTest extends FoodMartTestCase {
         checkAnnotations(time2Hierarchy.getAnnotationMap());
 
         final Dimension measuresDimension = cube.getDimensions()[0];
+        assertEquals(measuresCaption, measuresDimension.getCaption());
+        assertEquals(measuresDescription, measuresDimension.getDescription());
         final Hierarchy measuresHierarchy =
             measuresDimension.getHierarchies()[0];
+        assertEquals(measuresCaption, measuresHierarchy.getCaption());
+        assertEquals(measuresDescription, measuresHierarchy.getDescription());
         final mondrian.olap.Level measuresLevel =
             measuresHierarchy.getLevels()[0];
+        assertEquals(measuresCaption, measuresLevel.getCaption());
+        assertEquals(measuresDescription, measuresLevel.getDescription());
         final SchemaReader schemaReader = cube.getSchemaReader(null);
         final List<Member> measures =
             schemaReader.getLevelMembers(measuresLevel, true);
