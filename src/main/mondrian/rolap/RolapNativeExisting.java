@@ -124,10 +124,16 @@ public class RolapNativeExisting extends RolapNativeSet {
                     : getContextMembers(evaluator, dimension))
                 {
                     if (!contextMember.isAll()) {
+                        List<RolapMember> contextMembers;
+                        if (contextMember instanceof RolapResult.CompoundSlicerRolapMember) {
+                            contextMembers = evaluator.getSlicerMembers(contextMember.getHierarchy());
+                        } else {
+                            contextMembers = Collections.singletonList(contextMember);
+                        }
                         CrossJoinArg predicate =
                             MemberListCrossJoinArg.create(
                                 evaluator,
-                                Collections.singletonList(contextMember),
+                                contextMembers,
                                 restrictMemberTypes, false);
                         if (predicate == null) {
                             return null;
@@ -335,7 +341,6 @@ public class RolapNativeExisting extends RolapNativeSet {
                         result,
                         rolapMember.getLevel(),
                         rolapMember);
-                    continue;
                 }
             }
         }

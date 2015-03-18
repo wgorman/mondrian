@@ -71,6 +71,7 @@ class OrderFunDef extends FunDefBase {
                     calcList[1] = new ValueCalc(
                         new DummyExp(expCalc.getType()));
                     return new ContextCalc(
+                        call,
                         calcs,
                         new CalcImpl(
                             call, calcList, keySpecList));
@@ -84,6 +85,7 @@ class OrderFunDef extends FunDefBase {
                         compiler.getEvaluator()
                             .mightReturnNullForUnrelatedDimension());
                     return new ContextCalc(
+                        call,
                         constantList.toArray(
                             new MemberCalc[constantList.size()]),
                         new CalcImpl(
@@ -122,6 +124,23 @@ class OrderFunDef extends FunDefBase {
             }
             keySpecList.add(new SortKeySpec(key, dir));
         }
+    }
+
+    private static NativeEvaluator getNativeEvaluator(
+        Evaluator evaluator,
+        ResolvedFunCall call,
+        Calc calc)
+    {
+        SchemaReader schemaReader = evaluator.getSchemaReader();
+        RolapEvaluator manyToManyEval =
+            ManyToManyUtil.getManyToManyEvaluator((RolapEvaluator)evaluator);
+        NativeEvaluator nativeEvaluator =
+            schemaReader.getNativeSetEvaluator(
+                call.getFunDef(),
+                call.getArgs(),
+                manyToManyEval,
+                calc);
+        return nativeEvaluator;
     }
 
     private interface CalcWithDual extends Calc {
@@ -203,16 +222,8 @@ class OrderFunDef extends FunDefBase {
         }
 
         public TupleList evaluateList(Evaluator evaluator) {
-            SchemaReader schemaReader = evaluator.getSchemaReader();
-            RolapEvaluator manyToManyEval =
-                ManyToManyUtil.getManyToManyEvaluator(
-                    (RolapEvaluator)evaluator);
             NativeEvaluator nativeEvaluator =
-                schemaReader.getNativeSetEvaluator(
-                    call.getFunDef(),
-                    call.getArgs(),
-                    manyToManyEval,
-                    this);
+                getNativeEvaluator(evaluator, call, this);
             if (nativeEvaluator != null) {
                 return
                     (TupleList) nativeEvaluator.execute(ResultStyle.LIST);
@@ -353,12 +364,14 @@ class OrderFunDef extends FunDefBase {
         private final MemberCalc[] memberCalcs;
         private final CalcWithDual calc;
         private final Member[] members; // workspace
+        private final ResolvedFunCall call;
 
-        protected ContextCalc(MemberCalc[] memberCalcs, CalcWithDual calc) {
+        protected ContextCalc(ResolvedFunCall call, MemberCalc[] memberCalcs, CalcWithDual calc) {
             super(new DummyExp(calc.getType()), xx(memberCalcs, calc));
             this.memberCalcs = memberCalcs;
             this.calc = calc;
             this.members = new Member[memberCalcs.length];
+            this.call = call;
         }
 
         private static Calc[] xx(
@@ -371,6 +384,12 @@ class OrderFunDef extends FunDefBase {
         }
 
         public Object evaluate(Evaluator evaluator) {
+            NativeEvaluator nativeEvaluator =
+                getNativeEvaluator(evaluator, call, this);
+            if (nativeEvaluator != null) {
+                return nativeEvaluator.execute(ResultStyle.LIST);
+            }
+
             // Evaluate each of the members, and set as context in the
             // sub-evaluator.
             for (int i = 0; i < memberCalcs.length; i++) {

@@ -206,6 +206,7 @@ public class XmlaTest extends TestCase {
 
             assertEquals("Foo", encoder.encode("Foo"));
             assertEquals("Foo_x0020_Bar", encoder.encode("Foo Bar"));
+            assertEquals("Foo_x0020__x0026__x0020_Bar", encoder.encode("Foo & Bar"));
 
             if (false) // FIXME:
             assertEquals(

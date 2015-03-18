@@ -1480,6 +1480,135 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #2:\n");
     }
 
+    public void testNativeNamedSetWithNesting() {
+        if (!propSaver.properties.EnableNativeSubset.get()
+            || propSaver.properties.UseAggregates.get()
+            || propSaver.properties.ReadAggregates.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS Subset([Product].[Food].Children, 2, 10)\n"
+            + "  SET TC1 AS TC\n"
+            + "  SELECT NON EMPTY [Measures].[Unit Sales] on 0,\n"
+            + "    TC1 ON 1 \n"
+            + "  FROM [Sales] WHERE {([Time].[1997])}\n";
+
+        String mysqlQuery =
+            "select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` = 'Food')\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`\n"
+            + "order by\n"
+            + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+            + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 10 offset 2";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Breakfast Foods]}\n"
+            + "{[Product].[Food].[Canned Foods]}\n"
+            + "{[Product].[Food].[Canned Products]}\n"
+            + "{[Product].[Food].[Dairy]}\n"
+            + "{[Product].[Food].[Deli]}\n"
+            + "{[Product].[Food].[Eggs]}\n"
+            + "{[Product].[Food].[Frozen Foods]}\n"
+            + "{[Product].[Food].[Meat]}\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "Row #0: 3,317\n"
+            + "Row #1: 19,026\n"
+            + "Row #2: 1,812\n"
+            + "Row #3: 12,885\n"
+            + "Row #4: 12,037\n"
+            + "Row #5: 4,132\n"
+            + "Row #6: 26,655\n"
+            + "Row #7: 1,714\n"
+            + "Row #8: 37,792\n"
+            + "Row #9: 1,764\n");
+    }
+
+    public void testNativeOrder() {
+        if (!propSaver.properties.EnableNativeOrder.get()
+            || !propSaver.properties.EnableNativeNonEmptyFunction.get()
+            || propSaver.properties.UseAggregates.get()
+            || propSaver.properties.ReadAggregates.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.ExpandNonNative, false);
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "WITH\n"
+            + "  SET [PRODUCT_SET] as 'NonEmpty([Product].[Product Family].Members, [Measures].[Store Cost])'\n"
+            + "  SET [PRODUCT_SET_SORTED] as 'Order([PRODUCT_SET], [Measures].[Store Cost], BDESC)' \n"
+            + "SELECT\n"
+            + "  [Measures].[Store Cost] ON COLUMNS,\n"
+            + "  [PRODUCT_SET_SORTED] ON ROWS\n"
+            + "FROM [Sales]";
+        String mysqlQuery =
+            "select\n"
+            + "    `time_by_day`.`the_year` as `c0`,\n"
+            + "    `product_class`.`product_family` as `c1`,\n"
+            + "    sum(`sales_fact_1997`.`store_cost`) as `m0`\n"
+            + "from\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "group by\n"
+            + "    `time_by_day`.`the_year`,\n"
+            + "    `product_class`.`product_family`";
+        SqlPattern mysqlPattern =
+            new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+        assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Cost]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "{[Product].[Drink]}\n"
+            + "Row #0: 163,270.72\n"
+            + "Row #1: 42,879.28\n"
+            + "Row #2: 19,477.23\n");
+    }
+
     public void testNativeNonEmptyWithBasicCalcMeasure() {
         final String mdx =
             "WITH MEMBER [Measures].[Calc] AS '[Measures].[Store Sales]'\n"
@@ -1894,6 +2023,41 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #12: 24,329.23\n");
     }
 
+    public void testNativeCountWithoutMeasuresInVirtualCube() {
+        propSaver.set(propSaver.properties.UseAggregates, false);
+        String mdx =
+            "WITH MEMBER [Measures].[MyMeasure] AS 'Count([Product].[All Products].Children)'\n"
+            + "SELECT [Measures].[MyMeasure] ON 0 FROM [Warehouse and Sales]";
+
+        if (MondrianProperties.instance().EnableNativeCount.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n" +
+                "    COUNT(*)\n" +
+                "from\n" +
+                "    (select\n" +
+                "    `product_class`.`product_family` as `c0`\n" +
+                "from\n" +
+                "    `product` as `product`,\n" +
+                "    `product_class` as `product_class`\n" +
+                "where\n" +
+                "    `product`.`product_class_id` = `product_class`.`product_class_id`\n" +
+                "group by\n" +
+                "    `product_class`.`product_family`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[MyMeasure]}\n"
+            + "Row #0: 3\n");
+    }
+
     public void testNativeCountWithChildren() {
         propSaver.set(propSaver.properties.GenerateFormattedSql, true);
 
@@ -2029,6 +2193,50 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #1:\n"
             + "{[Measures].[Cust ID Count]}\n"
             + "Row #0: 5,581\n");
+    }
+
+    public void testNativeCountWithHanger() {
+        TestContext testContext = TestContext.instance()
+            .createSubstitutingCube(
+                "Sales",
+                "<Dimension name=\"GenderHanger\" foreignKey=\"customer_id\" hanger=\"true\">"
+                + "<Hierarchy hasAll=\"true\" allMemberName=\"All GenderHanger\" primaryKey=\"customer_id\">\n"
+                + "  <Table name=\"customer\"/>\n"
+                + "  <Level name=\"GenderHanger\" column=\"gender\" uniqueMembers=\"true\"/>\n"
+                + "</Hierarchy>\n"
+                + "</Dimension>\n");
+        String mdx =
+            "with member [Measures].[Count] as 'Count([GenderHanger].AllMembers))'\n"
+            + "select {[Measures].[Count]} on 0 from [Sales]";
+        getTestContext().flushSchemaCache();
+
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+        if (MondrianProperties.instance().EnableNativeCount.get() && !useAgg) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `customer`.`gender` as `c0`\n"
+                + "from\n"
+                + "    `customer` as `customer`\n"
+                + "group by\n"
+                + "    `customer`.`gender`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count]}\n"
+            + "Row #0: 3\n");
     }
 
     /**
@@ -3911,34 +4119,85 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "{}\n"
             + "Axis #1:\n"
             + "{[Measures].[Count Existing]}\n"
-           // + "{[Measures].[Count All]}\n"
             + "Axis #2:\n"
             + "{[Time].[1997].[Q2]}\n"
             + "Row #0: 14\n");
-        //TODO sql
+
         final boolean useAgg =
             MondrianProperties.instance().UseAggregates.get()
             && MondrianProperties.instance().ReadAggregates.get();
-        String mySql = "select\n"
-            + "    COUNT(*)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    `time_by_day`.`the_year` as `c0`,\n"
-            + "    `time_by_day`.`week_of_year` as `c1`\n"
-            + "from\n"
-            + "    `time_by_day` as `time_by_day`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    (`time_by_day`.`quarter` = 'Q2' and `time_by_day`.`the_year` = 1997)\n"
-            + "group by\n"
-            + "    `time_by_day`.`the_year`,\n"
-            + "    `time_by_day`.`week_of_year`\n"
-            + "order by\n"
-            + "    ISNULL(`time_by_day`.`the_year`) ASC, `time_by_day`.`the_year` ASC,\n"
-            + "    ISNULL(`time_by_day`.`week_of_year`) ASC, `time_by_day`.`week_of_year` ASC) as `countQuery`";
+        if (!useAgg && MondrianProperties.instance().EnableNativeExisting.get()) {
+            propSaver.set(MondrianProperties.instance().GenerateFormattedSql, true);
+            String mySql =
+                "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `time_by_day`.`the_year` as `c0`,\n"
+                + "    `time_by_day`.`week_of_year` as `c1`\n"
+                + "from\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    (`time_by_day`.`quarter` = 'Q2' and `time_by_day`.`the_year` = 1997)\n"
+                + "group by\n"
+                + "    `time_by_day`.`the_year`,\n"
+                + "    `time_by_day`.`week_of_year`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mySql, null);
+            assertQuerySql(mdx, new SqlPattern[]{ mysqlPattern });
+        }
+    }
 
+    public void testExistingWithCompoundSlicer() {
+        String mdx =
+            "WITH MEMBER [Measures].[Count Existing]"
+            + " AS Count(existing [Time].[Month].Members)\n"
+            + "SELECT {[Measures].[Count Existing]} ON 0\n"
+            + "FROM [Sales]\n"
+            + "WHERE {[Time].[1997].[Q2], [Time].[1997].[Q3]}";
+        assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "{[Time].[1997].[Q3]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+            + "Row #0: 6\n");
+
+        if (propSaver.properties.EnableNativeExisting.get()) {
+            verifySameNativeAndNot(mdx, "Existing with compound slicer", getTestContext());
+
+            final boolean useAgg =
+                propSaver.properties.UseAggregates.get()
+                && propSaver.properties.ReadAggregates.get();
+            if (!useAgg) {
+                propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+                String mySql =
+                    "select\n"
+                    + "    COUNT(*)\n"
+                    + "from\n"
+                    + "    (select\n"
+                    + "    `time_by_day`.`the_year` as `c0`,\n"
+                    + "    `time_by_day`.`quarter` as `c1`,\n"
+                    + "    `time_by_day`.`month_of_year` as `c2`\n"
+                    + "from\n"
+                    + "    `time_by_day` as `time_by_day`,\n"
+                    + "    `sales_fact_1997` as `sales_fact_1997`\n"
+                    + "where\n"
+                    + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                    + "and\n"
+                    + "    (`time_by_day`.`quarter` in ('Q2', 'Q3') and `time_by_day`.`the_year` = 1997)\n"
+                    + "group by\n"
+                    + "    `time_by_day`.`the_year`,\n"
+                    + "    `time_by_day`.`quarter`,\n"
+                    + "    `time_by_day`.`month_of_year`) as `countQuery`";
+                SqlPattern mysqlPattern =
+                    new SqlPattern(Dialect.DatabaseProduct.MYSQL, mySql, null);
+                assertQuerySql(mdx, new SqlPattern[]{ mysqlPattern });
+            }
+        }
     }
 
     /**

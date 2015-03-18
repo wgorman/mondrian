@@ -422,7 +422,8 @@ public class DefaultXmlaRequest
                 Util.newError(buf.toString()));
         }
         statement = XmlaUtil.textInElement(childElems[0]).replaceAll("\\r", "");
-        drillthrough = statement.toUpperCase().indexOf("DRILLTHROUGH") != -1;
+        statement = statement.replaceAll("[;\\s]+$", "");
+        drillthrough = statement.toUpperCase().contains("DRILLTHROUGH");
     }
 
     private List<Parameter> parseParameters(Element parametersElement)

@@ -14,6 +14,7 @@ package mondrian.rolap;
 import mondrian.calc.ResultStyle;
 import mondrian.calc.TupleList;
 import mondrian.calc.impl.*;
+import mondrian.mdx.NamedSetExpr;
 import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.*;
 import mondrian.rolap.RolapNativeCount.CountConstraint;
@@ -81,6 +82,10 @@ public abstract class RolapNativeSet extends RolapNative {
      */
     protected SetEvaluator getNestedEvaluator(Exp exp, RolapEvaluator evaluator) {
         SetEvaluator eval = null;
+        if (exp instanceof NamedSetExpr) {
+            NamedSet namedSet = ((NamedSetExpr)exp).getNamedSet();
+            return getNestedEvaluator(namedSet.getExp(), evaluator);
+        }
         if (exp instanceof ResolvedFunCall) {
             ResolvedFunCall call = (ResolvedFunCall)exp;
             if (call.getFunDef().getName().equals("Cache")) {
@@ -228,6 +233,13 @@ public abstract class RolapNativeSet extends RolapNative {
             }
             return key;
         }
+
+        /**
+         * Returns args
+         */
+        public CrossJoinArg[] getArgs() {
+            return args;
+        }
     }
 
     /**
@@ -296,6 +308,13 @@ public abstract class RolapNativeSet extends RolapNative {
             } else {
                 super.constrainExtraLevels(baseCube, levelBitKey);
             }
+        }
+
+        /**
+         * Returns args
+         */
+        public CrossJoinArg[] getArgs() {
+            return parentConstraint != null ? parentConstraint.getArgs() : super.getArgs();
         }
     }
 

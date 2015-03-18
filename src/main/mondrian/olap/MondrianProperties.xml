@@ -1469,6 +1469,15 @@ otherwise looks at the bottom level.</p>
         <Default>false</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>SsasNativeMemberUniqueNameStyle</Name>
+        <Path>mondrian.olap.SsasNativeMemberUniqueNameStyle</Path>
+        <Description>
+            <p>If true and SsasCompatibleNaming=true, member unique names will contain member key instead of name.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>XmlaSchemaRefreshInterval</Name>
         <Path>mondrian.xmla.SchemaRefreshInterval</Path>
         <Description>

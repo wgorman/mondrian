@@ -87,22 +87,16 @@ public class NamedSetExpr extends ExpBase implements Exp {
             return null;
         }
 
+        Calc calc = compiler.compile(namedSet.getExp());
         return new AbstractIterCalc(
             this,
-            new Calc[]{/* todo: compile namedSet.getExp() */})
+            new Calc[]{calc})
         {
             public TupleIterable evaluateIterable(
                 Evaluator evaluator)
             {
                 final Evaluator.NamedSetEvaluator eval = getEval(evaluator);
                 return eval.evaluateTupleIterable(evaluator);
-            }
-
-            public boolean dependsOn(Hierarchy hierarchy) {
-                // Given that a named set is never re-evaluated within the
-                // scope of a query, effectively it's independent of all
-                // dimensions.
-                return false;
             }
         };
     }

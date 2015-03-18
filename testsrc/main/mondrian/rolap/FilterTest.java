@@ -1550,7 +1550,8 @@ public class FilterTest extends BatchTestCase {
             + "and `promotion`.`promotion_name` = 'Big Promo' "
             + "and `customer`.`gender` = 'F' "
             + "group by `customer`.`customer_id` "
-            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC "
+            + "limit 25 offset 0";
         String mdx = 
             "WITH\n"
             + "     SET [Customer IDs Fullset] AS 'Filter({AddCalculatedMembers([Customer IDs].[All Customer IDs].Children)}, (Count(CrossJoin({[Customer IDs].CurrentMember},CrossJoin({AddCalculatedMembers({[Store IDs].[All Store IDs].Children, [Store IDs].[All Store IDs]})},{[Measures].[Unit Sales]})), ExcludeEmpty)))'\n"
@@ -1672,7 +1673,8 @@ public class FilterTest extends BatchTestCase {
             + "and `promotion`.`promotion_name` = 'Big Promo' "
             + "and `customer`.`gender` = 'F' "
             + "group by `customer`.`customer_id` "
-            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+            + "order by ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC "
+            + "limit 25 offset 0";
         String mdx =
             "WITH\n"
             + "     MEMBER [Gender].[Filter 0] as Aggregate(Filter([Gender].[F], 1=1))\n"

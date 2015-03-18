@@ -54,7 +54,7 @@ public class RolapNativeCount extends RolapNativeSet {
             return null;
         }
         if (!SqlContextConstraint.isValidContext(
-                evaluator, false, new Level[]{}, restrictMemberTypes()))
+                evaluator, false, new Level[]{}, restrictMemberTypes(), false))
         {
             return null;
         }
@@ -151,6 +151,15 @@ public class RolapNativeCount extends RolapNativeSet {
                       return super.visit(call);
                     }
                 });
+
+            // we need to check the context for base cubes
+            if (mustJoin.get()
+                && (evaluator.getCube() == null || evaluator.getCube().isVirtual())
+                && (evaluator.getBaseCubes() == null || evaluator.getBaseCubes().size() == 0)) {
+                LOGGER.debug("cannot natively count due to a join requirement and no base cubes");
+                return null;
+            }
+
             final int savepoint = evaluator.savepoint();
             try {
                 overrideContext(evaluator, allArgs.get(0), null);

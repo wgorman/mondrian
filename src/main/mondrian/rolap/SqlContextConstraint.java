@@ -73,6 +73,25 @@ public class SqlContextConstraint
         Level [] levels,
         boolean strict)
     {
+      return isValidContext(context, disallowVirtualCube, levels, strict, true);
+    }
+    
+    /**
+     * @param context evaluation context
+     * @param disallowVirtualCube if true, check for virtual cubes
+     * @param levels levels being referenced in the current context
+     * @param strict false if more rows than requested may be returned
+     * (i.e. the constraint is incomplete)
+     *
+     * @return false if constraint will not work for current context
+     */
+    public static boolean isValidContext(
+        Evaluator context,
+        boolean disallowVirtualCube,
+        Level [] levels,
+        boolean strict,
+        boolean nonempty)
+    {
         if (context == null) {
             return false;
         }
@@ -86,7 +105,7 @@ public class SqlContextConstraint
             Query query = context.getQuery();
             Set<RolapCube> baseCubes = new HashSet<RolapCube>();
             List<RolapCube> baseCubeList = new ArrayList<RolapCube>();
-            if (!findVirtualCubeBaseCubes(query, baseCubes, baseCubeList)) {
+            if (!findVirtualCubeBaseCubes(query, baseCubes, baseCubeList) && nonempty) {
                 return false;
             }
             assert levels != null;

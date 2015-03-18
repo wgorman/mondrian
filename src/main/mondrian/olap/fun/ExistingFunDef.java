@@ -25,6 +25,7 @@ import mondrian.olap.Exp;
 import mondrian.olap.Hierarchy;
 import mondrian.olap.Member;
 import mondrian.olap.NativeEvaluator;
+import mondrian.olap.Util;
 import mondrian.olap.Validator;
 import mondrian.olap.type.Type;
 import mondrian.rolap.ManyToManyUtil;
@@ -94,6 +95,12 @@ public class ExistingFunDef extends FunDefBase {
                     return (TupleList)
                         nativeEvaluator.execute(ResultStyle.LIST);
                 } else {
+                    if (((RolapEvaluator)evaluator).isDisjointSlicerTuple()) {
+                        //TODO: disjoint slicer tuple case needs to be implemented
+                        throw Util.newError(
+                            new UnsupportedOperationException(),
+                            "Disjoint slicer tuple support is not implemented");
+                    }
                     TupleIterable setTuples =
                         setArg.evaluateIterable(evaluator);
                     TupleList result =

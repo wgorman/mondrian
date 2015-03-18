@@ -427,14 +427,17 @@ public class RolapHierarchy extends HierarchyBase {
         return annotationMap;
     }
 
-    RolapLevel newMeasuresLevel() {
+    RolapLevel newMeasuresLevel(
+        final String caption,
+        final String description)
+    {
         RolapLevel level =
             new RolapLevel(
                 this,
                 "MeasuresLevel",
-                null,
+                caption,
                 true,
-                null,
+                description,
                 this.levels.length,
                 null,
                 null,

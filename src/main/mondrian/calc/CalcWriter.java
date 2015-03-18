@@ -41,9 +41,11 @@ public class CalcWriter {
     }
 
     public void visitChild(int ordinal, Calc calc) {
-        indent();
-        calc.accept(this);
-        outdent();
+        if (calc != null) {
+            indent();
+            calc.accept(this);
+            outdent();
+        }
     }
 
     public void visitCalc(

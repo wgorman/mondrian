@@ -975,13 +975,14 @@ public class NamedSetTest extends FoodMartTestCase {
     }
 
     /**
-     * Tests that named sets never depend on anything.
+     * Tests that named sets inherit dependencies.
      */
     public void testNamedSetDependencies() {
         final TestContext tc =
             getTestContext().withSchemaProcessor(
                 NamedSetsInCubeProcessor.class);
-        tc.assertSetExprDependsOn("[Top CA Cities]", "{}");
+        String hierList = TestContext.allHiersExcept("[Measures]", "[Store]");
+        tc.assertSetExprDependsOn("[Top CA Cities]", hierList);
     }
 
     /**

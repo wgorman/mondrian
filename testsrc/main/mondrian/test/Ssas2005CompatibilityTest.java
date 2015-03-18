@@ -10,7 +10,6 @@
 package mondrian.test;
 
 import mondrian.olap.*;
-import mondrian.util.Bug;
 
 import java.sql.SQLException;
 
@@ -1387,6 +1386,25 @@ public class Ssas2005CompatibilityTest extends FoodMartTestCase {
             + "Axis #2:\n"
             + "{[Store Size in SQFT].[#null]}\n"
             + "Row #0: 39,329\n");
+    }
+
+    public void testNativeMemberUniqueNames(){
+        if (!MondrianProperties.instance().SsasCompatibleNaming.get()) {
+            return;
+        }
+        propSaver.set(propSaver.properties.SsasNativeMemberUniqueNameStyle, true);
+        assertExprReturns(
+            "[Store].[Stores].[USA].[CA].UniqueName",
+            "[Store].[Stores].[Store State].&[CA]");
+        assertExprReturns(
+            "[Store].[Stores].[USA].[CA].[San Francisco].UniqueName",
+            "[Store].[Stores].[Store City].&[San Francisco]&[CA]");
+        assertExprReturns(
+            "[Time].[Time2].[Month].[January].UniqueName",
+            "[Time].[Time2].[Month].&[1]&[Q1]&[1997]");
+
+        assertExprReturns("[Measures].[Unit Sales].UniqueName", "[Measures].[Unit Sales]");
+        assertExprReturns("[Customer].[(All)].UniqueName", "[Customer].[(All)]");
     }
 
     public void testFoo56() {
