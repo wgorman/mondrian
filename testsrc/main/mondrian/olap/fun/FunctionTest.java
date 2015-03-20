@@ -13135,6 +13135,22 @@ Intel platforms):
             + "Row #2: 32\n");
     }
 
+    public void testNonNativeExistingVirtualCube() {
+        // this caused a null pointer exception due to base cubes not being
+        // populated in the evaluator.
+        propSaver.set(propSaver.properties.EnableNativeExisting, false);
+        assertQueryReturns(
+            "WITH MEMBER [Measures].[Count Existing] AS Count(existing [Time.Weekly].[Week].Members)\n"
+            + "SELECT {[Measures].[Count Existing]} ON 0\n"
+            + "FROM [Warehouse and Sales]\n"
+            + "WHERE [Time].[1997].[Q2]",
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+            + "Row #0: 14\n");
+    }
+
     public void testExistingAggSet() {
         // aggregate simple set
         assertQueryReturns(
