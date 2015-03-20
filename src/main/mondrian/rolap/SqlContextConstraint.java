@@ -172,6 +172,16 @@ public class SqlContextConstraint
             }
         }
         if (baseCubes.isEmpty()) {
+            // add the default measure base cube to the list, but still return
+            // false.
+            Cube cube = query.getCube();
+            Dimension dimension = cube.getDimensions()[0];
+            RolapBaseCubeMeasure measure =
+                (RolapBaseCubeMeasure)dimension.getHierarchy()
+                    .getDefaultMember();
+            if (baseCubes.add(measure.getCube())) {
+                baseCubeList.add(measure.getCube());
+            }
             return false;
         }
         return true;

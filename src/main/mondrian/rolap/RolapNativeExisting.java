@@ -226,6 +226,9 @@ public class RolapNativeExisting extends RolapNativeSet {
         RolapHierarchy hierarchyLeft, TupleList leftSet,
         Hierarchy hierarchyRight, TupleList rightSet)
     {
+        // this call populates the evaluator base cubes
+        ExistingConstraint.isValidContext(
+            evaluator, false, new Level[]{}, false, false);
         // get only hierarchy member, by level
         Map<RolapLevel, List<RolapMember>> leftMembers =
             extractHierarchyMembers(
