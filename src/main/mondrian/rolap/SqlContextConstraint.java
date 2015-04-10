@@ -176,8 +176,8 @@ public class SqlContextConstraint
             // false.
             Cube cube = query.getCube();
             Dimension dimension = cube.getDimensions()[0];
-            RolapBaseCubeMeasure measure =
-                (RolapBaseCubeMeasure)dimension.getHierarchy()
+            RolapStoredMeasure measure =
+                (RolapStoredMeasure)dimension.getHierarchy()
                     .getDefaultMember();
             if (baseCubes.add(measure.getCube())) {
                 baseCubeList.add(measure.getCube());
