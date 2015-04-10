@@ -14,7 +14,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
@@ -184,7 +183,9 @@ public class RolapNativeSubset extends RolapNativeSet {
                         start, count, combinedArgs, evaluator, null);
                 SetEvaluator sev =
                     new SetEvaluator(cjArgs, schemaReader, constraint);
-                sev.setMaxRows(count);
+                if (count != null) {
+                    sev.setMaxRows(count);
+                }
                 LOGGER.debug("using native subset");
                 return sev;
             } finally {

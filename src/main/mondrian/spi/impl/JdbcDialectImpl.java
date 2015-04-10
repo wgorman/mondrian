@@ -13,7 +13,6 @@ import mondrian.olap.MondrianProperties;
 import mondrian.olap.Util;
 import mondrian.rolap.SqlStatement;
 import mondrian.spi.Dialect;
-import mondrian.spi.Dialect.DatabaseProduct;
 import mondrian.spi.StatisticsProvider;
 import mondrian.util.ClassResolver;
 
@@ -1174,6 +1173,11 @@ public class JdbcDialectImpl implements Dialect {
 
     public boolean supportsLimitAndOffset() {
         return false;
+    }
+
+    public String generateLimitOffsetClause(Integer limit, Integer offset) {
+        // Not supported in all dialects. The syntax is different.
+        throw new UnsupportedOperationException();
     }
 
     public Object translateValue(Object value, Datatype datatype) {
