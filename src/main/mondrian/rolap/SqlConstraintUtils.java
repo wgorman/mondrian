@@ -515,6 +515,15 @@ public class SqlConstraintUtils {
         } else {
             RolapStar.Column optimized = column.optimize();
             RolapStar.Table table = optimized.getTable();
+            if (table.getJoinCondition() == null
+                && !sqlQuery.hasFrom(table.getRelation(), null))
+            {
+                // the optimization is reverted if a star table doesn't
+                // have a join condition which means it is a fact table;
+                // otherwise, it would lead to cartesian product.
+                optimized = column;
+                table = column.getTable();
+            }
             table.addToFrom(sqlQuery, false, true);
             expr = optimized.generateExprString(sqlQuery);
         }

@@ -4039,6 +4039,66 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 294\n"); //existing+nonempty
     }
 
+    public void testNativeCountExistingEmptyScenario() {
+        propSaver.set(propSaver.properties.SsasCompatibleNaming, true);
+        TestContext testContext = TestContext.instance()
+            .create(
+                "  <Dimension name=\"Customer IDs\">\n"
+                + "    <Hierarchy name=\"Customer IDs\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"ID\" column=\"customer_id\" nameColumn=\"fullname\" uniqueMembers=\"true\"/>"
+                + "    </Hierarchy>\n"
+                + "    <Hierarchy name=\"Customer City\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"City\" column=\"city\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>\n",
+                "<Cube name=\"Customers\">\n"
+                + "  <Table name=\"sales_fact_1997\"/>\n"
+                + "  <DimensionUsage name=\"Customer IDs\" source=\"Customer IDs\" foreignKey=\"customer_id\"/>\n"
+                + "  <Measure name=\"Customer Count\" column=\"customer_id\" aggregator=\"count\"/>\n"
+                + "</Cube>\n"
+                + "<VirtualCube name=\"VCustomers\">\n"
+                + "  <VirtualCubeDimension cubeName=\"Customers\" name=\"Customer IDs\"/>\n"
+                + "  <VirtualCubeMeasure cubeName=\"Customers\" name=\"[Measures].[Customer Count]\"/>\n"
+                + "</VirtualCube>\n"
+                , null, null, null, null);
+        String mdx =
+            "WITH MEMBER [Measures].[City Count] AS Count(Existing [Customer IDs].[Customer City].[City].members)\n"
+            + "SELECT {[Measures].[City Count]} ON 0, {[Customer IDs].[ID].&[55]} ON 1\n"
+            + "FROM [VCustomers]\n";
+        if (!isUseAgg() && propSaver.properties.EnableNativeCount.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `customer`.`city` as `c0`\n"
+                + "from\n"
+                + "    `customer` as `customer`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+                + "and\n"
+                + "    `customer`.`customer_id` = '55'\n"
+                + "group by\n"
+                + "    `customer`.`city`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[City Count]}\n"
+            + "Axis #2:\n"
+            + "{[Customer IDs].[Gary Dumin]}\n"
+            + "Row #0: 1\n");
+    }
+
     public void testNativeFilterNoMeasureUnconstrained() {
         // Native filter would return wrong results when no measure in filter
         // and its arguments need member constraints
