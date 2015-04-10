@@ -73,6 +73,7 @@ public class RolapNativeExisting extends RolapNativeSet {
             getContextArgsByDim(cjArgs, evaluator, restrictMemberTypes());
         if (contextPredicateArgs == null) {
             alertNonNative(evaluator, fun, args[0]);
+            return null;
         }
         final CrossJoinArg[] predicateArgs = allArgs.size() > 1
             ? Util.appendArrays(contextPredicateArgs, allArgs.get(1))
@@ -195,12 +196,16 @@ public class RolapNativeExisting extends RolapNativeSet {
      */
     private static TupleList removeInvalidTuples(
         TupleList tuples,
-        Set<RolapMember> removedMembers)
+        Set<RolapMember> removedMembers,
+        final boolean isNonEmpty)
     {
         ListIterator<List<Member>> tupleIter = tuples.listIterator();
         iterateTuples:
         while (tupleIter.hasNext()) {
-            for (Member member : tupleIter.next()) {
+            for (Member m : tupleIter.next()) {
+                Member member = !isNonEmpty && m instanceof RolapCubeMember
+                    ? ((RolapCubeMember)m).getRolapMember()
+                    : m;
                 if (removedMembers.contains(member)) {
                     tupleIter.remove();
                     continue iterateTuples;
@@ -258,7 +263,8 @@ public class RolapNativeExisting extends RolapNativeSet {
             }
         }
         // filter tuple list
-        return removeInvalidTuples(leftSet, removedMembers);
+        return removeInvalidTuples(
+            leftSet, removedMembers, evaluator.isNonEmpty());
     }
 
     /**
