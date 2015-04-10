@@ -137,9 +137,12 @@ public final class SegmentCacheWorker {
                     .SegmentCacheFailedToLoadSegment
                     .baseMessage,
                 t);
-            throw MondrianResource.instance()
-                .SegmentCacheFailedToLoadSegment.ex(t);
+            if (MondrianProperties.instance().SegmentCacheFailOnError.get()) {
+                throw MondrianResource.instance()
+                    .SegmentCacheFailedToLoadSegment.ex(t);
+            }
         }
+        return null;
     }
 
     /**
@@ -151,24 +154,24 @@ public final class SegmentCacheWorker {
      */
     public void put(SegmentHeader header, SegmentBody body) {
         checkThread();
+        boolean result;
+        Throwable throwable = null;
         try {
-            final boolean result = cache.put(header, body);
-            if (!result) {
-                LOGGER.error(
-                    MondrianResource.instance()
-                        .SegmentCacheFailedToSaveSegment
-                        .baseMessage);
-                throw MondrianResource.instance()
-                    .SegmentCacheFailedToSaveSegment.ex();
-            }
+            result = cache.put(header, body);
         } catch (Throwable t) {
+            result = false;
+            throwable = t;
+        }
+
+        if (!result) {
             LOGGER.error(
                 MondrianResource.instance()
-                    .SegmentCacheFailedToSaveSegment
-                    .baseMessage,
-                t);
-            throw MondrianResource.instance()
-                .SegmentCacheFailedToSaveSegment.ex(t);
+                    .SegmentCacheFailedToSaveSegment.baseMessage,
+                throwable);
+            if (MondrianProperties.instance().SegmentCacheFailOnError.get()) {
+                throw MondrianResource.instance()
+                    .SegmentCacheFailedToSaveSegment.ex(throwable);
+            }
         }
     }
 
@@ -188,9 +191,12 @@ public final class SegmentCacheWorker {
                     .SegmentCacheFailedToDeleteSegment
                     .baseMessage,
                 t);
-            throw MondrianResource.instance()
-                .SegmentCacheFailedToDeleteSegment.ex(t);
+            if (MondrianProperties.instance().SegmentCacheFailOnError.get()) {
+                throw MondrianResource.instance()
+                    .SegmentCacheFailedToDeleteSegment.ex(t);
+            }
         }
+        return false;
     }
 
     /**
@@ -204,9 +210,12 @@ public final class SegmentCacheWorker {
             return cache.getSegmentHeaders();
         } catch (Throwable t) {
             LOGGER.error("Failed to get a list of segment headers.", t);
-            throw MondrianResource.instance()
-                .SegmentCacheFailedToScanSegments.ex(t);
+            if (MondrianProperties.instance().SegmentCacheFailOnError.get()) {
+                throw MondrianResource.instance()
+                    .SegmentCacheFailedToScanSegments.ex(t);
+            }
         }
+        return Collections.emptyList();
     }
 
     public boolean supportsRichIndex() {
