@@ -1053,11 +1053,8 @@ public class SqlQuery {
             buf, generateFormattedSql, prefix, " having ", " and ", "", "");
         orderBy.toBuffer(
             buf, generateFormattedSql, prefix, " order by ", ", ", "", "");
-        if (limit != null) {
-            buf.append(" limit ").append(limit);
-        }
-        if (offset != null) {
-            buf.append(" offset ").append(offset);
+        if (offset != null || limit != null) {
+            buf.append(dialect.generateLimitOffsetClause(limit, offset));
         }
     }
 

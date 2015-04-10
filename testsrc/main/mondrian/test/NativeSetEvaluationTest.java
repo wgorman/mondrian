@@ -1419,6 +1419,99 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #9: 1,764\n");
     }
 
+    public void testNativeSubsetWithoutLimit() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS 'Subset([Product].[Food].Children, 10)'\n"
+            + "  SELECT NON EMPTY [Measures].[Unit Sales] on 0,\n"
+            + "    TC ON 1 \n"
+            + "  FROM [Sales] WHERE {([Time].[1997])}\n";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeSubset.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+            // According to https://dev.mysql.com/doc/refman/5.7/en/select.html:
+            // To retrieve all rows from a certain offset up to the end of
+            // the result set, you can use some large number for the second parameter.
+            final String mysqlQuery =
+                "select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    (`product_class`.`product_family` = 'Food')\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`\n"
+                + "order by\n"
+                + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+                + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 9223372036854775807 offset 10";
+            SqlPattern mysqlPattern =
+                new SqlPattern(DatabaseProduct.MYSQL, mysqlQuery, null);
+            final String verticaQuery =
+                "select\n"
+                + "    \"product_class\".\"product_family\" as \"c0\",\n"
+                + "    \"product_class\".\"product_department\" as \"c1\"\n"
+                + "from\n"
+                + "    \"product_class\" as \"product_class\",\n"
+                + "    \"product\" as \"product\",\n"
+                + "    \"sales_fact_1997\" as \"sales_fact_1997\",\n"
+                + "    \"time_by_day\" as \"time_by_day\"\n"
+                + "where\n"
+                + "    \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
+                + "and\n"
+                + "    \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\"\n"
+                + "and\n"
+                + "    \"sales_fact_1997\".\"time_id\" = \"time_by_day\".\"time_id\"\n"
+                + "and\n"
+                + "    \"time_by_day\".\"the_year\" = 1997\n"
+                + "and\n"
+                + "    (\"product_class\".\"product_family\" = 'Food')\n"
+                + "group by\n"
+                + "    \"product_class\".\"product_family\",\n"
+                + "    \"product_class\".\"product_department\"\n"
+                + "order by\n"
+                + "    CASE WHEN \"product_class\".\"product_family\" IS NULL THEN 1 ELSE 0 END, \"product_class\".\"product_family\" ASC,\n"
+                + "    CASE WHEN \"product_class\".\"product_department\" IS NULL THEN 1 ELSE 0 END, \"product_class\".\"product_department\" ASC offset 10";
+            SqlPattern verticaPattern =
+                new SqlPattern(DatabaseProduct.VERTICA, verticaQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern, verticaPattern});
+        }
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "{[Product].[Food].[Snack Foods]}\n"
+            + "{[Product].[Food].[Snacks]}\n"
+            + "{[Product].[Food].[Starchy Foods]}\n"
+            + "Row #0: 37,792\n"
+            + "Row #1: 1,764\n"
+            + "Row #2: 30,545\n"
+            + "Row #3: 6,884\n"
+            + "Row #4: 5,262\n");
+    }
+
     public void testNativeSubsetWithAllMembers() {
         final boolean useAgg =
             MondrianProperties.instance().UseAggregates.get()

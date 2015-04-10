@@ -475,7 +475,17 @@ public interface Dialect {
      * @return whether limit and offset are supported.
      */
     boolean supportsLimitAndOffset();
-    
+
+    /**
+     * Returns LIMIT... OFFSET clause for the dialect.
+     *
+     * @param limit Specifies the number of rows to return.
+     * @param offset Specifies the number of rows to skip, before starting
+     *               to return rows from the query expression.
+     * @return String containing LIMIT... OFFSET clause for the dialect.
+     */
+    String generateLimitOffsetClause(Integer limit, Integer offset);
+
     /**
      * Returns true if this Dialect can include expressions in the GROUP BY
      * clause only by adding an expression to the SELECT clause and using
