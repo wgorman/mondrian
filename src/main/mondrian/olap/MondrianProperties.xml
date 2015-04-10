@@ -1082,6 +1082,16 @@ Defaults to 100.</p>
         <Default>100</Default>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>LazyLoadRoles</Name>
+        <Path>mondrian.rolap.lazyLoadRoles</Path>
+        <Description>
+            <p>Property that defines whether roles are applied during schema
+                load or only when a role is used in a connection.</p>
+        </Description>
+        <Type>boolean</Type>
+        <Default>false</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>IgnoreInvalidMembers</Name>
         <Path>mondrian.rolap.ignoreInvalidMembers</Path>
         <Description>
