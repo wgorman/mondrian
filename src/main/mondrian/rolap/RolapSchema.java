@@ -612,9 +612,15 @@ public class RolapSchema implements Schema {
         }
 
         // Create roles.
-        for (MondrianDef.Role xmlRole : xmlSchema.roles) {
-            Role role = createRole(xmlRole);
-            mapNameToRole.put(xmlRole.name, role);
+        if (MondrianProperties.instance().LazyLoadRoles.get()) {
+            for (MondrianDef.Role xmlRole : xmlSchema.roles) {
+                mapNameToRole.put(xmlRole.name, null);
+            }
+        } else {
+            for (MondrianDef.Role xmlRole : xmlSchema.roles) {
+                Role role = createRole(xmlRole);
+                mapNameToRole.put(xmlRole.name, role);
+            }
         }
 
         // Set default role.
@@ -715,7 +721,7 @@ public class RolapSchema implements Schema {
             }
             List<Role> roleList = new ArrayList<Role>();
             for (MondrianDef.RoleUsage roleUsage : xmlRole.union.roleUsages) {
-                final Role role = mapNameToRole.get(roleUsage.roleName);
+                final Role role = lookupRole(roleUsage.roleName);
                 if (role == null) {
                     throw MondrianResource.instance().UnknownRole.ex(
                         roleUsage.roleName);
@@ -1028,8 +1034,23 @@ public class RolapSchema implements Schema {
         return null;
     }
 
-    public Role lookupRole(final String role) {
-        return mapNameToRole.get(role);
+    public Role lookupRole(final String roleName) {
+        Role role = mapNameToRole.get(roleName);
+        if (role == null
+            && MondrianProperties.instance().LazyLoadRoles.get()
+            && mapNameToRole.containsKey(roleName))
+        {
+            // loop in reverse order as roles can be overridden
+            for (int i = xmlSchema.roles.length - 1; i >= 0; i--) {
+                MondrianDef.Role xmlRole = xmlSchema.roles[i];
+                if (xmlRole.name.equals(roleName)) {
+                    role = createRole(xmlRole);
+                    mapNameToRole.put(roleName, role);
+                    break;
+                }
+            }
+        }
+        return role;
     }
 
     public Set<String> roleNames() {
