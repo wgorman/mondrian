@@ -13151,6 +13151,33 @@ Intel platforms):
             + "Row #0: 14\n");
     }
 
+    public void testNonNativeExistingVirtualCubeNoDefaultMeasure() {
+        // If defaultMeasure is defined in a cube, it is initialized
+        // in RolapCube constructor and its type is RolapBaseCubeMeasure.
+        // If the attribute is not defined in a cube, it is initialized
+        // in RolapHierarchy.getDefaultMember() as RolapStoredMeasure.
+        // The leads to ClassCastException.
+        String cubeDef =
+            "<VirtualCube name=\"Foo\">\n"
+            + "  <VirtualCubeDimension name=\"Time\"/>\n"
+            + "  <VirtualCubeMeasure cubeName=\"Sales\" name=\"[Measures].[Sales Count]\"/>\n"
+            + "</VirtualCube>\n";
+        TestContext context =
+            getTestContext().create(
+                null, null, cubeDef, null, null, null);
+        propSaver.set(propSaver.properties.EnableNativeExisting, false);
+        context.assertQueryReturns(
+            "WITH MEMBER [Measures].[Count Existing] AS Count(existing [Time.Weekly].[Week].Members)\n"
+            + "SELECT {[Measures].[Count Existing]} ON 0\n"
+            + "FROM [Foo]\n"
+            + "WHERE [Time].[1997].[Q2]",
+            "Axis #0:\n"
+            + "{[Time].[1997].[Q2]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Count Existing]}\n"
+            + "Row #0: 14\n");
+    }
+
     public void testExistingAggSet() {
         // aggregate simple set
         assertQueryReturns(
