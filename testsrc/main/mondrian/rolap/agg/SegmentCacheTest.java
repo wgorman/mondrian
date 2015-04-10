@@ -13,7 +13,9 @@ import mondrian.olap.CacheControl;
 import mondrian.olap.Cube;
 import mondrian.olap.MondrianProperties;
 import mondrian.olap.MondrianServer;
+import mondrian.resource.MondrianResource;
 import mondrian.rolap.agg.SegmentCacheManager.CompositeSegmentCache;
+import mondrian.spi.SegmentBody;
 import mondrian.spi.SegmentCache;
 import mondrian.spi.SegmentHeader;
 import mondrian.test.BasicQueryTest;
@@ -33,6 +35,9 @@ public class SegmentCacheTest extends BasicQueryTest {
         super.setUp();
         getTestContext().getConnection().getCacheControl(null)
             .flushSchemaCache();
+        propSaver.set(
+            MondrianProperties.instance().SegmentCacheFailOnError,
+            true);
     }
 
     public void testCompoundPredicatesCollision() {
@@ -133,6 +138,39 @@ public class SegmentCacheTest extends BasicQueryTest {
                 .forConnection(getTestContext().getConnection())
                 .getAggregationManager().cacheMgr.compositeCache)
                 .removeListener(listener);
+            MondrianServer.forConnection(getTestContext().getConnection())
+                .getAggregationManager().cacheMgr.segmentCacheWorkers
+                .remove(testWorker);
+        }
+    }
+
+    public void testSegmentCacheFailOnError() {
+        SegmentCache cache =
+            new MockSegmentCache()
+            {
+                public SegmentBody get(SegmentHeader header) {
+                    throw new UnsupportedOperationException();
+                }
+                public boolean put(SegmentHeader header, SegmentBody body) {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        SegmentCacheWorker testWorker =
+            new SegmentCacheWorker(cache, null);
+        MondrianServer.forConnection(getTestContext().getConnection())
+            .getAggregationManager().cacheMgr.segmentCacheWorkers
+            .add(testWorker);
+        try {
+            propSaver.set(propSaver.properties.SegmentCacheFailOnError, true);
+            String mdx =
+                "select {[Measures].[Unit Sales]} on columns from [Sales]";
+            assertQueryThrows(mdx,
+                MondrianResource.instance()
+                    .SegmentCacheFailedToLoadSegment.baseMessage);
+
+            propSaver.set(propSaver.properties.SegmentCacheFailOnError, false);
+            executeQuery(mdx);
+        } finally {
             MondrianServer.forConnection(getTestContext().getConnection())
                 .getAggregationManager().cacheMgr.segmentCacheWorkers
                 .remove(testWorker);

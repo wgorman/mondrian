@@ -314,6 +314,21 @@ is an implementation of {@link mondrian.spi.SegmentCache}.
         <Type>String</Type>
     </PropertyDefinition>
     <PropertyDefinition>
+        <Name>SegmentCacheFailOnError</Name>
+        <Path>mondrian.rolap.SegmentCacheFailOnError</Path>
+        <Description>
+            Property which tells the SegmentLoader to throw an exception
+            if an exception is encountered while loading segments from
+            cache. <code>true</code> to throw back the errors,
+            <code>false</code> to log the error and continue execution.
+            Used only for testing or configuration issues. On a production
+            system, it is recommended to keep the default value. Defaults
+            to <code>true</code>.
+        </Description>
+        <Type>boolean</Type>
+        <Default>true</Default>
+    </PropertyDefinition>
+    <PropertyDefinition>
         <Name>SparseSegmentCountThreshold</Name>
         <Path>mondrian.rolap.SparseSegmentValueThreshold</Path>
         <Description>
