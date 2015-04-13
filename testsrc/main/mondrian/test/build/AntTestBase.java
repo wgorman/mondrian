@@ -80,7 +80,7 @@ abstract class AntTestBase extends TestCase
         // On hudson, ant is not on the path but is at /opt/ant1.7. If that
         // file exists, assume that we are on hudson. Otherwise, require ant
         // to be on the path.
-        String antCommand = "ant";
+        String antCommand = null;
         final String[] paths = {
             "/opt/ant1.7/bin/ant",
             "/opt/apache-ant-1.7.1/bin/ant"
@@ -92,7 +92,27 @@ abstract class AntTestBase extends TestCase
                 break;
             }
         }
+        if (antCommand == null) {
+            // try ant home
+            String antHome = System.getenv("ANT_HOME");
+            if (antHome != null && antHome.length() > 0) {
+                String os = System.getProperty("os.name").toLowerCase();
+                String ext = "";
+                if (os.contains("win")) {
+                    // runtime appears to have a problem executing just 'ant' on windows
+                    ext = ".bat";
+                }
 
+                File antFile = new File(antHome + File.separator + "bin" + File.separator + "ant" + ext);
+                if (antFile.exists()) {
+                    antCommand = antFile.getAbsolutePath();
+                }
+            }
+        }
+        // fall back to PATH
+        if (antCommand == null) {
+            antCommand = "ant";
+        }
         Runtime runtime = Runtime.getRuntime();
         Process proc =
             runtime.exec(
