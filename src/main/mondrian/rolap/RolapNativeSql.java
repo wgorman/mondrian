@@ -13,6 +13,7 @@ package mondrian.rolap;
 
 import mondrian.calc.Calc;
 import mondrian.calc.ExpCompiler;
+import mondrian.calc.MemberCalc;
 import mondrian.mdx.*;
 import mondrian.olap.*;
 import mondrian.olap.type.MemberType;
@@ -22,6 +23,7 @@ import mondrian.rolap.sql.SqlQuery;
 import mondrian.spi.Dialect;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,7 @@ public class RolapNativeSql {
     int storedMeasureCount = 0;
     final Set<Member> addlContext = new HashSet<Member>();
     final Map<String, String> preEvalExprs;
+    final Map<String, MemberExpr> preEvalMembers = new HashMap<String, MemberExpr>();
 
     /**
      * We remember one of the measures so we can generate
@@ -841,8 +844,14 @@ public class RolapNativeSql {
         // so we inherit from storedmeasure and delegate to the calculated member compiler
         CalculatedMemberSqlCompiler calcCompiler;
 
-        public TupleSqlCompiler(CalculatedMemberSqlCompiler calcCompiler) {
+        // pre eval compiler to help with handling function call expressions
+        // in the tuple, specifically StrToMember
+        PreEvalSqlCompiler preEvalSqlCompiler;
+
+        public TupleSqlCompiler(CalculatedMemberSqlCompiler calcCompiler,
+                                PreEvalSqlCompiler preEvalSqlCompiler) {
             this.calcCompiler = calcCompiler;
+            this.preEvalSqlCompiler = preEvalSqlCompiler;
         }
 
         public String compile(Exp exp) {
@@ -875,7 +884,14 @@ public class RolapNativeSql {
                   }
                   if (!currentMember) {
                       if (!(argExp instanceof MemberExpr)) {
-                          return null;
+                          if ((argExp instanceof FunCall)
+                              && ((FunCall) argExp).getFunName()
+                                     .equalsIgnoreCase("strtomember")
+                              && preEvalSqlCompiler.supportsExp(argExp)) {
+                                  argExp = preEvalSqlCompiler.getMemberExpr(argExp);
+                          } else {
+                              return null;
+                          }
                       }
                       Member member = ((MemberExpr)argExp).getMember();
                       if (member.isCalculated()) {
@@ -903,6 +919,13 @@ public class RolapNativeSql {
      * This compiler attempts to pre-evaluate static values before pushing down to SQL
      */
     class PreEvalSqlCompiler implements SqlCompiler {
+        
+        private SqlCompiler parentCompiler;
+
+        public PreEvalSqlCompiler(SqlCompiler compiler) {
+            this.parentCompiler = compiler;
+        }
+
         public boolean supportsExp( Exp exp ) {
             if (exp instanceof FunCall) {
                 FunCall funcall = (FunCall) exp;
@@ -910,8 +933,11 @@ public class RolapNativeSql {
                     return supportsExp(funcall.getArg(0));
                 } else if (funcall.getFunName().equalsIgnoreCase("ccur") && funcall.getArgCount() == 1) {
                     return supportsExp(funcall.getArg(0));
-                } else if (funcall.getFunName().equalsIgnoreCase("strtomember") && funcall.getArgCount() == 1) {
-                    return supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("strtomember")) {
+                    if(funcall.getArgCount() == 2 && !(funcall.getArg(1) instanceof Literal)) {
+                        return false;
+                    }
+                    return supportsExp(funcall.getArg(0)) || funcall.getArg(0) instanceof Literal;
                 } else if (funcall.getFunName().equalsIgnoreCase("CurrentMember")) {
                     // we need to verify that the current member isn't in the filter section
                     final RolapCubeDimension dimension;
@@ -946,14 +972,38 @@ public class RolapNativeSql {
                     if (!(funcall.getArg(1) instanceof Literal)) {
                         return false;
                     }
-                    return supportsExp(funcall.getArg(0));
-                } else if (funcall.getFunName().equalsIgnoreCase("Name")  && funcall.getArgCount() == 1) {
-                    return supportsExp(funcall.getArg(0));
+                    boolean validMember = false;
+                    if(funcall.getArg(0) instanceof MemberExpr) {
+                        Member member = ((MemberExpr) funcall.getArg(0)).getMember();
+                        validMember = !member.isCalculated() && !member.isMeasure();
+                    }
+                    return validMember || supportsExp(funcall.getArg(0));
+                } else if (funcall.getFunName().equalsIgnoreCase("Name")
+                    && funcall.getArgCount() == 1) {
+                    boolean validMember = false;
+                    if (funcall.getArg(0) instanceof MemberExpr) {
+                        Member member = ((MemberExpr) funcall.getArg(0)).getMember();
+                        validMember = !member.isCalculated() && !member.isMeasure();
+                    }
+                    return validMember || supportsExp(funcall.getArg(0));
                 }
             } else if (exp instanceof ParameterExpr) {
                 return true;
-            }
+            } 
             return false;
+        }
+        
+        public MemberExpr getMemberExpr(Exp exp) {
+            MemberExpr memberExpr = preEvalMembers.get(exp.toString());
+            if(memberExpr != null) {
+                return memberExpr;
+            }
+            ExpCompiler compiler = evaluator.getQuery().createCompiler();
+            MemberCalc calc = compiler.compileMember(exp);
+            Member member = calc.evaluateMember(evaluator);
+            memberExpr = new MemberExpr(member);
+            preEvalMembers.put(exp.toString(), memberExpr);
+            return memberExpr;
         }
 
         public String compile(Exp exp) {
@@ -964,12 +1014,19 @@ public class RolapNativeSql {
             if (preEvalExprs.containsKey(exp.toString())) {
                 return preEvalExprs.get(exp.toString());
             }
-            ExpCompiler compiler = evaluator.getQuery().createCompiler();
-            Calc calc = compiler.compileScalar(exp, true);
-            Object results = calc.evaluate(evaluator);
-            // convert a null string to a SQL string
-            if (results == null) {
-                results = "NULL";
+            Object results;
+            if ((exp instanceof FunCall) && ((FunCall) exp).getFunName()
+                                                           .equalsIgnoreCase("strtomember")) {
+                MemberExpr expr = getMemberExpr(exp);
+                results = parentCompiler.compile(expr);
+            } else {
+                ExpCompiler compiler = evaluator.getQuery().createCompiler();
+                Calc calc = compiler.compileScalar(exp, true);
+                results = calc.evaluate(evaluator);
+                // convert a null string to a SQL string
+                if (results == null) {
+                    results = "NULL";
+                }
             }
             preEvalExprs.put(exp.toString(), results.toString());
             return results.toString();
@@ -1002,13 +1059,13 @@ public class RolapNativeSql {
 
         numericCompiler = new CompositeSqlCompiler();
         booleanCompiler = new CompositeSqlCompiler();
-
-        numericCompiler.add( new PreEvalSqlCompiler() );
+        PreEvalSqlCompiler preEvalSqlCompiler = new PreEvalSqlCompiler(numericCompiler);
+        numericCompiler.add(preEvalSqlCompiler );
         numericCompiler.add(new NumberSqlCompiler());
         numericCompiler.add(new StoredMeasureSqlCompiler());
         CalculatedMemberSqlCompiler calcCompiler = new CalculatedMemberSqlCompiler(numericCompiler);
         numericCompiler.add(calcCompiler);
-        numericCompiler.add(new TupleSqlCompiler(calcCompiler));
+        numericCompiler.add(new TupleSqlCompiler(calcCompiler, preEvalSqlCompiler));
         numericCompiler.add(
             new ParenthesisSqlCompiler(Category.Numeric, numericCompiler));
         numericCompiler.add(
