@@ -138,7 +138,8 @@ public class OrPredicate extends ListPredicate {
             new HashMap<Integer, RolapStar.Column>();
 
         for (RolapStar.Column column : columns) {
-            columnMap.put(column.getBitPosition(), column);
+            final RolapStar.Column optimized = column.optimize();
+            columnMap.put(column.getBitPosition(), optimized);
         }
 
         buf.append("(");

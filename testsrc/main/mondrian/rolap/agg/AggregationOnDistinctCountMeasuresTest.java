@@ -1618,6 +1618,78 @@ public class AggregationOnDistinctCountMeasuresTest extends BatchTestCase {
             true,
             true);
     }
+
+    public void testStarColumnOptimization() {
+        // tests star column optimization in OrPredicate
+        TestContext testContext = TestContext.instance()
+            .create(
+                "  <Dimension name=\"Customer IDs\">\n"
+                + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>\n"
+                + "  <Dimension name=\"Store IDs\">\n"
+                + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Store IDs\" primaryKey=\"store_id\">\n"
+                + "      <Table name=\"store\"/>\n"
+                + "      <Level name=\"ID\" column=\"store_id\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>\n"
+                + "  <Dimension name=\"Product IDs\">\n"
+                + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Product IDs\" primaryKey=\"product_id\">\n"
+                + "      <Table name=\"product\"/>\n"
+                + "      <Level name=\"ID\" column=\"product_id\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>\n",
+                "<Cube name=\"Sales ID\">\n"
+                + "  <Table name=\"sales_fact_1997\"/>\n"
+                + "  <DimensionUsage name=\"Customer IDs\" source=\"Customer IDs\" foreignKey=\"customer_id\"/>\n"
+                + "  <DimensionUsage name=\"Store IDs\" source=\"Store IDs\" foreignKey=\"store_id\"/>\n"
+                + "  <DimensionUsage name=\"Product IDs\" source=\"Product IDs\" foreignKey=\"product_id\"/>\n"
+                + "  <Measure name=\"Store Cost Count\" column=\"store_cost\" aggregator=\"distinct-count\"/>\n"
+                + "</Cube>\n"
+                , null, null, null, null);
+        String mdx =
+            "WITH SET [Stores] AS Subset([Store IDs].[All Store IDs].Children, 0, 3)\n"
+            + "SELECT [Measures].[Store Cost Count] ON 0, [Stores] ON 1\n"
+            + "FROM [Sales ID]\n"
+            + "WHERE {([Product IDs].[ID].[477], [Customer IDs].[ID].[206]), "
+            + "([Product IDs].[ID].[35], [Customer IDs].[ID].[372])}";
+        testContext.assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Product IDs].[477], [Customer IDs].[206]}\n"
+            + "{[Product IDs].[35], [Customer IDs].[372]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Store Cost Count]}\n"
+            + "Axis #2:\n"
+            + "{[Store IDs].[0]}\n"
+            + "{[Store IDs].[1]}\n"
+            + "{[Store IDs].[2]}\n"
+            + "Row #0: \n"
+            + "Row #1: \n"
+            + "Row #2: 2\n");
+        if (!MondrianProperties.instance().UseAggregates.get()
+            && !MondrianProperties.instance().ReadAggregates.get())
+        {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n"
+                + "    `sales_fact_1997`.`store_id` as `c0`,\n"
+                + "    count(distinct `sales_fact_1997`.`store_cost`) as `m0`\n"
+                + "from\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`store_id` in ('0', '1', '2')\n"
+                + "and\n"
+                + "    (((`sales_fact_1997`.`customer_id`, `sales_fact_1997`.`product_id`) in (('206', '477'), ('372', '35'))))\n"
+                + "group by\n"
+                + "    `sales_fact_1997`.`store_id`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{ mysqlPattern });
+        }
+    }
 }
 
 // End AggregationOnDistinctCountMeasuresTest.java
