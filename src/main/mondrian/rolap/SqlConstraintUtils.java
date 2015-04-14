@@ -57,13 +57,28 @@ public class SqlConstraintUtils {
      *   contains calculated members. If true, thows an exception.
      * @param evaluator Evaluator
      */
+    public static void addContextConstraint(SqlQuery sqlQuery, AggStar aggStar, Evaluator evaluator,
+        RolapCube baseCube, boolean restrictMemberTypes) {
+        addContextConstraint(sqlQuery, aggStar, evaluator, baseCube, restrictMemberTypes, null);
+    }
+
+    /**
+     * This accepts an optional consolidationHandler which will consolidate queries if possible.
+     * @param sqlQuery
+     * @param aggStar
+     * @param evaluator
+     * @param baseCube
+     * @param restrictMemberTypes
+     * @param consolidationHandler
+     */
     public static void addContextConstraint(
+
         SqlQuery sqlQuery,
         AggStar aggStar,
         Evaluator evaluator,
         RolapCube baseCube,
-        boolean restrictMemberTypes)
-    {
+        boolean restrictMemberTypes,
+        ConsolidationHandler consolidationHandler) {
         if (baseCube == null && evaluator instanceof RolapEvaluator) {
             baseCube = ((RolapEvaluator) evaluator).getCube();
         }
@@ -169,25 +184,22 @@ public class SqlConstraintUtils {
                                 // permitted, we won't constraint.
                                 sqlQuery.addWhere(where, subquery);
                             }
-                        } else {
-                            addSimpleColumnConstraint(
-                                    sqlQuery,
-                                    column,
-                                    expr,
-                                    value,
-                                    subquery);
                         }
                         done.put(keyForSlicerMap, Boolean.TRUE);
                     }
                     // if done, no op
                 } else {
-                    // TODO: Add Subquery component to this
-                    // column not constrained by slicer
-                    addSimpleColumnConstraint(sqlQuery, column, expr, value, subquery);
+                    if (consolidationHandler != null) {
+                        consolidationHandler.configureQuery(sqlQuery, aggStar, rEvaluator, baseCube,
+                            restrictMemberTypes, column, expr, subquery, value);
+                    } else {
+                        // TODO: Add Subquery component to this
+                        // column not constrained by slicer
+                        addSimpleColumnConstraint(sqlQuery, column, expr, value, subquery);
+                    }
                 }
             }
         }
-
         // force Role based Access filtering
         addRoleAccessConstraints(
                 sqlQuery,
@@ -199,7 +211,7 @@ public class SqlConstraintUtils {
 
     /**
      * Same as {@link addConstraint} but tr
-     * 
+     *
      * @param sqlQuery
      * @param aggStar
      * @param evaluator
@@ -554,9 +566,12 @@ public class SqlConstraintUtils {
     }
 
     /**
-     * add 'expr = value' to where
+     * add 'expr = value' to where.
+     * This is public so that it can be called from ConsolidationHandlers,
+     * specifically the configureQuery() method which is called by this class
+     * in the addContextConstraint() method.
      */
-    private static void addSimpleColumnConstraint(
+    public static void addSimpleColumnConstraint(
         SqlQuery sqlQuery,
         RolapStar.Column column,
         String expr,
@@ -2023,7 +2038,10 @@ public class SqlConstraintUtils {
     /**
      * Generates a multi-value IN expression corresponding to a list of
      * member expressions, and adds the expression to the WHERE clause
-     * of a query, provided the member values are all non-null
+     * of a query, provided the member values are all non-null.
+     * This is public so that it can be called from ConsolidationHandlers,
+     * specifically the configureQuery() method which is called by this class
+     * in the addContextConstraint() method.
      *
      *
      * @param sqlQuery query containing the where clause
@@ -2038,7 +2056,7 @@ public class SqlConstraintUtils {
      *                            for parent levels.
      * @return a non-empty String if IN list was generated for the members.
      */
-    private static String generateSingleValueInExpr(
+    public static String generateSingleValueInExpr(
         SqlQuery sqlQuery,
         RolapCube baseCube,
         AggStar aggStar,

@@ -45,6 +45,7 @@ public class FastBatchingCellReader implements CellReader {
     private static final Logger LOGGER =
         Logger.getLogger(FastBatchingCellReader.class);
 
+
     private final int cellRequestLimit;
 
     private final RolapCube cube;
@@ -198,6 +199,62 @@ public class FastBatchingCellReader implements CellReader {
     }
 
     /**
+     * Consolidate requests using count and sum consolidators.
+     * The consolidated request, returns true if its addRequest method resulted
+     * in a normal request in the list being added. In this case, the normal request is removed
+     * from the list.
+     * If a consolidated request has returned true to any addRequest calls, its
+     * getConsolidatedRequests() method is called and the returned requests are added to the list.
+     * NativeRequestConsolidator instances can return multiple requests for two main reasons.
+     * Firstly, because it was unable to consolidate certain requests, or only able to do so in
+     * a reasonably primitive way, such as a UNION ALL. Therefore requests can
+     * be returned to the list so that they can be executed in parallel. Secondly, the
+     * consolidator may have to break up requests that it can consolidate because of restrictions
+     * on the maximum number of rows allowed in the IN clause of the particular dialect.
+     */
+    public void consolidateRequests() {
+        List<NativeRequestConsolidator> requests = new ArrayList<NativeRequestConsolidator>();
+
+        NativeRequestConsolidator added =
+            invokeConsolidator(new ConsolidationQuery.NativeCountRequestConsolidator());
+        if (added != null) {
+            requests.add(added);
+        }
+        added = invokeConsolidator(new ConsolidationQuery.NativeSumRequestConsolidator());
+        if (added != null) {
+            requests.add(added);
+        }
+        for (NativeRequestConsolidator request : requests) {
+            List<RolapNativeRequest> consolidated = request.getConsolidatedRequests();
+            nativeRequests.addAll(consolidated);
+        }
+    }
+
+    /**
+     * Execute the consolidator against the requests in our list.
+     * If it takes any requests out of the list, return it, so that it can be asked for its
+     * list of requests once we've run all consolidators.
+     * @param consolidator a consolidator
+     * @return the consolidator or null if it was not interested in any native requests.
+     */
+    private NativeRequestConsolidator invokeConsolidator(NativeRequestConsolidator consolidator) {
+        boolean add = false;
+        Iterator<RolapNativeRequest> it = nativeRequests.iterator();
+        while (it.hasNext()) {
+            RolapNativeRequest curr = it.next();
+            boolean added = consolidator.addRequest(curr);
+            if (added) {
+                it.remove();
+                add = true;
+            }
+        }
+        if(add) {
+            return consolidator;
+        }
+        return null;
+    }
+
+    /**
      * Resolves any pending cell reads using the cache. After calling this
      * method, all cells requested in a given batch are loaded into this
      * statement's local cache.
@@ -240,6 +297,8 @@ public class FastBatchingCellReader implements CellReader {
         // Process any native evaluations
         List<Future<Object>> nativeFutures = new ArrayList<Future<Object>>();
         if (!nativeRequests.isEmpty()) {
+            // consolidate requests before invoking
+            consolidateRequests();
             final Locus locus = Locus.peek();
             for (final RolapNativeRequest nr : nativeRequests) {
                 Future<Object> future = cacheMgr.nativeExecutor.submit(new Callable<Object>() {

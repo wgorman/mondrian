@@ -104,21 +104,23 @@ public class RolapNativeTopCount extends RolapNativeSet {
             return measure.getAggregator() != RolapAggregator.DistinctCount;
         }
 
+        /**
+         * This returns a CacheKey object
+         *
+         * @return
+         */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
+            if (this.getEvaluator() instanceof RolapEvaluator) {
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
+            }
             // Note: need to use string in order for caching to work
             if (orderByExpr != null) {
-                key.add(orderByExpr.toString());
+                key.setValue(getClass().getName() + ".orderByExpr", orderByExpr.toString());
             }
-            key.add(ascending);
-            key.add(topCount);
+            key.setValue(getClass().getName() + ".ascending", ascending);
+            key.setValue(getClass().getName() + ".topCount", topCount);
 
-            if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
-            }
             return key;
         }
     }

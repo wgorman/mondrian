@@ -1105,6 +1105,15 @@ public class SqlQuery {
         types.add(null);
     }
 
+    /**
+     * Accessor to the types. This saves turning the query into a String/Types pair
+     * when not needed.
+     * @return the list of types. The list is not wrapped or made unmodifiable.
+     */
+    public List<SqlStatement.Type> getTypes() {
+        return types;
+    }
+
     private void addType(SqlStatement.Type type) {
         types.add(type);
     }

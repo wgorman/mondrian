@@ -132,7 +132,7 @@ public interface TupleReader {
      *
      * @return Cache key
      */
-    Object getCacheKey();
+    CacheKey getCacheKey();
 
     /**
      * Indicates that there was an empty argument somewhere in the tuple.
