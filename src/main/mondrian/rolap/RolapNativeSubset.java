@@ -75,17 +75,18 @@ public class RolapNativeSubset extends RolapNativeSet {
             super.addConstraint(sqlQuery, baseCube, aggStar);
         }
 
+        /**
+         * This returns a CacheKey object
+         * @return
+         */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
-            key.add(start);
-            key.add(count);
-
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
             if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
             }
+            key.setValue(getClass().getName() + ".start", start);
+            key.setValue(getClass().getName()+ ".count", count);
+
             return key;
         }
     }

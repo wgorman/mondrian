@@ -24,6 +24,7 @@ import mondrian.rolap.aggmatcher.AggStar;
 import mondrian.rolap.cache.*;
 import mondrian.rolap.sql.*;
 
+import mondrian.util.Pair;
 import org.apache.log4j.Logger;
 
 import java.util.*;
@@ -48,7 +49,7 @@ public abstract class RolapNativeSet extends RolapNative {
     private SmartCache<Object, TupleList> cache =
         new SoftSmartCache<Object, TupleList>();
 
-    private SmartCache<Object, Integer> countCache = 
+    private SmartCache<Object, Integer> countCache =
         new SoftSmartCache<Object, Integer>();
 
     private SmartCache<Object, Double> sumCache =
@@ -133,6 +134,8 @@ public abstract class RolapNativeSet extends RolapNative {
     protected static abstract class SetConstraint extends SqlContextConstraint {
         CrossJoinArg[] args;
 
+        ConsolidationHandler consolidationHandler;
+
         SetConstraint(
             CrossJoinArg[] args,
             RolapEvaluator evaluator,
@@ -140,6 +143,24 @@ public abstract class RolapNativeSet extends RolapNative {
         {
             super(evaluator, strict);
             this.args = args;
+        }
+
+        /**
+         * The consolidation handler is used by the constraint to inject the SQL query
+         * with any members that the handler has been configured with. This happens
+         * during the calls to addConstraint and the two variants of addMemberConstaint.
+         * @param consolidationHandler the consolidation handler to set
+         */
+        public void setConsolidationHandler(ConsolidationHandler consolidationHandler) {
+            this.consolidationHandler = consolidationHandler;
+        }
+
+        /**
+         * Get the consolidation handler.
+         * @return the consolidation handler or null if it has not been set.
+         */
+        public ConsolidationHandler getConsolidationHandler() {
+            return consolidationHandler;
         }
 
         /**
@@ -155,18 +176,29 @@ public abstract class RolapNativeSet extends RolapNative {
         /**
          * If no join is required, there is no need to resolve an agg table.
          * specifing an aggstar downstream leads to unnecessary joins during
-         * member resolution. 
+         * member resolution.
          */
         public boolean skipAggTable() {
             return !isJoinRequired();
         }
 
+        /**
+         * Add a SQL constraint. This passes the consolidation handler to SqlConstraintUtils, which
+         * will call its configureQuery() method while setting the context contraint.
+         * This constraint object will also ask the handler to augment any cross join args with
+         * configured members, before calling the args addConstraint() method.
+         * @param sqlQuery
+         * @param baseCube
+         * @param aggStar
+         */
         public void addConstraint(
             SqlQuery sqlQuery,
             RolapCube baseCube,
             AggStar aggStar)
         {
-            super.addConstraint(sqlQuery, baseCube, aggStar);
+
+            SqlConstraintUtils.addContextConstraint(sqlQuery, aggStar, getEvaluator(), baseCube,
+                isStrict(), getConsolidationHandler());
             for (CrossJoinArg arg : args) {
                 // if the cross join argument has calculated members in its
                 // enumerated set, ignore the constraint since we won't
@@ -176,11 +208,72 @@ public abstract class RolapNativeSet extends RolapNative {
                     || !((MemberListCrossJoinArg) arg).hasCalcMembers())
                 {
                     RolapLevel level = arg.getLevel();
+                    if (level != null && arg instanceof DescendantsCrossJoinArg) {
+                        Level olapLevel = level.getParentLevel();
+                        if (olapLevel instanceof RolapLevel) {
+                            level = (RolapLevel) olapLevel;
+                        }
+                    }
+                    if (level != null) {
+                        RolapStar.Column c = ((RolapCubeLevel) level).getBaseStarKeyColumn(baseCube);
+                        RolapEvaluator eval = (RolapEvaluator) getEvaluator();
+                        if(getConsolidationHandler() != null) {
+                            arg = getConsolidationHandler().augmentCrossJoinArg(sqlQuery, level, c,
+                                eval, aggStar, arg);
+                        }
+                    }
                     if (level == null || levelIsOnBaseCube(baseCube, level)) {
                         arg.addConstraint(sqlQuery, baseCube, aggStar);
                     }
                 }
             }
+        }
+
+        /**
+         * Called from MemberChildren: adds <code>parent</code> to the current
+         * context and restricts the SQL resultset to that new context.
+         * This passes the consolidation handler to SqlConstaintUtils.addContextConstaint.
+         */
+        public void addMemberConstraint(SqlQuery sqlQuery, RolapCube baseCube, AggStar aggStar,
+            RolapMember parent) {
+            if (parent.isCalculated()) {
+                throw Util.newInternal("cannot restrict SQL to calculated member");
+            }
+            final int savepoint = getEvaluator().savepoint();
+            try {
+                getEvaluator().setContext(parent);
+                SqlConstraintUtils.addContextConstraint(sqlQuery, aggStar, getEvaluator(), baseCube,
+                    isStrict(), getConsolidationHandler());
+            } finally {
+                getEvaluator().restore(savepoint);
+            }
+
+            // comment out addMemberConstraint here since constraint
+            // is already added by addContextConstraint
+            // SqlConstraintUtils.addMemberConstraint(
+            //        sqlQuery, baseCube, aggStar, parent, true);
+        }
+
+        /**
+         * Adds <code>parents</code> to the current
+         * context and restricts the SQL resultset to that new context.
+         */
+        public void addMemberConstraint(SqlQuery sqlQuery, RolapCube baseCube, AggStar aggStar,
+            List<RolapMember> parents) {
+            ConsolidationHandler handler = getConsolidationHandler();
+            SqlConstraintUtils.addContextConstraint(sqlQuery, aggStar, getEvaluator(), baseCube,
+                isStrict(), handler);
+            if (parents.size() > 0) {
+                RolapStar.Column column = null;
+                RolapLevel memberLevel = parents.get(0).getLevel();
+                if (memberLevel instanceof RolapCubeLevel) {
+                    column = ((RolapCubeLevel) memberLevel).getBaseStarKeyColumn(baseCube);
+                    if (column != null && handler != null) {
+                        handler.augmentParentMembers(column, sqlQuery, aggStar, parents);
+                    }
+                }
+            }
+            SqlConstraintUtils.addMemberConstraint(sqlQuery, baseCube, aggStar, parents, true, false, false);
         }
 
         protected boolean levelIsOnBaseCube(
@@ -216,21 +309,22 @@ public abstract class RolapNativeSet extends RolapNative {
         }
 
         /**
-         * returns a key to cache the result
+         * This returns a CacheKey object
          */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
             // only add args that will be retrieved through native sql;
             // args that are sets with calculated members aren't executed
             // natively
+            List<CrossJoinArg> crossJoinArgs = new ArrayList<CrossJoinArg>();
             for (CrossJoinArg arg : args) {
                 if (!(arg instanceof MemberListCrossJoinArg)
                     || !((MemberListCrossJoinArg) arg).hasCalcMembers())
                 {
-                    key.add(arg);
+                    crossJoinArgs.add(arg);
                 }
             }
+            key.setCrossJoinArgs(crossJoinArgs);
             return key;
         }
 
@@ -280,14 +374,14 @@ public abstract class RolapNativeSet extends RolapNative {
         }
 
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
             if (parentConstraint != null) {
-                key.add(parentConstraint.getCacheKey());
+                return parentConstraint.getCacheKey();
             } else {
-                key.add(super.getCacheKey());
+                return super.getCacheKey();
             }
-            return key;
         }
+
+
 
         public MemberChildrenConstraint getMemberChildrenConstraint(
             RolapMember parent)
@@ -321,6 +415,9 @@ public abstract class RolapNativeSet extends RolapNative {
     private boolean multiThreaded = MondrianProperties.instance().SegmentCacheManagerNumberNativeThreads.get() > 0;
 
     protected class SetEvaluator implements NativeEvaluator {
+
+        public static final String KEY_SET_EVALUATOR_CROSSJOIN_ARGS = "mondrian.rolap.RolapNativeSet.SetEvaluator.crossjoin.args";
+        public static final String KEY_SET_EVALUATOR_MAX_ROWS = "mondrian.rolap.RolapNativeSet.SetEvaluator.max.rows";
         private final CrossJoinArg[] args;
         private final SchemaReaderWithMemberReaderAvailable schemaReader;
         private TupleConstraint constraint;
@@ -376,6 +473,10 @@ public abstract class RolapNativeSet extends RolapNative {
             return args;
         }
 
+        public SchemaReader getSchemaReader() {
+            return schemaReader;
+        }
+
         public Object execute(ResultStyle desiredResultStyle) {
             switch (desiredResultStyle) {
             case ITERABLE:
@@ -412,21 +513,7 @@ public abstract class RolapNativeSet extends RolapNative {
                 addLevel(tr, arg);
             }
 
-            // Look up the result in cache; we can't return the cached
-            // result if the tuple reader contains a target with calculated
-            // members because the cached result does not include those
-            // members; so we still need to cross join the cached result
-            // with those enumerated members.
-            //
-            // The key needs to include the arguments (projection) as well as
-            // the constraint, because it's possible (see bug MONDRIAN-902)
-            // that independent axes have identical constraints but different
-            // args (i.e. projections). REVIEW: In this case, should we use the
-            // same cached result and project different columns?
-            List<Object> key = new ArrayList<Object>();
-            key.add(tr.getCacheKey());
-            key.addAll(Arrays.asList(args));
-            key.add(maxRows);
+            CacheKey key = createCacheKey(tr);
 
             TupleList result = cache.get(key);
             boolean hasEnumTargets = (tr.getEnumTargetCount() > 0);
@@ -491,7 +578,7 @@ public abstract class RolapNativeSet extends RolapNative {
             return filterInaccessibleTuples(result);
         }
 
-        public void populateListCache(final SqlTupleReader tr, List<Object> key) {
+        public void populateListCache(final SqlTupleReader tr, CacheKey key) {
             if (listener != null) {
                 TupleEvent e = new TupleEvent(this, tr);
                 listener.executingSql(e);
@@ -515,7 +602,7 @@ public abstract class RolapNativeSet extends RolapNative {
             filterInaccessibleTuples(result);
         }
 
-        public void populateSumCache(final SqlTupleReader tr, List<Object> key) {
+        public void populateSumCache(final SqlTupleReader tr, CacheKey key) {
             DataSource dataSource = schemaReader.getDataSource();
             double sum = ((SqlTupleReader)tr).sumTuples(dataSource);
             if (!MondrianProperties.instance().DisableCaching.get()) {
@@ -528,23 +615,7 @@ public abstract class RolapNativeSet extends RolapNative {
             for (CrossJoinArg arg : args) {
                 addLevel(tr, arg);
             }
-
-            // Look up the result in cache; we can't return the cached
-            // result if the tuple reader contains a target with calculated
-            // members because the cached result does not include those
-            // members; so we still need to cross join the cached result
-            // with those enumerated members.
-            //
-            // The key needs to include the arguments (projection) as well as
-            // the constraint, because it's possible (see bug MONDRIAN-902)
-            // that independent axes have identical constraints but different
-            // args (i.e. projections). REVIEW: In this case, should we use the
-            // same cached result and project different columns?
-            List<Object> key = new ArrayList<Object>();
-            key.add(tr.getCacheKey());
-            key.addAll(Arrays.asList(args));
-            key.add(maxRows);
-
+            CacheKey key = createCacheKey(tr);
             Double result = sumCache.get(key);
             if (result != null) {
               // TODO: Add Listener Interface?  Is this for testing only?
@@ -579,7 +650,7 @@ public abstract class RolapNativeSet extends RolapNative {
             return  sum;
         }
 
-        public void populateCountCache(final SqlTupleReader tr, List<Object> key) {
+        public void populateCountCache(final SqlTupleReader tr, CacheKey key) {
             DataSource dataSource = schemaReader.getDataSource();
             int count = ((SqlTupleReader)tr).countTuples(dataSource);
 
@@ -593,27 +664,90 @@ public abstract class RolapNativeSet extends RolapNative {
             }
         }
 
+        /**
+         * This executes a SQL query that will return multiple count results in one call. For each
+         * returned result, the result is cached using the list of keys at the index of the
+         * returned
+         * result.
+         *
+         * @param tr    the SqlTupleReader
+         * @param query the SQL query
+         * @param keys  the list of cache keys
+         */
+        public void populateMultiCountCache(final SqlTupleReader tr, String query,
+                                            List<CacheKey> keys) {
+            DataSource dataSource = schemaReader.getDataSource();
+            List<Integer> counts = tr.multiCountTuples(dataSource, query);
+
+            assert counts.size() == keys.size() :
+                "multi count did not return the same number counts as there are keys. Counts:"
+                    + counts.size()
+                    + " Keys:"
+                    + keys.size();
+
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                for (int i = 0; i < keys.size(); i++) {
+                    int count = counts.get(i);
+                    if (tr.constraint instanceof CountConstraint) {
+                        // adds calc and all members to the overall count.
+                        count += ((CountConstraint) tr.constraint).addlCount;
+                    }
+                    CacheKey key = keys.get(i);
+                    countCache.put(key, count);
+                }
+            }
+        }
+
+        /**
+         * This executes a SQL query that will return multiple sum results in one call. For each
+         * returned result, the result is cached using the list of keys at the index of the
+         * returned
+         * result.
+         *
+         * @param tr    the SqlTupleReader
+         * @param query the SQL query
+         * @param keys  the list of cache keys
+         */
+        public void populateMultiSumCache(final SqlTupleReader tr, String query,
+                                          List<CacheKey> keys) {
+            DataSource dataSource = schemaReader.getDataSource();
+            List<Double> sums = tr.multiSumTuples(dataSource, query);
+
+            assert sums.size() == keys.size() :
+                "multi sum did not return the same number counts as there are keys. Counts:"
+                    + sums.size()
+                    + " Keys:"
+                    + keys.size();
+
+            if (!MondrianProperties.instance().DisableCaching.get()) {
+                for (int i = 0; i < keys.size(); i++) {
+
+                    CacheKey key = keys.get(i);
+                    sumCache.put(key, sums.get(i));
+                }
+            }
+        }
+
+        public SqlQuery getSumSql(SqlTupleReader tr) {
+            return tr.getSumSql(schemaReader.getDataSource());
+        }
+
+        public SqlQuery getUnwrappedSumSql(SqlTupleReader tr) {
+            return tr.getUnwrappedSumSql(schemaReader.getDataSource());
+        }
+
+
+        public Pair<SqlQuery, List<SqlStatement.Type>> getLevelMembersSql(SqlTupleReader tr,
+                                                                          boolean keyOnly) {
+            return tr.getLevelMembersSql(schemaReader.getDataSource(), keyOnly);
+        }
+
         protected int executeCount(final SqlTupleReader tr) {
             tr.setMaxRows(maxRows);
             for (CrossJoinArg arg : args) {
                 addLevel(tr, arg);
             }
-
-            // Look up the result in cache; we can't return the cached
-            // result if the tuple reader contains a target with calculated
-            // members because the cached result does not include those
-            // members; so we still need to cross join the cached result
-            // with those enumerated members.
-            //
-            // The key needs to include the arguments (projection) as well as
-            // the constraint, because it's possible (see bug MONDRIAN-902)
-            // that independent axes have identical constraints but different
-            // args (i.e. projections). REVIEW: In this case, should we use the
-            // same cached result and project different columns?
-            List<Object> key = new ArrayList<Object>();
-            key.add(tr.getCacheKey());
-            key.addAll(Arrays.asList(args));
-            key.add(maxRows);
+            CacheKey key = createCacheKey(tr);
 
             Integer result = countCache.get(key);
             if (result != null) {
@@ -653,6 +787,25 @@ public abstract class RolapNativeSet extends RolapNative {
             // should have already detected this eariler in the process.
             // filterInaccessibleTuples(result)
             return  count;
+        }
+
+        protected CacheKey createCacheKey(SqlTupleReader tr) {
+            // Look up the result in cache; we can't return the cached
+            // result if the tuple reader contains a target with calculated
+            // members because the cached result does not include those
+            // members; so we still need to cross join the cached result
+            // with those enumerated members.
+            //
+            // The key needs to include the arguments (projection) as well as
+            // the constraint, because it's possible (see bug MONDRIAN-902)
+            // that independent axes have identical constraints but different
+            // args (i.e. projections). REVIEW: In this case, should we use the
+            // same cached result and project different columns?
+            CacheKey key = tr.getCacheKey();
+
+            key.setValue(KEY_SET_EVALUATOR_CROSSJOIN_ARGS, Arrays.asList(args));
+            key.setValue(KEY_SET_EVALUATOR_MAX_ROWS, maxRows);
+            return key;
         }
 
         /**
@@ -894,12 +1047,12 @@ public abstract class RolapNativeSet extends RolapNative {
     /**
      * This is the native request for multi-threaded processing in FastBatchingCellReader
      */
-    static class NativeRequest implements RolapNativeRequest {
+    public static class NativeRequest implements RolapNativeRequest {
         RolapNativeSet.SetEvaluator eval;
-        List<Object> key;
+        CacheKey key;
         SqlTupleReader tr;
 
-        public NativeRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+        public NativeRequest(RolapNativeSet.SetEvaluator eval, CacheKey key, SqlTupleReader tr) {
             this.eval = eval;
             this.key = key;
             this.tr = tr;
@@ -909,13 +1062,25 @@ public abstract class RolapNativeSet extends RolapNative {
             eval.populateListCache(tr, key);
         }
 
+        public SetEvaluator getSetEvaluator() {
+            return eval;
+        }
+
+        public CacheKey getCacheKey() {
+            return key;
+        }
+
+        public SqlTupleReader getTupleReader() {
+            return tr;
+        }
+
         /**
          * two requests are considered identical if their keys match.
          * This prevents duplicate requests to be executed in parallel.
          */
         public boolean equals(Object other) {
             if (other instanceof NativeRequest) {
-                return ((NativeRequest)other).key.equals(key); 
+                return ((NativeRequest)other).key.equals(key);
             }
             return false;
         }
@@ -924,8 +1089,8 @@ public abstract class RolapNativeSet extends RolapNative {
     /**
      * This is the native sum request for multi-threaded processing in FastBatchingCellReader
      */
-    static class NativeSumRequest extends NativeRequest {
-        public NativeSumRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+    public static class NativeSumRequest extends NativeRequest {
+        public NativeSumRequest(RolapNativeSet.SetEvaluator eval, CacheKey key, SqlTupleReader tr) {
             super(eval, key, tr);
         }
 
@@ -937,8 +1102,8 @@ public abstract class RolapNativeSet extends RolapNative {
     /**
      * This is the native count request for multi-threaded processing in FastBatchingCellReader
      */
-    static class NativeCountRequest extends NativeRequest {
-        public NativeCountRequest(RolapNativeSet.SetEvaluator eval, List<Object> key, SqlTupleReader tr) {
+    public static class NativeCountRequest extends NativeRequest {
+        public NativeCountRequest(RolapNativeSet.SetEvaluator eval, CacheKey key, SqlTupleReader tr) {
             super(eval, key, tr);
         }
 
@@ -946,6 +1111,7 @@ public abstract class RolapNativeSet extends RolapNative {
             eval.populateCountCache(tr, key);
         }
     }
+
 }
 
 // End RolapNativeSet.java

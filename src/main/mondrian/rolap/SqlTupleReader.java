@@ -348,17 +348,24 @@ public class SqlTupleReader implements TupleReader {
         targets.add(new Target(level, memberBuilder, srcMembers));
     }
 
-    public Object getCacheKey() {
-        List<Object> key = new ArrayList<Object>();
-        key.add(constraint.getCacheKey());
-        key.add(SqlTupleReader.class);
+    public CacheKey getCacheKey() {
+        CacheKey key;
+        if(constraint instanceof SqlContextConstraint) {
+            key = new CacheKey((CacheKey)constraint.getCacheKey());
+        } else {
+            key = new CacheKey();
+            key.setValue(getClass().getName() + ".constraint.cache.key", constraint.getCacheKey());
+        }
+        key.setValue(getClass().getName() + ".tuple.reader.class", SqlTupleReader.class);
+        List<RolapLevel> targetLevels = new ArrayList<RolapLevel>();
         for (TargetBase target : targets) {
             // don't include the level in the key if the target isn't
             // processed through native sql
             if (target.srcMembers != null) {
-                key.add(target.getLevel());
+               targetLevels.add(target.getLevel());
             }
         }
+        key.setValue(getClass().getName() + ".target.levels", targetLevels);
         return key;
     }
 
@@ -571,6 +578,48 @@ public class SqlTupleReader implements TupleReader {
     }
 
     /**
+     * returns a SqlQuery without a summing wrapper around it.
+     * @param dataSource
+     * @return
+     */
+    public SqlQuery getUnwrappedSumSql(DataSource dataSource) {
+        if (!((RolapNativeSum.SumConstraint) constraint).isVirtualCubeQueryMode()) {
+            // single cube use case
+            final Pair<SqlQuery, List<SqlStatement.Type>> pair = getLevelMembersSql(dataSource,
+                true);
+            return pair.left;
+        } else {
+            // Two cube Usecase, triggers more complex SQL generation
+            // First generate the inner query selecting the tuple from the first fact
+            // table based on its current constraint
+            final Pair<SqlQuery, List<SqlStatement.Type>> pair = getLevelMembersSql(dataSource,
+                true);
+            SqlQuery inner = pair.left;
+
+            ((RolapNativeSum.SumConstraint) constraint).setInnerQuery(inner);
+            // let the sum constraint know about the inner query
+            final Pair<SqlQuery, List<SqlStatement.Type>> pair2 = getLevelMembersSql(dataSource,
+                true);
+            return pair2.left;
+        }
+    }
+
+    /**
+     * Returns a SqlQuery with a summing wrapper around it.
+     * @param dataSource
+     * @return
+     */
+    public SqlQuery getSumSql(DataSource dataSource) {
+        SqlQuery sql = getUnwrappedSumSql(dataSource);
+        SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
+        // Add the subquery to the wrapper query.
+        sumQuery.addFromQuery(sql.toString(), "sumQuery", true);
+        // Don't forget to select all columns.
+        sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
+        return sumQuery;
+    }
+
+    /**
      * This method performs a native sum on the tuples being requested.
      */
     public double sumTuples(DataSource dataSource) {
@@ -585,35 +634,7 @@ public class SqlTupleReader implements TupleReader {
                     partialTargets.add(target);
                 }
             }
-            if (!((RolapNativeSum.SumConstraint)constraint).isVirtualCubeQueryMode()) {
-                // single cube use case
-                final Pair<String, List<SqlStatement.Type>> pair =
-                    makeLevelMembersSql(dataSource, true);
-                SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
-                // Add the subquery to the wrapper query.
-                sumQuery.addFromQuery(
-                    pair.left, "sumQuery", true);
-                // Don't forget to select all columns.
-                sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
-                sql = sumQuery.toSqlAndTypes().left;
-            } else {
-                // Two cube Usecase, triggers more complex SQL generation
-                // First generate the inner query selecting the tuple from the first fact 
-                // table based on it's current constraint
-                final Pair<String, List<SqlStatement.Type>> pair =
-                    makeLevelMembersSql(dataSource, true);
-                // let the sum constraint know about the inner query
-                ((RolapNativeSum.SumConstraint)constraint).setInnerQuery(pair.left);
-                final Pair<String, List<SqlStatement.Type>> pair2 =
-                    makeLevelMembersSql(dataSource, true);
-                SqlQuery sumQuery = SqlQuery.newQuery(dataSource, "");
-                // Add the subquery to the wrapper query.
-                sumQuery.addFromQuery(
-                    pair2.left, "sumQuery", true);
-                // Don't forget to select all columns.
-                sumQuery.addSelect("sum(" + sumQuery.getDialect().quoteIdentifier("m1") + ")", null, null);
-                sql = sumQuery.toSqlAndTypes().left;
-            }
+            sql = getSumSql(dataSource).toString();
             assert sql != null && !sql.equals("");
 
             stmt = RolapUtil.executeQuery(
@@ -844,9 +865,150 @@ public class SqlTupleReader implements TupleReader {
         partialResult.add(row);
     }
 
-    Pair<String, List<SqlStatement.Type>> makeLevelMembersSql(
-        DataSource dataSource, boolean keyOnly)
-    {
+    /**
+     * Count a collection of sql rows or columns representing counts.
+     * @param dataSource  the data source.
+     * @param countQuery the SqlQuery to execute.
+     * @return a list of integers which are the values of of the count queries.
+     */
+    public List<Integer> multiCountTuples(DataSource dataSource, SqlQuery countQuery) {
+        String sql = countQuery.toSqlAndTypes().left;
+        return multiCountTuples(dataSource, sql);
+    }
+
+    /**
+     * Read a collection of sql rows or columns containing integer values.
+     * If the number of columns is 1, then this reads rows into the list.
+     * If the number of columns is > 1, then this takes a single row and reads
+     * columns into the list.
+     *
+     * @param dataSource the data source.
+     * @param sql the SQL to execute.
+     * @return a list of integers which are the values of of the count queries.
+     */
+    public List<Integer> multiCountTuples(DataSource dataSource, String sql) {
+        SqlStatement stmt = null;
+        String message = "Calculating count with members for " + targets;
+        final ResultSet resultSet;
+        List<Integer> ret = new ArrayList<Integer>();
+        try {
+            List<TargetBase> partialTargets = new ArrayList<TargetBase>();
+            for (TargetBase target : targets) {
+                if (target.srcMembers == null) {
+                    partialTargets.add(target);
+                }
+            }
+            assert sql != null && !sql.equals("");
+            stmt = RolapUtil.executeQuery(dataSource, sql, null, maxRows, 0,
+                new SqlStatement.StatementLocus(Locus.peek().execution,
+                    "SqlTupleReader.multiCountTuples " + partialTargets, message,
+                    SqlStatementEvent.Purpose.TUPLES, 0), -1, -1, null);
+            resultSet = stmt.getResultSet();
+            int width = resultSet.getMetaData().getColumnCount();
+            boolean countRows = true;
+            if (width > 1) {
+                countRows = false;
+            }
+            if (countRows) {
+                while (resultSet.next()) {
+                    ++stmt.rowCount;
+                    ret.add(resultSet.getInt(1));
+                }
+            } else {
+                if (resultSet.next()) {
+                    ++stmt.rowCount;
+                    for (int i = 0; i < width; i++) {
+                        ret.add(resultSet.getInt(i + 1));
+                    }
+                }
+
+            }
+        } catch (SQLException e) {
+            if (stmt == null) {
+                throw Util.newError(e, message);
+            } else {
+                throw stmt.handle(e);
+            }
+        } finally {
+            if (stmt != null) {
+                stmt.close();
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Read a collection of sql rows or columns containing integer values.
+     * If the number of columns is 1, then this reads rows into the list.
+     * If the number of columns is > 1, then this takes a single row and reads
+     * columns into the list.
+     *
+     * @param dataSource the data source.
+     * @param sql        the SQL to execute.
+     * @return a list of integers which are the values of of the count queries.
+     */
+    public List<Double> multiSumTuples(DataSource dataSource, String sql) {
+        SqlStatement stmt = null;
+        String message = "Calculating sum with members for " + targets;
+        final ResultSet resultSet;
+        List<Double> ret = new ArrayList<Double>();
+        try {
+            List<TargetBase> partialTargets = new ArrayList<TargetBase>();
+            for (TargetBase target : targets) {
+                if (target.srcMembers == null) {
+                    partialTargets.add(target);
+                }
+            }
+            assert sql != null && !sql.equals("");
+            stmt = RolapUtil.executeQuery(dataSource, sql, null, maxRows, 0,
+                new SqlStatement.StatementLocus(Locus.peek().execution,
+                    "SqlTupleReader.multiSumTuples " + partialTargets, message,
+                    SqlStatementEvent.Purpose.TUPLES, 0), -1, -1, null);
+            resultSet = stmt.getResultSet();
+            int width = resultSet.getMetaData().getColumnCount();
+            boolean countRows = true;
+            if (width > 1) {
+                countRows = false;
+            }
+            if (countRows) {
+                while (resultSet.next()) {
+                    ++stmt.rowCount;
+                    ret.add(resultSet.getDouble(1));
+                }
+            } else {
+                if (resultSet.next()) {
+                    ++stmt.rowCount;
+                    for (int i = 0; i < width; i++) {
+                        ret.add(resultSet.getDouble(i + 1));
+                    }
+                }
+
+            }
+        } catch (SQLException e) {
+            if (stmt == null) {
+                throw Util.newError(e, message);
+            } else {
+                throw stmt.handle(e);
+            }
+        } finally {
+            if (stmt != null) {
+                stmt.close();
+            }
+        }
+        return ret;
+    }
+
+    /**
+     * Preserves the SqlQuery object in the return value. The problem here
+     * is the types have to be separate from the query because they do not match
+     * up with the selects.
+     * Need to extend SqlQuery to support unions.
+     *
+     * @param dataSource
+     * @param keyOnly
+     * @return
+     */
+    Pair<SqlQuery, List<SqlStatement.Type>> getLevelMembersSql(DataSource dataSource, boolean keyOnly) {
         // In the case of a virtual cube, if we need to join to the fact
         // table, we do not necessarily have a single underlying fact table,
         // as the underlying base cubes in the virtual cube may all reference
@@ -876,7 +1038,8 @@ public class SqlTupleReader implements TupleReader {
             Collection<RolapCube> fullyJoiningBaseCubes =
                 getFullyJoiningBaseCubes(baseCubes);
             if (fullyJoiningBaseCubes.size() == 0) {
-                return sqlForEmptyTuple(dataSource, baseCubes);
+                SqlQuery q = sqlQueryForEmptyTuple(dataSource, baseCubes);
+                return Pair.of(q, q.getTypes());
             }
             // generate sub-selects, each one joining with one of
             // the fact table referenced
@@ -897,6 +1060,9 @@ public class SqlTupleReader implements TupleReader {
 
             Integer unionLimit = null;
             Integer unionOffset = null;
+            SqlQuery currQuery = null;
+            boolean pretty = MondrianProperties.instance().GenerateFormattedSql.get();
+            String spc = pretty ? Util.nl : " ";
 
             try {
                 for (RolapCube baseCube : fullyJoiningBaseCubes) {
@@ -958,12 +1124,17 @@ public class SqlTupleReader implements TupleReader {
                             subquery.setOffset(null);
                         }
                     }
-                    prependString =
-                        MondrianProperties.instance().GenerateFormattedSql.get()
-                            ? Util.nl + UNION + Util.nl
+                    currQuery = subquery;
+                    prependString = pretty ? Util.nl + UNION + Util.nl
                             : " " + UNION + " ";
                     final Pair<String, List<SqlStatement.Type>> pair = subquery.toSqlAndTypes();
-                    selectString.append(pair.left);
+                    if(currQuery.getDialect().supportsWithClause()) {
+                        selectString.append(spc).append("SELECT *").append(spc).append("FROM ( ");
+                        selectString.append(pair.left);
+                        selectString.append(" ) as sub1").append(spc);
+                    } else {
+                        selectString.append(pair.left);
+                    }
                     types = pair.right;
                 }
             } finally {
@@ -975,7 +1146,7 @@ public class SqlTupleReader implements TupleReader {
                 // Because there is only one virtual cube to
                 // join on, we can swap the union query by
                 // the original one.
-                return Pair.of(selectString.toString(), types);
+                return Pair.of(currQuery, types);
             } else {
                 // Add the subquery to the wrapper query.
                 unionQuery.addFromQuery(
@@ -1009,15 +1180,24 @@ public class SqlTupleReader implements TupleReader {
                     unionQuery.setOffset(unionOffset);
                 }
 
-                return Pair.of(unionQuery.toSqlAndTypes().left, types);
+                return Pair.of(unionQuery, types);
             }
 
         } else {
             // This is the standard code path with regular single-fact table
             // cubes.
-            return generateSelectForLevels(
-                dataSource, cube, WhichSelect.ONLY, keyOnly).toSqlAndTypes();
+            SqlQuery q = generateSelectForLevels(dataSource, cube, WhichSelect.ONLY, keyOnly);
+            return Pair.of(q, q.getTypes());
         }
+    }
+
+    Pair<String, List<SqlStatement.Type>> makeLevelMembersSql(DataSource dataSource,
+        boolean keyOnly) {
+        Pair<SqlQuery, List<SqlStatement.Type>> query = getLevelMembersSql(dataSource, keyOnly);
+        if (query != null) {
+            return Pair.of(query.left.toSqlAndTypes().left, query.right);
+        }
+        return null;
     }
 
     private Collection<RolapCube> getFullyJoiningBaseCubes(
@@ -1049,15 +1229,13 @@ public class SqlTupleReader implements TupleReader {
         return baseCubes;
     }
 
-    Pair<String, List<SqlStatement.Type>> sqlForEmptyTuple(
-        DataSource dataSource,
-        final Collection<RolapCube> baseCubes)
-    {
+    SqlQuery sqlQueryForEmptyTuple(DataSource dataSource,
+        final Collection<RolapCube> baseCubes) {
         final SqlQuery sqlQuery = SqlQuery.newQuery(dataSource, null);
         sqlQuery.addSelect("0", null);
         sqlQuery.addFrom(baseCubes.iterator().next().getFact(), null, true);
         sqlQuery.addWhere("1 = 0");
-        return sqlQuery.toSqlAndTypes();
+        return sqlQuery;
     }
 
     /**

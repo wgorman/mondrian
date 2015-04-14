@@ -43,7 +43,7 @@ import java.util.*;
 public class SqlContextConstraint
     implements MemberChildrenConstraint, TupleConstraint
 {
-    private final List<Object> cacheKey;
+    private final CacheKey cacheKey;
     private Evaluator evaluator;
     private boolean strict;
 
@@ -251,9 +251,9 @@ public class SqlContextConstraint
     SqlContextConstraint(RolapEvaluator evaluator, boolean strict) {
         this.evaluator = evaluator.push();
         this.strict = strict;
-        cacheKey = new ArrayList<Object>();
-        cacheKey.add(getClass());
-        cacheKey.add(strict);
+        cacheKey = new CacheKey();
+        cacheKey.setConstraintClass(getClass());
+        cacheKey.setStrict(strict);
 
         List<Member> members = new ArrayList<Member>();
         List<Member> expandedMembers = new ArrayList<Member>();
@@ -269,24 +269,25 @@ public class SqlContextConstraint
                 SqlConstraintUtils.expandSupportedCalculatedMembers(
                     members,
                     evaluator)));
-        cacheKey.add(expandedMembers);
+        cacheKey.setMembers(expandedMembers);
 
         // TODO: If slicerTuple contains a calculated member in this
         // query, it may be different in the next.  See
         // CompoundSlicerTest.testTopCountWithAggregatedMemberCacheKey()
         TupleList slicerTuples = evaluator.getSlicerTuples();
         if (slicerTuples != null) {
-            cacheKey.add(slicerTuples);
+            cacheKey.setSlicerTuples(slicerTuples);
         }
-
         // Add restrictions imposed by Role based access filtering
         Map<Level, List<RolapMember>> roleMembers =
             SqlConstraintUtils.getRoleConstraintMembers(
                 this.getEvaluator().getSchemaReader(),
                 this.getEvaluator().getMembers());
+        List<List<RolapMember>> container = new ArrayList<List<RolapMember>>();
         for (List<RolapMember> list : roleMembers.values()) {
-            cacheKey.addAll(list);
+            container.add(list);
         }
+        cacheKey.setRoleMemberLists(container);
 
         // For virtual cubes, context constraint should be evaluated in the
         // query's context, because the query might reference different base
@@ -298,7 +299,7 @@ public class SqlContextConstraint
         // code in RolapResult() that replaces the default measure seems to
         // do that.
         if (evaluator.getCube().isVirtual()) {
-            cacheKey.addAll(evaluator.getBaseCubes());
+            cacheKey.setCubes(evaluator.getBaseCubes());
         }
     }
 
@@ -407,8 +408,16 @@ public class SqlContextConstraint
         return this;
     }
 
+    /**
+     * This returns a CacheKey object.
+     * @return the cache key
+     */
     public Object getCacheKey() {
         return cacheKey;
+    }
+
+    protected boolean isStrict() {
+        return strict;
     }
 
     public Evaluator getEvaluator() {
