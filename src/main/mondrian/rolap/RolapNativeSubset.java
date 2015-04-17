@@ -14,7 +14,6 @@ import java.util.List;
 
 import javax.sql.DataSource;
 
-import mondrian.mdx.ResolvedFunCall;
 import mondrian.olap.Exp;
 import mondrian.olap.FunDef;
 import mondrian.olap.Level;
@@ -76,17 +75,18 @@ public class RolapNativeSubset extends RolapNativeSet {
             super.addConstraint(sqlQuery, baseCube, aggStar);
         }
 
+        /**
+         * This returns a CacheKey object
+         * @return
+         */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
-            key.add(start);
-            key.add(count);
-
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
             if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
             }
+            key.setValue(getClass().getName() + ".start", start);
+            key.setValue(getClass().getName()+ ".count", count);
+
             return key;
         }
     }
@@ -184,7 +184,9 @@ public class RolapNativeSubset extends RolapNativeSet {
                         start, count, combinedArgs, evaluator, null);
                 SetEvaluator sev =
                     new SetEvaluator(cjArgs, schemaReader, constraint);
-                sev.setMaxRows(count);
+                if (count != null) {
+                    sev.setMaxRows(count);
+                }
                 LOGGER.debug("using native subset");
                 return sev;
             } finally {

@@ -124,6 +124,17 @@ public class PostgreSqlDialect extends JdbcDialectImpl {
     public boolean supportsLimitAndOffset() {
         return true;
     }
+
+    public String generateLimitOffsetClause(Integer limit, Integer offset) {
+        final StringBuilder buf = new StringBuilder();
+        if (limit != null) {
+            buf.append(" limit ").append(limit);
+        }
+        if (offset != null) {
+            buf.append(" offset ").append(offset);
+        }
+        return buf.toString();
+    }
 }
 
 // End PostgreSqlDialect.java

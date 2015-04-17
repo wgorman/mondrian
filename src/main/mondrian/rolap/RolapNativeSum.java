@@ -242,7 +242,7 @@ public class RolapNativeSum extends RolapNativeSet {
      * Extracts the stored measures referenced in an expression
      *
      * @param exp expression
-     * @param baseCubes set of base cubes
+     * @param foundMeasure found measures
      */
     private static void findMeasure(
         Exp exp,
@@ -277,7 +277,7 @@ public class RolapNativeSum extends RolapNativeSet {
     static class SumConstraint extends SetConstraint {
 
         boolean virtualCubeQueryMode = false;
-        String innerSql = null;
+        SqlQuery innerSql = null;
         Member measure;
         Member evalMeasure;
         TupleConstraint delegatingConstraint;
@@ -305,13 +305,28 @@ public class RolapNativeSum extends RolapNativeSet {
           return virtualCubeQueryMode == true && innerSql == null;
         }
 
-        public void setInnerQuery(String innerSql) {
-          this.innerSql = innerSql;
+        public void setInnerQuery(SqlQuery innerSql) {
+            if(this.innerSql != null) {
+                return;
+            }
+            this.innerSql = innerSql;
             // change the base cube to the summed measure
             List<RolapCube> baseCubes = new ArrayList<RolapCube>();
             baseCubes.add(((RolapStoredMeasure)measure).getCube());
             getEvaluator().setBaseCubes(baseCubes);
         }
+
+        /**
+         * Pass the handler to the delegating constraint if it supports it.
+         * @param consolidationHandler
+         */
+        public void setConsolidationHandler(ConsolidationHandler consolidationHandler) {
+            super.setConsolidationHandler(consolidationHandler);
+            if(delegatingConstraint != null && delegatingConstraint instanceof SetConstraint) {
+                ((SetConstraint)delegatingConstraint).setConsolidationHandler(consolidationHandler);
+            }
+        }
+
 
         @Override
         public void addConstraint(
@@ -377,13 +392,45 @@ public class RolapNativeSum extends RolapNativeSet {
                     // will depend on the current args foreign key
                     // this assumes we are working with a flat dimension
                     // a check during the evaluation creation verifies this
+                    ConsolidationHandler handler = getConsolidationHandler();
+                    if (handler != null) {
+                        ConsolidationMembers members = handler.getLevelMembers();
+                        if (members != null && members.getColumnExpression() != null && members.getMembers().size() > 0) {
+                            this.innerSql.addSelect(members.getColumnExpression(), null, "c1");
+                            this.innerSql.addGroupBy(members.getColumnExpression());
+                        }
+                    }
                     if (sqlQuery.getDialect().supportsWithClause()) {
-                        String str = sqlQuery.addWith(innerSql);
-                        sqlQuery.addWhere(columnExpr + " IN ( select * from " + str + " )");
+                        String str = sqlQuery.addWith(innerSql.toString());
+                        sqlQuery.addWhere(columnExpr + " IN ( select " + sqlQuery.getDialect()
+                                                                                 .quoteIdentifier(
+                                                                                     "c0") + " from " + str + " )");
                     } else {
-                        sqlQuery.addFromQuery(innerSql,  "tbl001", true);
+                        sqlQuery.addFromQuery(innerSql.toString(),  "tbl001", true);
                         sqlQuery.addWhere(columnExpr + " = " + sqlQuery.getDialect().quoteIdentifier("tbl001")
                             + "." + sqlQuery.getDialect().quoteIdentifier("c0"));
+                    }
+                    if (handler != null) {
+                        ConsolidationMembers members = handler.getLevelMembers();
+                        if (members != null && members.getColumnExpression() != null && members.getMembers().size() > 0) {
+                            sqlQuery.addSelect(members.getColumnExpression(), null, "m2");
+                            sqlQuery.addGroupBy(members.getColumnExpression());
+                            if (!sqlQuery.getDialect().supportsWithClause()) {
+                                sqlQuery.addWhere(members.getColumnExpression()
+                                        + " = "
+                                        + sqlQuery.getDialect()
+                                               .quoteIdentifier("tbl001")
+                                        + "."
+                                        + sqlQuery.getDialect().quoteIdentifier("c1"));
+                            } else {
+                                sqlQuery.addWhere(members.getColumnExpression()
+                                    + " IN ( select "
+                                    + sqlQuery.getDialect().quoteIdentifier("c1")
+                                    + " from "
+                                    + sqlQuery.getDialect().quoteIdentifier("wq1")
+                                    + " )");
+                            }
+                        }
                     }
                 }
             }
@@ -452,22 +499,27 @@ public class RolapNativeSum extends RolapNativeSet {
             return true;
         }
 
+        /**
+         * This returns a CacheKey object
+         * @return
+         */
         @Override
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            //  // we're "special"
-            key.add(this.getClass());
-            key.add(measure);
-            key.add(evalMeasure);
-            if (delegatingConstraint != null) {
-                key.add(delegatingConstraint.getCacheKey());
+            CacheKey key;
+            if (delegatingConstraint != null && delegatingConstraint instanceof SetConstraint) {
+                key = new CacheKey((CacheKey) (delegatingConstraint).getCacheKey());
             } else {
-                key.add(super.getCacheKey());
-                if (this.getEvaluator() instanceof RolapEvaluator) {
-                    key.add(
-                        ((RolapEvaluator)this.getEvaluator())
-                        .getSlicerMembers());
-                }
+                key = new CacheKey((CacheKey) super.getCacheKey());
+            }
+            if (this.getEvaluator() instanceof RolapEvaluator) {
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
+            }
+            // is this really needed?
+            key.setValue(getClass().getName()+ ".my.class", this.getClass());
+            key.setValue(getClass().getName() + ".measure", measure);
+            key.setValue(getClass().getName() + ".eval.measure", evalMeasure);
+            if (delegatingConstraint != null && !(delegatingConstraint instanceof SetConstraint)) {
+                key.setValue(getClass().getName() + ".delegating.cache.key", delegatingConstraint.getCacheKey());
             }
             return key;
         }

@@ -64,6 +64,6 @@ echo Using JAVA_HOME: %JAVA_HOME%
 echo Using JAVACMD: %JAVACMD%
 echo Using Ant arguments: %ANT_ARGUMENTS%
 
-ant %ANT_ARGUMENTS%
+IF "%ANT_HOME%"=="" ( ant %ANT_ARGUMENTS% ) ELSE ( %ANT_HOME%\bin\ant %ANT_ARGUMENTS% )
 
 rem End buildOnJdk.bat

@@ -318,6 +318,22 @@ public class MySqlDialect extends JdbcDialectImpl {
     public boolean supportsLimitAndOffset() {
         return true;
     }
+
+    public String generateLimitOffsetClause(Integer limit, Integer offset) {
+        final StringBuilder buf = new StringBuilder();
+        if (limit != null) {
+            buf.append(" limit ").append(limit);
+        } else if (offset != null) {
+            // According to https://dev.mysql.com/doc/refman/5.7/en/select.html:
+            // To retrieve all rows from a certain offset up to the end of
+            // the result set, you can use some large number for the second parameter.
+            buf.append(" limit ").append(Long.MAX_VALUE);
+        }
+        if (offset != null) {
+            buf.append(" offset ").append(offset);
+        }
+        return buf.toString();
+    }
 }
 
 // End MySqlDialect.java

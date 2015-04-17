@@ -213,21 +213,21 @@ public class RolapNativeCount extends RolapNativeSet {
             return joinRequired || (getEvaluator().isNonEmpty() && super.isJoinRequired());
         }
 
+        /**
+         * This returns a CacheKey object
+         * @return
+         */
         @Override
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            //  // we're "special"
-            //  key.add(this.getClass());
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey)super.getCacheKey());
             if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
             }
-            key.add(addlCount);
-            key.add(joinRequired);
+            key.setValue(getClass().getName() + ".addlCount", addlCount);
+            key.setValue(getClass().getName() + ".joinRequired", joinRequired);
             return key;
         }
+
     }
 }
 

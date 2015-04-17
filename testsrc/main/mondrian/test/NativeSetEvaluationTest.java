@@ -9,6 +9,7 @@
 package mondrian.test;
 
 import mondrian.olap.MondrianProperties;
+import mondrian.olap.Result;
 import mondrian.rolap.BatchTestCase;
 import mondrian.spi.Dialect;
 import mondrian.spi.Dialect.DatabaseProduct;
@@ -1417,6 +1418,99 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #7: 1,714\n"
             + "Row #8: 37,792\n"
             + "Row #9: 1,764\n");
+    }
+
+    public void testNativeSubsetWithoutLimit() {
+        final boolean useAgg =
+            MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        final String mdx =
+            "WITH\n"
+            + "  SET TC AS 'Subset([Product].[Food].Children, 10)'\n"
+            + "  SELECT NON EMPTY [Measures].[Unit Sales] on 0,\n"
+            + "    TC ON 1 \n"
+            + "  FROM [Sales] WHERE {([Time].[1997])}\n";
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeSubset.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+            // According to https://dev.mysql.com/doc/refman/5.7/en/select.html:
+            // To retrieve all rows from a certain offset up to the end of
+            // the result set, you can use some large number for the second parameter.
+            final String mysqlQuery =
+                "select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    (`product_class`.`product_family` = 'Food')\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`\n"
+                + "order by\n"
+                + "    ISNULL(`product_class`.`product_family`) ASC, `product_class`.`product_family` ASC,\n"
+                + "    ISNULL(`product_class`.`product_department`) ASC, `product_class`.`product_department` ASC limit 9223372036854775807 offset 10";
+            SqlPattern mysqlPattern =
+                new SqlPattern(DatabaseProduct.MYSQL, mysqlQuery, null);
+            final String verticaQuery =
+                "select\n"
+                + "    \"product_class\".\"product_family\" as \"c0\",\n"
+                + "    \"product_class\".\"product_department\" as \"c1\"\n"
+                + "from\n"
+                + "    \"product_class\" as \"product_class\",\n"
+                + "    \"product\" as \"product\",\n"
+                + "    \"sales_fact_1997\" as \"sales_fact_1997\",\n"
+                + "    \"time_by_day\" as \"time_by_day\"\n"
+                + "where\n"
+                + "    \"sales_fact_1997\".\"product_id\" = \"product\".\"product_id\"\n"
+                + "and\n"
+                + "    \"product\".\"product_class_id\" = \"product_class\".\"product_class_id\"\n"
+                + "and\n"
+                + "    \"sales_fact_1997\".\"time_id\" = \"time_by_day\".\"time_id\"\n"
+                + "and\n"
+                + "    \"time_by_day\".\"the_year\" = 1997\n"
+                + "and\n"
+                + "    (\"product_class\".\"product_family\" = 'Food')\n"
+                + "group by\n"
+                + "    \"product_class\".\"product_family\",\n"
+                + "    \"product_class\".\"product_department\"\n"
+                + "order by\n"
+                + "    CASE WHEN \"product_class\".\"product_family\" IS NULL THEN 1 ELSE 0 END, \"product_class\".\"product_family\" ASC,\n"
+                + "    CASE WHEN \"product_class\".\"product_department\" IS NULL THEN 1 ELSE 0 END, \"product_class\".\"product_department\" ASC offset 10";
+            SqlPattern verticaPattern =
+                new SqlPattern(DatabaseProduct.VERTICA, verticaQuery, null);
+            assertQuerySql(mdx, new SqlPattern[]{mysqlPattern, verticaPattern});
+        }
+        assertQueryReturns(
+            mdx,
+            "Axis #0:\n"
+            + "{[Time].[1997]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Unit Sales]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Food].[Produce]}\n"
+            + "{[Product].[Food].[Seafood]}\n"
+            + "{[Product].[Food].[Snack Foods]}\n"
+            + "{[Product].[Food].[Snacks]}\n"
+            + "{[Product].[Food].[Starchy Foods]}\n"
+            + "Row #0: 37,792\n"
+            + "Row #1: 1,764\n"
+            + "Row #2: 30,545\n"
+            + "Row #3: 6,884\n"
+            + "Row #4: 5,262\n");
     }
 
     public void testNativeSubsetWithAllMembers() {
@@ -2899,34 +2993,38 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
       mysqlQuery =
           "select\n"
-          + "    sum(`m1`)\n"
-          + "from\n"
-          + "    (select\n"
-          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
-          + "from\n"
-          + "    `store` as `store`,\n"
-          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-          + "    `time_by_day` as `time_by_day`,\n"
-          + "    `product_class` as `product_class`,\n"
-          + "    `product` as `product`\n"
-          + "where\n"
-          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-          + "and\n"
-          + "    `time_by_day`.`the_year` = 1997\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-          + "and\n"
-          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-          + "and\n"
-          + "    `product_class`.`product_family` = 'Drink'\n"
-          + "group by\n"
-          + "    `store`.`store_country`,\n"
-          + "    `store`.`store_state`,\n"
-          + "    `store`.`store_city`\n"
-          + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 3000)) as `sumQuery`";
+              + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+              + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+              + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+              + "from\n"
+              + "    (select\n"
+              + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`,\n"
+              + "    `product_class`.`product_family` as `m2`\n"
+              + "from\n"
+              + "    `store` as `store`,\n"
+              + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+              + "    `time_by_day` as `time_by_day`,\n"
+              + "    `product_class` as `product_class`,\n"
+              + "    `product` as `product`\n"
+              + "where\n"
+              + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+              + "and\n"
+              + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+              + "and\n"
+              + "    `time_by_day`.`the_year` = 1997\n"
+              + "and\n"
+              + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+              + "and\n"
+              + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+              + "and\n"
+              + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+              + "group by\n"
+              + "    `store`.`store_country`,\n"
+              + "    `store`.`store_state`,\n"
+              + "    `store`.`store_city`,\n"
+              + "    `product_class`.`product_family`\n"
+              + "having\n"
+              + "    (sum(`sales_fact_1997`.`unit_sales`) > 3000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -2955,36 +3053,40 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
       mysqlQuery =
           "select\n"
-          + "    sum(`m1`)\n"
-          + "from\n"
-          + "    (select\n"
-          + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`\n"
-          + "from\n"
-          + "    `store` as `store`,\n"
-          + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-          + "    `time_by_day` as `time_by_day`,\n"
-          + "    `product_class` as `product_class`,\n"
-          + "    `product` as `product`\n"
-          + "where\n"
-          + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-          + "and\n"
-          + "    `time_by_day`.`the_year` = 1997\n"
-          + "and\n"
-          + "    `time_by_day`.`quarter` = 'Q1'\n"
-          + "and\n"
-          + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-          + "and\n"
-          + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-          + "and\n"
-          + "    `product_class`.`product_family` = 'Drink'\n"
-          + "group by\n"
-          + "    `store`.`store_country`,\n"
-          + "    `store`.`store_state`,\n"
-          + "    `store`.`store_city`\n"
-          + "having\n"
-          + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+              + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+              + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+              + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+              + "from\n"
+              + "    (select\n"
+              + "    sum(`sales_fact_1997`.`unit_sales`) as `m1`,\n"
+              + "    `product_class`.`product_family` as `m2`\n"
+              + "from\n"
+              + "    `store` as `store`,\n"
+              + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+              + "    `time_by_day` as `time_by_day`,\n"
+              + "    `product_class` as `product_class`,\n"
+              + "    `product` as `product`\n"
+              + "where\n"
+              + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+              + "and\n"
+              + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+              + "and\n"
+              + "    `time_by_day`.`the_year` = 1997\n"
+              + "and\n"
+              + "    `time_by_day`.`quarter` = 'Q1'\n"
+              + "and\n"
+              + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+              + "and\n"
+              + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+              + "and\n"
+              + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+              + "group by\n"
+              + "    `store`.`store_country`,\n"
+              + "    `store`.`store_state`,\n"
+              + "    `store`.`store_city`,\n"
+              + "    `product_class`.`product_family`\n"
+              + "having\n"
+              + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
       if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
           getTestContext().flushSchemaCache();
@@ -3022,36 +3124,40 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-            + "    sum(`m1`)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
-            + "from\n"
-            + "    `store` as `store`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`,\n"
-            + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `time_by_day`.`quarter` = 'Q1'\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-            + "and\n"
-            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Drink'\n"
-            + "group by\n"
-            + "    `store`.`store_country`,\n"
-            + "    `store`.`store_state`,\n"
-            + "    `store`.`store_city`\n"
-            + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+                + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+                + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+                + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+                + "from\n"
+                + "    (select\n"
+                + "    count(`sales_fact_1997`.`product_id`) as `m1`,\n"
+                + "    `product_class`.`product_family` as `m2`\n"
+                + "from\n"
+                + "    `store` as `store`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+                + "group by\n"
+                + "    `store`.`store_country`,\n"
+                + "    `store`.`store_state`,\n"
+                + "    `store`.`store_city`,\n"
+                + "    `product_class`.`product_family`\n"
+                + "having\n"
+                + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
             getTestContext().flushSchemaCache();
@@ -3090,36 +3196,40 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-            + "    sum(`m1`)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    sum(`sales_fact_1997`.`store_cost`) as `m1`\n"
-            + "from\n"
-            + "    `store` as `store`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`,\n"
-            + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `time_by_day`.`quarter` = 'Q1'\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-            + "and\n"
-            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Drink'\n"
-            + "group by\n"
-            + "    `store`.`store_country`,\n"
-            + "    `store`.`store_state`,\n"
-            + "    `store`.`store_city`\n"
-            + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+                + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+                + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+                + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+                + "from\n"
+                + "    (select\n"
+                + "    sum(`sales_fact_1997`.`store_cost`) as `m1`,\n"
+                + "    `product_class`.`product_family` as `m2`\n"
+                + "from\n"
+                + "    `store` as `store`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+                + "group by\n"
+                + "    `store`.`store_country`,\n"
+                + "    `store`.`store_state`,\n"
+                + "    `store`.`store_city`,\n"
+                + "    `product_class`.`product_family`\n"
+                + "having\n"
+                + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeSum.get()) {
             getTestContext().flushSchemaCache();
@@ -3228,60 +3338,68 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-        + "    sum(`m1`)\n"
-        + "from\n"
-        + "    (select\n"
-        + "    sum(`inventory_fact_1997`.`warehouse_sales`) as `m1`\n"
-        + "from\n"
-        + "    `product_class` as `product_class`,\n"
-        + "    `product` as `product`,\n"
-        + "    `inventory_fact_1997` as `inventory_fact_1997`,\n"
-        + "    `store` as `store`,\n"
-        + "    `time_by_day` as `time_by_day`,\n"
-        + "    (select\n"
-        + "    `product_class`.`product_family` as `c0`\n"
-        + "from\n"
-        + "    `product_class` as `product_class`,\n"
-        + "    `product` as `product`,\n"
-        + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-        + "    `store` as `store`,\n"
-        + "    `time_by_day` as `time_by_day`\n"
-        + "where\n"
-        + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-        + "and\n"
-        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-        + "and\n"
-        + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-        + "and\n"
-        + "    `store`.`store_state` = 'WA'\n"
-        + "and\n"
-        + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-        + "and\n"
-        + "    `time_by_day`.`the_year` = 1997\n"
-        + "and\n"
-        + "    `time_by_day`.`quarter` = 'Q1'\n"
-        + "group by\n"
-        + "    `product_class`.`product_family`\n"
-        + "having\n"
-        + "    (sum(`sales_fact_1997`.`unit_sales`) > 10000)) as `tbl001`\n"
-        + "where\n"
-        + "    `inventory_fact_1997`.`product_id` = `product`.`product_id`\n"
-        + "and\n"
-        + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-        + "and\n"
-        + "    `inventory_fact_1997`.`store_id` = `store`.`store_id`\n"
-        + "and\n"
-        + "    `store`.`store_state` = 'WA'\n"
-        + "and\n"
-        + "    `inventory_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-        + "and\n"
-        + "    `time_by_day`.`the_year` = 1997\n"
-        + "and\n"
-        + "    `time_by_day`.`quarter` = 'Q1'\n"
-        + "and\n"
-        + "    `product_class`.`product_family` = `tbl001`.`c0`\n"
-        + "group by\n"
-        + "    `product_class`.`product_family`) as `sumQuery`";
+                + "    sum(case when `m2` = 'CA' then `m1` else 0 end) as `sum0`,\n"
+                + "    sum(case when `m2` = 'OR' then `m1` else 0 end) as `sum1`,\n"
+                + "    sum(case when `m2` = 'WA' then `m1` else 0 end) as `sum2`\n"
+                + "from\n"
+                + "    (select\n"
+                + "    sum(`inventory_fact_1997`.`warehouse_sales`) as `m1`,\n"
+                + "    `store`.`store_state` as `m2`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `inventory_fact_1997` as `inventory_fact_1997`,\n"
+                + "    `store` as `store`,\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    (select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `store`.`store_state` as `c1`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `store` as `store`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                + "and\n"
+                + "    `store`.`store_state` in ('CA', 'OR', 'WA')\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `store`.`store_state`\n"
+                + "having\n"
+                + "    (sum(`sales_fact_1997`.`unit_sales`) > 10000)) as `tbl001`\n"
+                + "where\n"
+                + "    `inventory_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `inventory_fact_1997`.`store_id` = `store`.`store_id`\n"
+                + "and\n"
+                + "    `store`.`store_state` in ('CA', 'OR', 'WA')\n"
+                + "and\n"
+                + "    `inventory_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "and\n"
+                + "    `product_class`.`product_family` = `tbl001`.`c0`\n"
+                + "and\n"
+                + "    `store`.`store_state` = `tbl001`.`c1`\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `store`.`store_state`) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
             getTestContext().flushSchemaCache();
@@ -3331,36 +3449,40 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-            + "    sum(`m1`)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
-            + "from\n"
-            + "    `store` as `store`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`,\n"
-            + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `time_by_day`.`quarter` = 'Q1'\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-            + "and\n"
-            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Drink'\n"
-            + "group by\n"
-            + "    `store`.`store_country`,\n"
-            + "    `store`.`store_state`,\n"
-            + "    `store`.`store_city`\n"
-            + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
+                + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+                + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+                + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+                + "from\n"
+                + "    (select\n"
+                + "    count(`sales_fact_1997`.`product_id`) as `m1`,\n"
+                + "    `product_class`.`product_family` as `m2`\n"
+                + "from\n"
+                + "    `store` as `store`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+                + "group by\n"
+                + "    `store`.`store_country`,\n"
+                + "    `store`.`store_state`,\n"
+                + "    `store`.`store_city`,\n"
+                + "    `product_class`.`product_family`\n"
+                + "having\n"
+                + "    (sum(`sales_fact_1997`.`unit_sales`) > 1000)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
             getTestContext().flushSchemaCache();
@@ -3420,37 +3542,41 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-            + "    sum(`m1`)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    count(`sales_fact_1997`.`product_id`) as `m1`\n"
-            + "from\n"
-            + "    `customer` as `customer`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`,\n"
-            + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `time_by_day`.`quarter` = 'Q1'\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-            + "and\n"
-            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-            + "and\n"
-            + "    `product_class`.`product_family` = 'Food'\n"
-            + "group by\n"
-            + "    `customer`.`country`,\n"
-            + "    `customer`.`state_province`,\n"
-            + "    `customer`.`city`,\n"
-            + "    `sales_fact_1997`.`customer_id`\n"
-            + "having\n"
-            + "    (sum(`sales_fact_1997`.`unit_sales`) > 10)) as `sumQuery`";
+                + "    sum(case when `m2` = 'Drink' then `m1` else 0 end) as `sum0`,\n"
+                + "    sum(case when `m2` = 'Food' then `m1` else 0 end) as `sum1`,\n"
+                + "    sum(case when `m2` = 'Non-Consumable' then `m1` else 0 end) as `sum2`\n"
+                + "from\n"
+                + "    (select\n"
+                + "    count(`sales_fact_1997`.`product_id`) as `m1`,\n"
+                + "    `product_class`.`product_family` as `m2`\n"
+                + "from\n"
+                + "    `customer` as `customer`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`,\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q1'\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `product_class`.`product_family` in ('Drink', 'Food', 'Non-Consumable')\n"
+                + "group by\n"
+                + "    `customer`.`country`,\n"
+                + "    `customer`.`state_province`,\n"
+                + "    `customer`.`city`,\n"
+                + "    `sales_fact_1997`.`customer_id`,\n"
+                + "    `product_class`.`product_family`\n"
+                + "having\n"
+                + "    (sum(`sales_fact_1997`.`unit_sales`) > 10)) as `sumQuery`";
 
         if (!useAgg && MondrianProperties.instance().EnableNativeFilter.get()) {
             getTestContext().flushSchemaCache();
@@ -3772,43 +3898,148 @@ public class NativeSetEvaluationTest extends BatchTestCase {
 
         String mysqlQuery =
             "select\n"
-            + "    COUNT(*)\n"
-            + "from\n"
-            + "    (select\n"
-            + "    `product_class`.`product_family` as `c0`,\n"
-            + "    `product_class`.`product_department` as `c1`,\n"
-            + "    `product_class`.`product_category` as `c2`,\n"
-            + "    `product_class`.`product_subcategory` as `c3`,\n"
-            + "    `product`.`brand_name` as `c4`,\n"
-            + "    `product`.`product_name` as `c5`\n"
-            + "from\n"
-            + "    `product_class` as `product_class`,\n"
-            + "    `product` as `product`,\n"
-            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
-            + "    `time_by_day` as `time_by_day`\n"
-            + "where\n"
-            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
-            + "and\n"
-            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
-            + "and\n"
-            + "    `time_by_day`.`the_year` = 1997\n"
-            + "and\n"
-            + "    `time_by_day`.`quarter` = 'Q4'\n"
-            + "and\n"
-            + "    `time_by_day`.`month_of_year` = 12\n"
-            + "and\n"
-            + "    (`product_class`.`product_family` = 'Non-Consumable')\n"
-            + "and\n"
-            + "    `sales_fact_1997`.`unit_sales` is not null\n"
-            + "group by\n"
-            + "    `product_class`.`product_family`,\n"
-            + "    `product_class`.`product_department`,\n"
-            + "    `product_class`.`product_category`,\n"
-            + "    `product_class`.`product_subcategory`,\n"
-            + "    `product`.`brand_name`,\n"
-            + "    `product`.`product_name`) as `countQuery`";
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`,\n"
+                + "    `product_class`.`product_category` as `c2`,\n"
+                + "    `product_class`.`product_subcategory` as `c3`,\n"
+                + "    `product`.`brand_name` as `c4`,\n"
+                + "    `product`.`product_name` as `c5`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q4'\n"
+                + "and\n"
+                + "    `time_by_day`.`month_of_year` = 12\n"
+                + "and\n"
+                + "    (`product_class`.`product_family` = 'Non-Consumable')\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`unit_sales` is not null\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`,\n"
+                + "    `product_class`.`product_category`,\n"
+                + "    `product_class`.`product_subcategory`,\n"
+                + "    `product`.`brand_name`,\n"
+                + "    `product`.`product_name` ) as `count0`\n"
+                + "union all\n"
+                + "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`,\n"
+                + "    `product_class`.`product_category` as `c2`,\n"
+                + "    `product_class`.`product_subcategory` as `c3`,\n"
+                + "    `product`.`brand_name` as `c4`,\n"
+                + "    `product`.`product_name` as `c5`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `time_by_day`.`quarter` = 'Q4'\n"
+                + "and\n"
+                + "    `time_by_day`.`month_of_year` = 12\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`unit_sales` is not null\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`,\n"
+                + "    `product_class`.`product_category`,\n"
+                + "    `product_class`.`product_subcategory`,\n"
+                + "    `product`.`brand_name`,\n"
+                + "    `product`.`product_name` ) as `count1`\n"
+                + "union all\n"
+                + "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`,\n"
+                + "    `product_class`.`product_category` as `c2`,\n"
+                + "    `product_class`.`product_subcategory` as `c3`,\n"
+                + "    `product`.`brand_name` as `c4`,\n"
+                + "    `product`.`product_name` as `c5`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    (`product_class`.`product_family` = 'Non-Consumable')\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`unit_sales` is not null\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`,\n"
+                + "    `product_class`.`product_category`,\n"
+                + "    `product_class`.`product_subcategory`,\n"
+                + "    `product`.`brand_name`,\n"
+                + "    `product`.`product_name` ) as `count2`\n"
+                + "union all\n"
+                + "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `product_class`.`product_family` as `c0`,\n"
+                + "    `product_class`.`product_department` as `c1`,\n"
+                + "    `product_class`.`product_category` as `c2`,\n"
+                + "    `product_class`.`product_subcategory` as `c3`,\n"
+                + "    `product`.`brand_name` as `c4`,\n"
+                + "    `product`.`product_name` as `c5`\n"
+                + "from\n"
+                + "    `product_class` as `product_class`,\n"
+                + "    `product` as `product`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+                + "    `time_by_day` as `time_by_day`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+                + "and\n"
+                + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+                + "and\n"
+                + "    `time_by_day`.`the_year` = 1997\n"
+                + "and\n"
+                + "    `sales_fact_1997`.`unit_sales` is not null\n"
+                + "group by\n"
+                + "    `product_class`.`product_family`,\n"
+                + "    `product_class`.`product_department`,\n"
+                + "    `product_class`.`product_category`,\n"
+                + "    `product_class`.`product_subcategory`,\n"
+                + "    `product`.`brand_name`,\n"
+                + "    `product`.`product_name` ) as `count3`";
         if (!isUseAgg() && (MondrianProperties.instance().EnableNativeCount.get()
             && MondrianProperties.instance().EnableNativeFilter.get()
             && MondrianProperties.instance().EnableNativeExisting.get()))
@@ -3944,6 +4175,66 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Axis #2:\n"
             + "{[Time].[1997].[Q4].[12]}\n"
             + "Row #0: 294\n"); //existing+nonempty
+    }
+
+    public void testNativeCountExistingEmptyScenario() {
+        propSaver.set(propSaver.properties.SsasCompatibleNaming, true);
+        TestContext testContext = TestContext.instance()
+            .create(
+                "  <Dimension name=\"Customer IDs\">\n"
+                + "    <Hierarchy name=\"Customer IDs\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"ID\" column=\"customer_id\" nameColumn=\"fullname\" uniqueMembers=\"true\"/>"
+                + "    </Hierarchy>\n"
+                + "    <Hierarchy name=\"Customer City\" hasAll=\"true\" allMemberName=\"All\" primaryKey=\"customer_id\">\n"
+                + "      <Table name=\"customer\"/>\n"
+                + "      <Level name=\"City\" column=\"city\" uniqueMembers=\"true\"/>\n"
+                + "    </Hierarchy>\n"
+                + "  </Dimension>\n",
+                "<Cube name=\"Customers\">\n"
+                + "  <Table name=\"sales_fact_1997\"/>\n"
+                + "  <DimensionUsage name=\"Customer IDs\" source=\"Customer IDs\" foreignKey=\"customer_id\"/>\n"
+                + "  <Measure name=\"Customer Count\" column=\"customer_id\" aggregator=\"count\"/>\n"
+                + "</Cube>\n"
+                + "<VirtualCube name=\"VCustomers\">\n"
+                + "  <VirtualCubeDimension cubeName=\"Customers\" name=\"Customer IDs\"/>\n"
+                + "  <VirtualCubeMeasure cubeName=\"Customers\" name=\"[Measures].[Customer Count]\"/>\n"
+                + "</VirtualCube>\n"
+                , null, null, null, null);
+        String mdx =
+            "WITH MEMBER [Measures].[City Count] AS Count(Existing [Customer IDs].[Customer City].[City].members)\n"
+            + "SELECT {[Measures].[City Count]} ON 0, {[Customer IDs].[ID].&[55]} ON 1\n"
+            + "FROM [VCustomers]\n";
+        if (!isUseAgg() && propSaver.properties.EnableNativeCount.get()) {
+            propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+            String mysqlQuery =
+                "select\n"
+                + "    COUNT(*)\n"
+                + "from\n"
+                + "    (select\n"
+                + "    `customer`.`city` as `c0`\n"
+                + "from\n"
+                + "    `customer` as `customer`,\n"
+                + "    `sales_fact_1997` as `sales_fact_1997`\n"
+                + "where\n"
+                + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+                + "and\n"
+                + "    `customer`.`customer_id` = '55'\n"
+                + "group by\n"
+                + "    `customer`.`city`) as `countQuery`";
+            SqlPattern mysqlPattern =
+                new SqlPattern(DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[]{mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(mdx,
+            "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[City Count]}\n"
+            + "Axis #2:\n"
+            + "{[Customer IDs].[Gary Dumin]}\n"
+            + "Row #0: 1\n");
     }
 
     public void testNativeFilterNoMeasureUnconstrained() {
@@ -4275,5 +4566,1119 @@ public class NativeSetEvaluationTest extends BatchTestCase {
             + "Row #0: 3\n"
             + "Row #0: 7\n");
     }
+
+    // tests creating consolidated count with descendant cross join arg instances
+    // i.e. mondrian.rolap.sql.DescendantsCrossJoinArg instances in the constraint
+    public void testNativeCombinedCountWithDescendantsCrossJoinArg() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        String mdx =
+            "WITH MEMBER [Measures].[C1] AS 'Count([Product].[Product Family].&[Non-Consumable].children)' "  +
+                "MEMBER [Measures].[C2] AS 'Count([Product].[Product Family].&[Food].children)' " +
+                "MEMBER [Measures].[C3] AS 'Count([Product].[Product Family].&[Drink].children)' " +
+                "SELECT {[Measures].[C1],[Measures].[C3], [Measures].[C2]} on 0 FROM [Sales] WHERE ([Time].[1997].[Q1])";
+
+        String mysql = "select\n"
+            + "    count(case when `c0` = 'Non-Consumable' then 1 else null end) as `count0`,\n"
+            + "    count(case when `c0` = 'Drink' then 1 else null end) as `count1`,\n"
+            + "    count(case when `c0` = 'Food' then 1 else null end) as `count2`\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` in ('Drink', 'Non-Consumable', 'Food'))\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`) as `countQuery`";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+
+        assertQueryReturns(mdx, "Axis #0:\n" +
+                "{[Time].[1997].[Q1]}\n" +
+                "Axis #1:\n" +
+                "{[Measures].[C1]}\n" +
+                "{[Measures].[C3]}\n" +
+                "{[Measures].[C2]}\n" +
+                "Row #0: 5\n" +
+                "Row #0: 3\n" +
+                "Row #0: 15\n");
+        propSaver.reset();
+    }
+
+    // tests creating consolidated count with descendant cross join arg instances
+    // i.e. mondrian.rolap.sql.DescendantsCrossJoinArg instances in the constraint
+    public void testNativeCombinedCountWithDescendantsCrossJoinArgDisjoint() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        String mdx =
+            "WITH MEMBER [Measures].[C1] AS 'Count([Product].[Product Family].&[Non-Consumable].children)' "
+                +
+                "MEMBER [Measures].[C2] AS 'Count([Product].[Product Family].&[Food].children)' "
+                +
+                "MEMBER [Measures].[C3] AS 'Count([Product].[Product Family].&[Drink].children)' "
+                +
+                "SELECT {[Measures].[C1],[Measures].[C3], [Measures].[C2]} on 0 FROM [Sales] "
+                + "WHERE {([Time].[1997].[Q1], [Store].[USA].[CA]),([Time].[1997].[Q2], [Store].[USA].[OR])}";
+
+        String mysql = "select\n"
+            + "    count(case when `c0` = 'Non-Consumable' then 1 else null end) as `count0`,\n"
+            + "    count(case when `c0` = 'Drink' then 1 else null end) as `count1`,\n"
+            + "    count(case when `c0` = 'Food' then 1 else null end) as `count2`\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`,\n"
+            + "    `product_class`.`product_department` as `c1`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` in ('Drink', 'Non-Consumable', 'Food'))\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`,\n"
+            + "    `product_class`.`product_department`) as `countQuery`";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+
+        assertQueryReturns(mdx, "Axis #0:\n"
+            + "{[Time].[1997].[Q1], [Store].[USA].[CA]}\n"
+            + "{[Time].[1997].[Q2], [Store].[USA].[OR]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[C1]}\n"
+            + "{[Measures].[C3]}\n"
+            + "{[Measures].[C2]}\n"
+            + "Row #0: 5\n"
+            + "Row #0: 3\n"
+            + "Row #0: 15\n");
+        propSaver.reset();
+    }
+
+
+
+    // tests creating consolidated count with member list cross join arg instances
+    // i.e. mondrian.rolap.sql.MemberListCrossJoinArgs in the constraint
+    public void testNativeCombinedCountWithMemberListCrossJoinArgs() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        String mdx =
+            "WITH MEMBER [Measures].[C1] AS 'Count([Product].[Product Family].&[Non-Consumable])' " +
+                "MEMBER [Measures].[C2] AS 'Count([Product].[Product Family].&[Food])' " +
+                "MEMBER [Measures].[C3] AS 'Count([Product].[Product Family].&[Drink])' " +
+                "SELECT {[Measures].[C1],[Measures].[C2], [Measures].[C3]} on 0 FROM [Sales] WHERE ([Time].[1997].[Q1])";
+
+        String mysql = "select\n"
+            + "    count(case when `c0` = 'Non-Consumable' then 1 else null end) as `count0`,\n"
+            + "    count(case when `c0` = 'Food' then 1 else null end) as `count1`,\n"
+            + "    count(case when `c0` = 'Drink' then 1 else null end) as `count2`\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `product_class`.`product_family` as `c0`\n"
+            + "from\n"
+            + "    `product` as `product`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    (`product_class`.`product_family` in ('Drink', 'Non-Consumable', 'Food'))\n"
+            + "group by\n"
+            + "    `product_class`.`product_family`) as `countQuery`";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+
+        String result = "Axis #0:\n"
+            + "{[Time].[1997].[Q1]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[C1]}\n"
+            + "{[Measures].[C2]}\n"
+            + "{[Measures].[C3]}\n"
+            + "Row #0: 1\n"
+            + "Row #0: 1\n"
+            + "Row #0: 1\n";
+
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testNativeSimpleConsolidatedCount() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =""
+                + "WITH MEMBER [Measures].[C1] as 'Count([Customers].[USA].[WA].[Spokane].children)'\n"
+                + "MEMBER [Measures].[C2] as 'Count([Store].[USA].[WA].[Spokane].children)'\n"
+                + "SELECT "
+                + "{[Measures].[C1], [Measures].[C2]} on 0 "
+                + "FROM [Sales]";
+
+        String mysql = "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `customer`.`country` as `c0`,\n"
+            + "    `customer`.`state_province` as `c1`,\n"
+            + "    `customer`.`city` as `c2`,\n"
+            + "    `customer`.`customer_id` as `c3`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    (`customer`.`city` = 'Spokane' and `customer`.`state_province` = 'WA')\n"
+            + "group by\n"
+            + "    `customer`.`country`,\n"
+            + "    `customer`.`state_province`,\n"
+            + "    `customer`.`city`,\n"
+            + "    `customer`.`customer_id` ) as `count0`\n"
+            + "union all\n"
+            + "select\n"
+            + "    COUNT(*)\n"
+            + "from\n"
+            + "    (select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`,\n"
+            + "    `store`.`store_name` as `c3`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    (`store`.`store_city` = 'Spokane' and `store`.`store_state` = 'WA')\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`,\n"
+            + "    `store`.`store_name` ) as `count1`";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+
+
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[C1]}\n"
+            + "{[Measures].[C2]}\n"
+            + "Row #0: 84\n"
+            + "Row #0: 1\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testStrToMemberMeasure() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[SalesNum] as StrToMember('[Measures].[Sales Count]')\n"
+                + "member [Measures].[ProfitPerSale] as [Measures].[Profit] / [Measures].[SalesNum]\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitPerSale] > 3.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitPerSale]} on 1 from [Sales]";
+
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / count(`sales_fact_1997`.`product_id`)) > 3.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitPerSale]}\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.99\n"
+            + "Row #0: 4.04\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 3.93\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.98\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 4.00\n";
+        assertQueryReturns(mdx, result);
+        propSaver.reset();
+    }
+    
+
+    public void testStrToMemberConstrainedMeasure() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[SalesNum] as StrToMember('[Measures].[Sales Count]', CONSTRAINED)\n"
+                + "member [Measures].[ProfitPerSale] as [Measures].[Profit] / [Measures].[SalesNum]\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitPerSale] > 3.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitPerSale]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / count(`sales_fact_1997`.`product_id`)) > 3.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitPerSale]}\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.99\n"
+            + "Row #0: 4.04\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 3.93\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.98\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 4.00\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testStrToMemberConstrainedParameterMeasure() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[SalesNum] as StrToMember(Parameter(\"SN\", STRING, '[Measures].[Sales Count]'), CONSTRAINED)\n"
+                + "member [Measures].[ProfitPerSale] as [Measures].[Profit] / [Measures].[SalesNum]\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitPerSale] > 3.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitPerSale]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / count(`sales_fact_1997`.`product_id`)) > 3.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitPerSale]}\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.99\n"
+            + "Row #0: 4.04\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 3.93\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.98\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 4.00\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+    
+
+    public void testValStrToMemberParameterNameMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val(StrToMember(Parameter(\"SQ\", STRING, '[Store Size in SQFT].[Store Sqft].[20319]')).Name)\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testValStrToMemberParameterPropertyMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val(StrToMember(Parameter(\"SQ\", STRING, '[Store Size in SQFT].[Store Sqft].[20319]')).Properties('Name'))\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testValNameMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val([Store Size in SQFT].[Store Sqft].[20319].Name)\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testValStrToMemberNameMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val(StrToMember('[Store Size in SQFT].[Store Sqft].[20319]').Name)\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testValPropertiesMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val([Store Size in SQFT].[Store Sqft].[20319].Properties('Name'))\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testValStrToMemberPropertiesMember() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByMinSqft] as [Measures].[Profit] / Val(StrToMember('[Store Size in SQFT].[Store Sqft].[20319]').Properties('Name'))\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByMinSqft] > 1.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByMinSqft]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 20319.0) > 1.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByMinSqft]}\n"
+            + "Row #0: 1.35\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.61\n"
+            + "Row #0: 1.63\n"
+            + "Row #0: 2.58\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.56\n"
+            + "Row #0: 1.47\n"
+            + "Row #0: 2.21\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testTupleSqlCompilerWithFunction() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg = MondrianProperties.instance().UseAggregates.get() && MondrianProperties.instance().ReadAggregates.get();
+
+        TestContext testContext
+            = TestContext.instance()
+           .createSubstitutingCube("Sales",
+               "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+                   + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+                   + "      <Table name=\"customer\"/>\n"
+                   + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+                   + "    </Hierarchy>\n"
+                   + "  </Dimension>\n",
+               "  <CalculatedMember visible=\"true\" name=\"20\" hierarchy=\"[Gender]\" parent=\"[Gender].[All Gender]\">\n"
+                   + "    <Formula>NULL</Formula>\n"
+                   + "  </CalculatedMember>\n"
+                   + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc\">\n"
+                   + "    <Formula>IIf(([Gender].[M], [Measures].[Unit Sales])>=val([Gender].currentMember.Name), (StrToMember(Parameter(\"Blokes\", STRING, '[Gender].[M]')), [Measures].[Unit Sales]), NULL)</Formula>\n"
+                   + "  </CalculatedMember>\n"
+                   + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc3\">\n"
+                   + "    <Formula>Count(Filter(NonEmpty([Customer IDs].[All Customer IDs].Children), NOT(ISEMPTY([Measures].[Calc]))))</Formula>\n"
+                   + "  </CalculatedMember>\n");
+
+        String mdx =
+            "with member [Measures].[Calc2] as '([Gender].[All Gender].[20], [Measures].[Calc3]) ', solve_order = -1\n"
+                + "select {[Measures].[Calc2]} on 0,\n"
+                +
+                "{[Product].[All Products].Children} on 1"
+                +
+                "from [Sales] where (StrToMember(\"[Marital Status].[S]\"))";
+
+        String mysqlQuery = "select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+            + "and\n"
+            + "    `customer`.`marital_status` = 'S'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+
+        getTestContext().flushSchemaCache();
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[] {mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(mdx, "Axis #0:\n"
+                + "{[Marital Status].[S]}\n"
+                + "Axis #1:\n"
+                + "{[Measures].[Calc2]}\n"
+                + "Axis #2:\n"
+                + "{[Product].[Drink]}\n"
+                + "{[Product].[Food]}\n"
+                + "{[Product].[Non-Consumable]}\n"
+                + "Row #0: 40\n"
+                + "Row #1: 820\n"
+                + "Row #2: 169\n");
+    }
+
+    public void testHangerTupleSqlCompilerWithFunction() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+
+        final boolean useAgg = MondrianProperties.instance().UseAggregates.get()
+            && MondrianProperties.instance().ReadAggregates.get();
+
+        TestContext testContext
+            = TestContext.instance()
+         .createSubstitutingCube("Sales",
+             "  <Dimension name=\"Customer IDs\" foreignKey=\"customer_id\">\n"
+                 + "    <Hierarchy hasAll=\"true\" allMemberName=\"All Customer IDs\" primaryKey=\"customer_id\">\n"
+                 + "      <Table name=\"customer\"/>\n"
+                 + "      <Level name=\"ID\" column=\"customer_id\" uniqueMembers=\"true\"/>\n"
+                 + "    </Hierarchy>\n"
+                 + "  </Dimension>\n"
+                 + "<Dimension name=\"GenderHanger\" foreignKey=\"customer_id\" hanger=\"true\">"
+                 + "<Hierarchy hasAll=\"true\" allMemberName=\"All GenderHanger\" primaryKey=\"customer_id\">\n"
+                 + "  <Table name=\"customer\"/>\n"
+                 + "  <Level name=\"GenderHanger\" column=\"gender\" uniqueMembers=\"true\"/>\n"
+                 + "</Hierarchy>\n"
+                 + "</Dimension>\n",
+             "  <CalculatedMember visible=\"true\" name=\"20\" hierarchy=\"[GenderHanger]\" parent=\"[GenderHanger].[All GenderHanger]\">\n"
+                 + "    <Formula>NULL</Formula>\n"
+                 + "  </CalculatedMember>\n"
+                 + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc\">\n"
+                 + "    <Formula>IIf(([GenderHanger].[M], [Measures].[Unit Sales])>=val([GenderHanger].currentMember.Name), (StrToMember('[GenderHanger].[M]'), [Measures].[Unit Sales]), NULL)</Formula>\n"
+                 + "  </CalculatedMember>\n"
+                 + "  <CalculatedMember dimension=\"Measures\" visible=\"true\" name=\"Calc3\">\n"
+                 + "    <Formula>Count(Filter(NonEmpty([Customer IDs].[All Customer IDs].Children), NOT(ISEMPTY([Measures].[Calc]))))</Formula>\n"
+                 + "  </CalculatedMember>\n");
+
+        String mdx =
+            "with member [Measures].[Calc2] as '([GenderHanger].[All GenderHanger].[20], [Measures].[Calc3]) ', solve_order = -1\n"
+                + "select {[Measures].[Calc2]} on 0,\n"
+                +
+                "{[Product].[All Products].Children} on 1"
+                +
+                "from [Sales] where (StrToMember(\"[Marital Status].[S]\"))";
+
+        String mysqlQuery = "select\n"
+            + "    `customer`.`customer_id` as `c0`\n"
+            + "from\n"
+            + "    `customer` as `customer`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`,\n"
+            + "    `product_class` as `product_class`,\n"
+            + "    `product` as `product`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`customer_id` = `customer`.`customer_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`product_id` = `product`.`product_id`\n"
+            + "and\n"
+            + "    `product`.`product_class_id` = `product_class`.`product_class_id`\n"
+            + "and\n"
+            + "    `product_class`.`product_family` = 'Non-Consumable'\n"
+            + "and\n"
+            + "    `customer`.`marital_status` = 'S'\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `customer`.`customer_id`\n"
+            + "order by\n"
+            + "    ISNULL(`customer`.`customer_id`) ASC, `customer`.`customer_id` ASC";
+
+        getTestContext().flushSchemaCache();
+
+        if (!useAgg && MondrianProperties.instance().EnableNativeCount.get()) {
+            SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysqlQuery, null);
+            assertQuerySql(testContext, mdx, new SqlPattern[] {mysqlPattern});
+        }
+
+        testContext.assertQueryReturns(mdx, "Axis #0:\n"
+            + "{[Marital Status].[S]}\n"
+            + "Axis #1:\n"
+            + "{[Measures].[Calc2]}\n"
+            + "Axis #2:\n"
+            + "{[Product].[Drink]}\n"
+            + "{[Product].[Food]}\n"
+            + "{[Product].[Non-Consumable]}\n"
+            + "Row #0: 86\n"
+            + "Row #1: 1,576\n"
+            + "Row #2: 353\n");
+    }
+
+    public void testValWithAddress() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[ProfitByAddress] as [Measures].[Profit] / Val(StrToMember('[Store].[Store Name].[Store 10]').Properties('Street address'))\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitByAddress] > 4.0)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitByAddress]} on 1 from [Sales]";
+        
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / 7894.0) > 4.0)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitByAddress]}\n"
+            + "Row #0: 4.15\n"
+            + "Row #0: 4.14\n"
+            + "Row #0: 4.19\n"
+            + "Row #0: 6.64\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 5.69\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
+    public void testStrToMemberParameterMeasure() {
+        propSaver.set(propSaver.properties.GenerateFormattedSql, true);
+        String mdx =
+            "with member [Measures].[Profit] AS [Measures].[Store Sales] - [Measures].[Store Cost]\n"
+                + "member [Measures].[SalesNum] as StrToMember(Parameter(\"NumberOfSales\", STRING, '[Measures].[Sales Count]')), FORMAT_STRING = \"$#,0\"\n"
+                + "member [Measures].[ProfitPerSale] as [Measures].[Profit] / [Measures].[SalesNum]\n"
+                + "set StoreSet as 'Filter(NonEmpty([Store].[Store City].Members, {[Measures].[Unit Sales]}), [Measures].[ProfitPerSale] > 3.00)'\n"
+                + "select [StoreSet] on 0, {[Measures].[ProfitPerSale]} on 1 from [Sales]";
+
+        String mysql = "select\n"
+            + "    `store`.`store_country` as `c0`,\n"
+            + "    `store`.`store_state` as `c1`,\n"
+            + "    `store`.`store_city` as `c2`\n"
+            + "from\n"
+            + "    `store` as `store`,\n"
+            + "    `sales_fact_1997` as `sales_fact_1997`,\n"
+            + "    `time_by_day` as `time_by_day`\n"
+            + "where\n"
+            + "    `sales_fact_1997`.`store_id` = `store`.`store_id`\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`time_id` = `time_by_day`.`time_id`\n"
+            + "and\n"
+            + "    `time_by_day`.`the_year` = 1997\n"
+            + "and\n"
+            + "    `sales_fact_1997`.`unit_sales` is not null\n"
+            + "group by\n"
+            + "    `store`.`store_country`,\n"
+            + "    `store`.`store_state`,\n"
+            + "    `store`.`store_city`\n"
+            + "having\n"
+            + "    (((sum(`sales_fact_1997`.`store_sales`) - sum(`sales_fact_1997`.`store_cost`)) / count(`sales_fact_1997`.`product_id`)) > 3.00)\n"
+            + "order by\n"
+            + "    ISNULL(`store`.`store_country`) ASC, `store`.`store_country` ASC,\n"
+            + "    ISNULL(`store`.`store_state`) ASC, `store`.`store_state` ASC,\n"
+            + "    ISNULL(`store`.`store_city`) ASC, `store`.`store_city` ASC";
+
+        SqlPattern mysqlPattern = new SqlPattern(Dialect.DatabaseProduct.MYSQL, mysql, null);
+        assertQuerySql(mdx, new SqlPattern[] {mysqlPattern});
+        String result = "Axis #0:\n"
+            + "{}\n"
+            + "Axis #1:\n"
+            + "{[Store].[USA].[CA].[Beverly Hills]}\n"
+            + "{[Store].[USA].[CA].[Los Angeles]}\n"
+            + "{[Store].[USA].[CA].[San Diego]}\n"
+            + "{[Store].[USA].[OR].[Portland]}\n"
+            + "{[Store].[USA].[OR].[Salem]}\n"
+            + "{[Store].[USA].[WA].[Bremerton]}\n"
+            + "{[Store].[USA].[WA].[Seattle]}\n"
+            + "{[Store].[USA].[WA].[Spokane]}\n"
+            + "{[Store].[USA].[WA].[Tacoma]}\n"
+            + "{[Store].[USA].[WA].[Yakima]}\n"
+            + "Axis #2:\n"
+            + "{[Measures].[ProfitPerSale]}\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.99\n"
+            + "Row #0: 4.04\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 3.93\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 3.98\n"
+            + "Row #0: 4.03\n"
+            + "Row #0: 4.01\n"
+            + "Row #0: 4.00\n";
+        assertQueryReturns(mdx, result);
+
+        propSaver.reset();
+    }
+
 }
 // End NativeSetEvaluationTest.java

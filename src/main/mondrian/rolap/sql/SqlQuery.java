@@ -1053,11 +1053,8 @@ public class SqlQuery {
             buf, generateFormattedSql, prefix, " having ", " and ", "", "");
         orderBy.toBuffer(
             buf, generateFormattedSql, prefix, " order by ", ", ", "", "");
-        if (limit != null) {
-            buf.append(" limit ").append(limit);
-        }
-        if (offset != null) {
-            buf.append(" offset ").append(offset);
+        if (offset != null || limit != null) {
+            buf.append(dialect.generateLimitOffsetClause(limit, offset));
         }
     }
 
@@ -1106,6 +1103,15 @@ public class SqlQuery {
         // A grouping function will end up in the select clause implicitly. It
         // needs a corresponding type.
         types.add(null);
+    }
+
+    /**
+     * Accessor to the types. This saves turning the query into a String/Types pair
+     * when not needed.
+     * @return the list of types. The list is not wrapped or made unmodifiable.
+     */
+    public List<SqlStatement.Type> getTypes() {
+        return types;
     }
 
     private void addType(SqlStatement.Type type) {

@@ -102,19 +102,24 @@ public class RolapNativeOrder extends RolapNativeSet {
             return measure.getAggregator() != RolapAggregator.DistinctCount;
         }
 
+        /**
+         * slots 0 - 6: parent slots
+         * slot 7: List<Member> slicer members or null
+         * slot 8: order Exp to String or null
+         * slot 9: boolean ascending
+         *
+         * @return
+         */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
+            if (this.getEvaluator() instanceof RolapEvaluator) {
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
+            }
             // Note: need to use string in order for caching to work
             if (orderByExpr != null) {
-                key.add(orderByExpr.toString());
+                key.setValue(getClass().getName() + ".orderByExpr", orderByExpr.toString());
             }
-            key.add(ascending);
-            if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
-            }
+            key.setValue(getClass().getName() + ".ascending", ascending);
             return key;
         }
     }

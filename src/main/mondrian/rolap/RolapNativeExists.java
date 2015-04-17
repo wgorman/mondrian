@@ -172,12 +172,9 @@ public class RolapNativeExists extends RolapNativeSet {
 
         @Override
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
             if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
             }
             return key;
         }

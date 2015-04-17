@@ -134,6 +134,17 @@ public class VerticaDialect extends JdbcDialectImpl {
         return true;
     }
 
+    public String generateLimitOffsetClause(Integer limit, Integer offset) {
+        final StringBuilder buf = new StringBuilder();
+        if (limit != null) {
+            buf.append(" limit ").append(limit);
+        }
+        if (offset != null) {
+            buf.append(" offset ").append(offset);
+        }
+        return buf.toString();
+    }
+
     public boolean supportsMultiValueInExpr() {
         return true;
     }

@@ -114,20 +114,20 @@ public class RolapNativeFilter extends RolapNativeSet {
             }
         }
 
+        /**
+         * This returns a CacheKey object
+         * @return
+         */
         public Object getCacheKey() {
-            List<Object> key = new ArrayList<Object>();
-            key.add(super.getCacheKey());
+            CacheKey key = new CacheKey((CacheKey) super.getCacheKey());
+            if (this.getEvaluator() instanceof RolapEvaluator) {
+                key.setSlicerMembers(((RolapEvaluator) this.getEvaluator()).getSlicerMembers());
+            }
             // Note required to use string in order for caching to work
             if (filterExpr != null) {
-                key.add(filterExpr.toString());
+                key.setValue(getClass().getName() + ".filterExpr", filterExpr.toString());
             }
-            key.add(getEvaluator().isNonEmpty());
-
-            if (this.getEvaluator() instanceof RolapEvaluator) {
-                key.add(
-                    ((RolapEvaluator)this.getEvaluator())
-                    .getSlicerMembers());
-            }
+            key.setValue(getClass().getName() + ".nonEmpty", getEvaluator().isNonEmpty());
 
             return key;
         }
