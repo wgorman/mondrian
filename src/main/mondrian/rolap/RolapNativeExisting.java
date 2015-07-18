@@ -224,7 +224,7 @@ public class RolapNativeExisting extends RolapNativeSet {
      * @param leftSet
      * @param hierarchyRight
      * @param rightSet
-     * @return 
+     * @return filtered left set
      */
     public static TupleList postFilterExistingRelatedHierarchies(
         RolapEvaluator evaluator,
@@ -334,6 +334,7 @@ public class RolapNativeExisting extends RolapNativeSet {
     {
         Map<RolapLevel, List<RolapMember>> result =
             new LinkedHashMap<RolapLevel, List<RolapMember>>();
+        final boolean isAgg = MondrianProperties.instance().UseAggregates.get();
         for (List<Member> tuple : tuples) {
             for (Member member : tuple) {
                 if (member.getHierarchy().equals(targetHierarchy)
@@ -341,10 +342,14 @@ public class RolapNativeExisting extends RolapNativeSet {
                 {
                     // avoiding rolapCubeMember will prevent fact table joins
                     // TODO: a better way
+                    // would fail for aggregate tables
                     RolapMember rolapMember = (RolapMember) member;
-                    if (!isNonEmpty && rolapMember instanceof RolapCubeMember) {
+                    if (!isNonEmpty
+                        && rolapMember instanceof RolapCubeMember
+                        && !isAgg)
+                    {
                         rolapMember =
-                            ((RolapCubeMember)member).getRolapMember();
+                            ((RolapCubeMember) member).getRolapMember();
                     }
                     putInMapList(
                         result,
